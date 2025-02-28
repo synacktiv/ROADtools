@@ -9,7 +9,7 @@ from roadtools.roadlib.metadef.database import User, Policy, JSON, Group, Direct
 import os
 import logging
 import argparse
-from sqlalchemy import func, and_, or_, select, desc, asc
+from sqlalchemy import func, and_, or_, select, desc, asc, cast
 from sqlalchemy.event import listens_for
 from sqlalchemy.pool import _ConnectionRecord
 import mimetypes
@@ -286,10 +286,17 @@ def query_all_items(request,schema,model,fields):
         query = query.filter(or_(*filters))
     
     if sortedField:
+        field = getattr(model, sortedField)
+        if hasattr(field, 'type') and isinstance(field.type, JSON):
+            # For JSON fields, use the length of the JSON array for sorting
+            field = func.json_array_length(cast(field, db.Text))
+        elif hasattr(field, 'property') and hasattr(field.property, 'direction'):
+            # Handle relationship fields
+            field = field.property.direction.mapper.class_.id
         if sortOrder == 1:
-            query = query.order_by(getattr(model,sortedField).desc())
+            query = query.order_by(field.desc())
         elif sortOrder == -1:
-            query = query.order_by(getattr(model,sortedField).asc())
+            query = query.order_by(field.asc())
 
     if page is None and rows is None:
         all_items = query.all()
