@@ -30,13 +30,8 @@ export default {
 
     const sidebarOpen = ref(false)
 
-    const isDark = useDark({
-      selector: 'html',
-    })
-
     return {
       sidebarOpen,
-      isDark
     }  
   }
 }
