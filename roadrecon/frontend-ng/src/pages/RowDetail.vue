@@ -393,6 +393,15 @@ export default {
                             ],
                         },
                         {
+                            name: "Groups",
+                            attribute: "memberOf",
+                            filterFields: ["name", "userPrincipalName", "accountEnabled"],
+                            columns: [
+                                { field: 'displayName', header: 'Name' },
+                                { field: 'description', header: 'Description' },
+                            ],
+                        },
+                        {
                             name: "Bitlocker Keys",
                             attribute: "blkeys",
                             filterFields: ["keyIdentifier", "keyMaterial"],
