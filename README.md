@@ -10,6 +10,8 @@ ROADtools is a framework to interact with Azure AD. It consists of a library (ro
 
 ## Roadrecon UI NG
 
+<img src="preview.png" width="300px" alt="New UI" />
+
 ### Install
 
 ```
