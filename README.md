@@ -24,6 +24,8 @@ Enjoy on port 5173 (port 5000 is used for the backend and does not include the o
 
 ### New features
 
+<img src="Policies.png" width="800px" alt="Policies page" />
+
 - New Frontend based on Vite, VueJS and PrimeVue framework
 - Backend pagination for better performance on large databases
 - Added a Policies detail page
