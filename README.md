@@ -14,6 +14,8 @@ ROADtools is a framework to interact with Azure AD. It consists of a library (ro
 
 ### Install
 
+#### Docker setup
+
 ```
 cd roadrecon
 # copy the roadrecon.db to roadrecon/
@@ -21,6 +23,26 @@ sudo docker-compose up -d
 ```
 
 Enjoy on port 5173 (port 5000 is used for the backend and does not include the old UI build anymore)
+
+#### Docker setup
+
+```
+cd roadrecon
+# copy the roadrecon.db to roadrecon/
+
+pip install .
+
+# OR
+
+pipx install git+https://github.com/synacktiv/ROADtools --include-deps
+```
+
+And then start the server:
+```
+roadrecon gui
+```
+Enjoy on port 5000
+
 
 ### New features
 
