@@ -22,9 +22,7 @@ export default defineConfig({
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,
-    },
-    outDir: '../roadtools/roadrecon/dist_gui',
-    emptyOutDir: true, // also necessary
+    }
   },
   server:{
     host: '0.0.0.0',

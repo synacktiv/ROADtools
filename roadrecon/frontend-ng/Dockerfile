@@ -7,7 +7,7 @@ RUN npm install
 ENV PATH /usr/src/node_modules/.bin:$PATH
 COPY . /usr/src/app
 WORKDIR /usr/src/app
-RUN npm run build
+RUN npm run docker
 
 # Development stage
 FROM node:latest AS dev
