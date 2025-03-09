@@ -14,6 +14,7 @@
                         severity="danger" value="Disabled" />
                 </div>
             </div>
+            <p v-if="loading">Loading...</p>
             <!-- Cards -->
             <div class="grid grid-cols-2 gap-4 overflow-auto rounded-3xl p-3">
                 <Card class="grid grid-cols-2 overflow-auto">
@@ -147,6 +148,7 @@ export default {
             name: "User detail",
             rawObject: null,
             err: null,
+            loading: false,
             columns: {
                 devices: [
                     { field: 'displayName', header: 'Name' },
@@ -213,6 +215,7 @@ export default {
             apiRoute = "policy"
         }
 
+        this.loading = true
         axios
             .get(`/api/${apiRoute}/${objectId}`)
             .then(response => {
@@ -707,7 +710,9 @@ export default {
                     console.log(error)
                     return
                 }
-            })
+            }).finally(() => {
+                this.loading = false;
+            });
     },
     methods: {
         checkDisplay(value) {
