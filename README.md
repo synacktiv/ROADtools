@@ -4,7 +4,7 @@
 ![Python 3 only](https://img.shields.io/badge/python-3.7+-blue.svg)
 ![License: MIT](https://img.shields.io/pypi/l/roadlib.svg)
 
-<img src="roadrecon/frontend/src/assets/rt_transparent.svg" width="300px" alt="ROADtools logo" />
+<img src="roadrecon/frontend-ng/src/images/logo.svg" width="300px" alt="ROADtools logo" />
 
 ROADtools is a framework to interact with Azure AD. It consists of a library (roadlib) with common components, the ROADrecon Azure AD exploration tool and the ROADtools Token eXchange (roadtx) tool.
 
