@@ -605,7 +605,15 @@ def sp_detail(id):
     sp = db.session.get(ServicePrincipal, id)
     if not sp:
         abort(404)
-    return serviceprincipal_schema.jsonify(sp)
+    result = serviceprincipal_schema.dump(sp)
+    for (i,elem) in enumerate(sp.appRolesAssigned):
+        resource_data = get_approle_by_resources_(sp.appRolesAssigned[i].resourceId)
+        result['appRolesAssigned'][i]['desc'] = resource_data[0]['desc']
+        result['appRolesAssigned'][i]['value'] = resource_data[0]['value']
+    if len(sp.appRolesAssignedTo) > 0:
+        principal_data = get_approles_by_principal_(sp.appRolesAssigned[0].resourceId)
+        result['appRolesAssignedTo'] = principal_data
+    return jsonify(result)
 
 @app.route("/api/serviceprincipals-by-appid/<id>", methods=["GET"])
 def sp_detail_by_appid(id):
@@ -809,19 +817,25 @@ def get_approles():
 
     return jsonify(result)
 
-@app.route("/api/approles_by_resource/<spid>", methods=["GET"])
-def get_approles_by_resource(spid):
+def get_approle_by_resources_(spid):
     approles = []
     for ar in db.session.query(AppRoleAssignment).filter(AppRoleAssignment.resourceId == spid):
         process_approle(approles, ar)
-    return jsonify(approles)
+    return approles
 
-@app.route("/api/approles_by_principal/<pid>", methods=["GET"])
-def get_approles_by_principal(pid):
+@app.route("/api/approles_by_resource/<spid>", methods=["GET"])
+def get_approles_by_resource(spid):
+    return jsonify(get_approle_by_resources_(spid))
+
+def get_approles_by_principal_(pid):
     approles = []
     for ar in db.session.query(AppRoleAssignment).filter(AppRoleAssignment.principalId == pid):
         process_approle(approles, ar)
-    return jsonify(approles)
+    return approles
+
+@app.route("/api/approles_by_principal/<pid>", methods=["GET"])
+def get_approles_by_principal(pid):
+    jsonify(get_approles_by_principal_(pid))
 
 @app.route("/api/oauth2permissions", methods=["GET"])
 def get_oauth2permissions():

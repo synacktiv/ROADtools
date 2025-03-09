@@ -540,20 +540,34 @@ export default {
                             ],
                         },
                         {
-                            name: "App role assignments",
-                            attribute: "appRolesAssignedTo",
+                            name: "App roles assigned to others",
+                            attribute: "appRolesAssigned",
                             value: "1",
+                            filterFields: ["principalDisplayName", "principalType", "value", "desc"],
+                            columns: [
+                                { field: 'principalDisplayName', header: 'PrincipalName' },
+                                { field: 'principalType', header: 'Principal Type' },
+                                { field: 'value', header: 'Role' },
+                                { field: 'desc', header: 'Description' },
+                            ],
+                        },
+                        {
+                            name: "App roles assigned to this principal",
+                            attribute: "appRolesAssignedTo",
+                            value: "2",
                             filterFields: ["value", "displayName", "description", "id", "allowedMemberTypes"],
                             columns: [
-                                { field: 'principalDisplayName', header: 'Principal Name' },
-                                { field: 'principalType', header: 'Type' },
-                                { field: 'resourceDisplayName', header: 'Ressource' },
+                                { field: 'principalDisplayName', header: 'PrincipalName' },
+                                { field: 'principalType', header: 'Principal Type' },
+                                { field: 'value', header: 'Role' },
+                                { field: 'resourceDisplayName', header: 'Application' },
+                                { field: 'desc', header: 'Description' },
                             ],
                         },
                         {
                             name: "OAuth2 permissions (delegated permissions)",
                             attribute: "oauth2Permissions",
-                            value: "2",
+                            value: "3",
                             filterFields: ["value", "displayName", "description", "id", "allowedMemberTypes"],
                             columns: [
                                 { field: 'value', header: 'Value' },
@@ -568,7 +582,7 @@ export default {
                         {
                             name: "Owner",
                             attribute: "ownerUsers",
-                            value: "3",
+                            value: "4",
                             filterFields: ["value", "displayName", "description", "id", "allowedMemberTypes"],
                             columns: [
                                 { field: 'displayName', header: 'Name' },
