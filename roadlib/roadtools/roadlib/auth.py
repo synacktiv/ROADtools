@@ -1352,6 +1352,8 @@ class Authentication():
         for newname, oldname in translate_map.items():
             if newname in tokenreply:
                 tokenobject[oldname] = tokenreply[newname]
+        if 'expires_in' in tokenreply:
+            tokenobject['expiresIn'] = int(tokenreply['expires_in'])
         return tokenobject
 
     @staticmethod
