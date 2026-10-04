@@ -72,24 +72,37 @@ Worktree agents: `podman compose -p rr-<worktree> run --rm py|node ...` (no publ
 
 | Slice | Routes | Pages | Backend | Frontend | Tests |
 |---|---|---|---|---|---|
-| S1 users | `/api/users` (incl. MFA filters), `/api/users/{id}`, `/api/owners` | users, user page, mfa | [ ] | [ ] | [ ] |
-| S2 groups | `/api/groups`, `/api/groups/{id}` | groups, group page | [ ] | [ ] | [ ] |
-| S3 devices + AUs | `/api/devices[/{id}]`, `/api/administrative-units[/{id}]` | devices, AUs | [ ] | [ ] | [ ] |
-| S4 SPs + apps | `/api/service-principals[/{id}]`, `/api/applications[/{id}]` | SPs, apps | [ ] | [ ] | [ ] |
-| S5 policies | `/api/policies[/{id}]`, `/api/policies/{id}/users`, `/api/policies/affecting/{type}/{id}`, `/api/named-locations[/{id}]` | policies, named locations, Policies tab | [ ] | [ ] | [ ] |
-| S6 roles | `/api/roles[/{id}]`, `/api/role-assignments` | roles, role page, Roles tabs | [ ] | [ ] | [ ] |
-| S7 grants | `/api/app-role-assignments`, `/api/oauth2-grants` | app roles, OAuth2 grants, grant tabs | [ ] | [ ] | [ ] |
-| S8 governance | `/api/azure-role-assignments`, `/api/pim-assignments`, `/api/groups/{id}/pim`, `/api/access-package-policies` | Azure / PIM / access package tabs | [ ] | [ ] | [ ] |
-| S9 meta | `/api/stats`, `/api/tenant`, `/api/search` | dashboard, ⌘K, settings | [ ] | [ ] | [ ] |
+| S1 users | `/api/users` (incl. MFA filters), `/api/users/{id}`, `/api/owners` | users, user page, mfa | [x] | [ ] | [x] |
+| S2 groups | `/api/groups`, `/api/groups/{id}` | groups, group page | [x] | [ ] | [x] |
+| S3 devices + AUs | `/api/devices[/{id}]`, `/api/administrative-units[/{id}]` | devices, AUs | [x] | [ ] | [x] |
+| S4 SPs + apps | `/api/service-principals[/{id}]`, `/api/applications[/{id}]` | SPs, apps | [x] | [ ] | [x] |
+| S5 policies | `/api/policies[/{id}]`, `/api/policies/{id}/users`, `/api/policies/affecting/{type}/{id}`, `/api/named-locations[/{id}]` | policies, named locations, Policies tab | [x] | [ ] | [x] |
+| S6 roles | `/api/roles[/{id}]`, `/api/role-assignments` | roles, role page, Roles tabs | [x] | [ ] | [x] |
+| S7 grants | `/api/app-role-assignments`, `/api/oauth2-grants` | app roles, OAuth2 grants, grant tabs | [x] | [ ] | [x] |
+| S8 governance | `/api/azure-role-assignments`, `/api/pim-assignments`, `/api/groups/{id}/pim`, `/api/access-package-policies` | Azure / PIM / access package tabs | [x] | [ ] | [x] |
+| S9 meta | `/api/stats`, `/api/tenant`, `/api/search` | dashboard, ⌘K, settings | [x] | [ ] | [x] |
 
 Batch 1: S5, S1, S2, S3, S4. Batch 2: S6, S7, S8, S9. Code review after each batch.
+
+Backend status (2026-10-04): every route implemented in its worktree, merged into `gui-next`; both batch reviews applied; 201 tests (`pytest roadrecon/tests`).
+- End-to-end smoke: all 29 pages render against the real API (gendb DB, Vite proxy, Playwright) with no HTTP or page errors.
+- Frontend column stays open for the per-page follow-ups:
+  - the app page still fetches the SP detail (`ApplicationDetail` now carries those fields);
+  - `LocationPolicies` makes one request per row (`NamedLocationRow.policies` exists now);
+  - `grants.tsx` `RISKY_SCOPE` and `apps.tsx` `isHighPriv` should use `isPrivileged` / `privilegedScopes`;
+  - the governance tables could set `meta.sort` (the backend accepts `role`, `kind`, `resourceType`, `packageName`).
+- Spec changes after `spec-v1`: `RoleDetail.holders` is a list of `{kind, principalType, scope, count}` (the role page tallied 1000 assignments, over the 500 cap).
+- SQLite-only SQL, marked `ponytail:`: `json_array_length` (SP / app credential counts) and `json_each` / `json_extract` (app role value filter). Needs `CAST(... AS json)` variants for Postgres.
+- Open questions for a real tenant:
+  - do deny access-package policies block a package that an allow policy grants? (Today they are only hidden.)
+  - does Entra store user actions as `Acrs: urn:user:*`? (Handled both ways.)
 
 ## Phase 5 — Integration and parity
 
 Performance and compatibility
-- [ ] 50k-user synthetic DB: list, relation and in-scope endpoints < 300 ms
-- [ ] DB without PIM/IG/AZ tables returns empty results, not errors
-- [ ] `--read-only` on a read-only file works
+- [x] 50k-user synthetic DB: list, relation and in-scope endpoints < 300 ms (`.dev/perf.py`: worst is a policy's in-scope users at about 240 ms; `role-assignments?expandGroups` across all roles is about 350 ms, but the UI only uses it with `roleId`)
+- [x] DB without PIM/IG/AZ tables returns empty results, not errors (`minimal_client` tests, plus single missing PIM tables)
+- [x] `--read-only` on a read-only file works (`test_read_only_engine`)
 - [ ] Side-by-side with the Flask GUI on the same DB (optional `legacy` compose service)
 
 Parity with the old GUI — lists
@@ -147,6 +160,7 @@ New features
 - Scope through eligible roles is flagged as eligible-only.
 
 ## Later (deliberately skipped)
+- Shared helpers for the per-router duplicates the review found: `_flag`, `_count`, `gm_user` / `gm_group`.
 - Clean up the `mfa_` column-id prefix in `pages/users.tsx`. It worked around a column-visibility key bug that has since been fixed in `DataTable`.
 - Unify the status marker icons across pages in a single shared helper (no MFA, not compliant, disabled, risky).
 - Code-split the bundle (about 740 kB) if the start-up time matters.
