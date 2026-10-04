@@ -58,7 +58,7 @@ Worktree agents: `podman compose -p rr-<worktree> run --rm py|node ...` (no publ
 - [x] Wave 2 per page: no duplicated info, markers next to names, `meta.filter` on columns, extra hidden columns, new spec fields, expandable Conditional Access rows
 - [x] World map component for named locations (`components/world-map.tsx`, `@svg-maps/world` CC BY 4.0, credited on the map): per-location map as the side card, overview map above the list
 - [ ] **User review of the mockup**
-- [ ] `roadrecon/tests/gendb.py` synthetic DB generator (parallel worktree), validated with `roadrecon plugin policies`
+- [x] `roadrecon/tests/gendb.py` synthetic DB generator (parallel worktree), validated with `roadrecon plugin policies` (300 users in 0.9 s, 50k in 9 s)
 
 ## Phase 3 — API spec
 - [x] `api/db.py` (engine, pragmas, `ensure_indexes`, read-only), `api/app.py`, `api/__main__.py`
@@ -66,7 +66,7 @@ Worktree agents: `podman compose -p rr-<worktree> run --rm py|node ...` (no publ
 - [x] Pydantic models (`api/models.py`) + router stubs for every route below (`api/routers/<slice>.py`, 501 until implemented)
 - [x] Cross-slice hooks stubbed in the owning module: `users.page_users`, `roles.count_roles` / `count_scoped_roles`, `policies.count_affecting`, `governance.count_*` (counts return 0 until the slice lands)
 - [x] `openapi.json` exported, `schema.d.ts` generated, frontend switched to generated types (tsc clean)
-- [ ] Tag `spec-v1`
+- [x] Tag `spec-v1` (plus `tests/conftest.py` fixtures and `tests/test_app.py`, which fails if `openapi.json` drifts from the models)
 
 ## Phase 4 — Route implementation (fan-out, worktrees)
 

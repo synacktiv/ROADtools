@@ -362,8 +362,9 @@ def mfa_summary(user: d.User) -> dict:
     usage = [k.get('usage') for k in keys if isinstance(k, dict)]
     return {
         'methods': [m['methodType'] for m in methods if m.get('methodType')],
-        'defaultMethod': next((m['methodType'] for m in methods if m.get('isDefault')), None),
-        'perUserMfa': requirements[0].get('state') if requirements else None,
+        # gather stores `default`; some older dumps and tools use `isDefault`.
+        'defaultMethod': next((m['methodType'] for m in methods if m.get('default') or m.get('isDefault')), None),
+        'perUserMfa': (requirements[0].get('state') or '').capitalize() or None if requirements else None,
         'fido': usage.count('FIDO'),
         'windowsHello': usage.count('NGC'),
     }
