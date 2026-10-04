@@ -58,11 +58,6 @@ def _scope_where(op: str, arg: str):
     return not_(hit) if op in NEGATED else hit
 
 
-def _date(col):
-    """Compare as stored text: roadlib's DateTime bind rejects the 'YYYY-MM-DD' args of date filters."""
-    return type_coerce(col, Text)
-
-
 def _sp_names(col):
     """Enum options: display names of the service principals `col` points to."""
     return lambda db: db.scalars(select(SP.displayName).where(SP.objectId.in_(select(col))).distinct())
@@ -77,7 +72,7 @@ APP_ROLE_FIELDS = register('app-role-assignments', {
                        col=case({'User': 'user', 'Group': 'group', 'ServicePrincipal': 'servicePrincipal'}, value=ARA.principalType)),
     'resource': F('Application', 'enum', col=ARA.resourceDisplayName),
     'value': F('Role', 'text', where=_role_value_where),
-    'createdDateTime': F('Assigned', 'date', col=_date(ARA.creationTimestamp)),
+    'createdDateTime': F('Assigned', 'date', col=ARA.creationTimestamp),
 })
 APP_ROLE_SORTS = {'principal': ARA.principalDisplayName, 'resource': ARA.resourceDisplayName,
                   'createdDateTime': ARA.creationTimestamp}
@@ -87,7 +82,7 @@ GRANT_FIELDS = register('oauth2-grants', {
     'client': F('Granted to', 'enum', col=Client.displayName, options=_sp_names(G.clientId)),
     'resource': F('On API', 'enum', col=Resource.displayName, options=_sp_names(G.resourceId)),
     'scope': F('Scope', 'enum', where=_scope_where, options=_scopes),
-    'expiryTime': F('Expires', 'date', col=_date(G.expiryTime)),
+    'expiryTime': F('Expires', 'date', col=G.expiryTime),
 })
 GRANT_SORTS = {'client': Client.displayName, 'resource': Resource.displayName}
 

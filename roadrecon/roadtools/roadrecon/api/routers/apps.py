@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import Db, F, iso, is_privileged_permission, not_found, paginate, register, resolve_appids
+from ..common import ci, Db, F, iso, is_privileged_permission, not_found, paginate, register, resolve_appids
 from ..models import (AppRoleDefinition, ApplicationCounts, ApplicationDetail, ApplicationQuery, ApplicationRow,
                       Credential, MetadataEntry, ObjectRef, Page, PermissionScopeDefinition, RequiredPermission,
                       RequiredResourceAccess, ServicePrincipalCounts, ServicePrincipalDetail, ServicePrincipalQuery,
@@ -65,7 +65,7 @@ SP_FIELDS = register('service-principals', {
     'appRoleCount': F('App roles', 'number', col=sp_roles),
     'hasCustomOwner': F('Has owner', 'bool', col=sp_owned),
 })
-SP_SORTS = {'displayName': SP.displayName, 'publisherName': SP.publisherName, 'appId': SP.appId,
+SP_SORTS = {'displayName': ci(SP.displayName), 'publisherName': SP.publisherName, 'appId': SP.appId,
             'servicePrincipalType': SP.servicePrincipalType, 'microsoftFirstParty': SP.microsoftFirstParty,
             'accountEnabled': SP.accountEnabled, 'appRoleAssignmentRequired': SP.appRoleAssignmentRequired,
             'passwordCount': sp_pw, 'keyCount': sp_key, 'appRoleCount': sp_roles,
@@ -82,7 +82,7 @@ APP_FIELDS = register('applications', {
     'appRoleCount': F('App roles', 'number', col=app_roles),
     'hasCustomOwner': F('Has owner', 'bool', col=app_owned),
 })
-APP_SORTS = {'displayName': App.displayName, 'appId': App.appId, 'homepage': App.homepage,
+APP_SORTS = {'displayName': ci(App.displayName), 'appId': App.appId, 'homepage': App.homepage,
              'availableToOtherTenants': App.availableToOtherTenants, 'publicClient': App.publicClient,
              'oauth2AllowImplicitFlow': App.oauth2AllowImplicitFlow, 'passwordCount': app_pw, 'keyCount': app_key,
              'appRoleCount': app_roles, 'oauth2PermissionCount': app_scopes, 'hasCustomOwner': app_owned}

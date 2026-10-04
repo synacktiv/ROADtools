@@ -28,7 +28,7 @@ def test_list_shape_paging_sort(client, db):
     rows = all_devices(db)
     p = devices(client)
     assert p.total == len(rows) == len(p.items)
-    assert [i.displayName for i in p.items] == sorted(r.displayName for r in rows)
+    assert [i.displayName for i in p.items] == sorted((r.displayName for r in rows), key=str.lower)
     first = devices(client, page_size=5, page=2)
     assert first.total == len(rows) and [i.displayName for i in first.items] == [i.displayName for i in p.items[5:10]]
     by_os = devices(client, sort='deviceOSType', order='desc')

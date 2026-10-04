@@ -8,7 +8,7 @@ from sqlalchemy import and_, func, not_, select, union
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import Db, F, iso, not_found, paginate, register, resolve_refs, sql_clause
+from ..common import ci, Db, F, iso, not_found, paginate, register, resolve_refs, sql_clause
 from ..models import (AdministrativeUnitDetail, AdministrativeUnitQuery, AdministrativeUnitRow, BitLockerKey,
                       DeviceDetail, DeviceQuery, DeviceRow, Page)
 from . import roles
@@ -93,7 +93,7 @@ def list_devices(q: Annotated[DeviceQuery, Query()], db: Db) -> Page[DeviceRow]:
         if v := getattr(q, key):
             stmt = stmt.where(DEVICE_FIELDS[key].col == v)
     return paginate(db, stmt, q, resource='devices', search=[Dev.displayName, Dev.deviceId, Dev.objectId],
-                    sorts={'displayName': Dev.displayName, 'deviceOSType': Dev.deviceOSType},
+                    sorts={'displayName': ci(Dev.displayName), 'deviceOSType': Dev.deviceOSType},
                     build=lambda rows: [DeviceRow(**_device_row(r)) for r in rows])
 
 
@@ -126,7 +126,7 @@ def list_administrative_units(q: Annotated[AdministrativeUnitQuery, Query()], db
         stmt = stmt.where(AU.objectId.in_(union(*(select(t.c.AdministrativeUnit).where(t.c[col] == q.memberId)
                                                   for t, col in AU_MEMBER_LINKS))))
     return paginate(db, stmt, q, resource='administrative-units', search=[AU.displayName],
-                    sorts={'displayName': AU.displayName},
+                    sorts={'displayName': ci(AU.displayName)},
                     build=lambda rows: [AdministrativeUnitRow(**_au_row(r)) for r in rows])
 
 

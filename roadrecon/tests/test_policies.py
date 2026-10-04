@@ -392,3 +392,15 @@ def test_minimal_db(minimal_client):
     assert minimal_client.get(f'/api/policies/{pid}').status_code == 200
     assert minimal_client.get('/api/named-locations').json()['total'] == 2
     assert minimal_client.get('/api/policies/affecting/role/' + GA).status_code == 200
+
+
+def test_eligible_only_exclusion_does_not_win():
+    from roadtools.roadrecon.api.models import MatchReason, PolicyRow
+    row = PolicyRow(id='p', displayName='p', state='enabled', targetsAllUsers=False, targetsAllApps=False, block=False,
+                    grant=[], grantOperator='OR', sessionControls=[], modifiedDateTime=None, parseError=None)
+    from roadtools.roadrecon.api.routers.policies import _match
+    inc = [MatchReason(condition='Users', via=[], approximate=False, eligibleOnly=False)]
+    elig = [MatchReason(condition='Directory roles', via=[], approximate=False, eligibleOnly=True)]
+    act = [MatchReason(condition='Directory roles', via=[], approximate=False, eligibleOnly=False)]
+    assert _match(row, inc, elig).effect == 'included'
+    assert _match(row, inc, act).effect == 'excluded'

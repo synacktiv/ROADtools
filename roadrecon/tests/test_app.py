@@ -25,3 +25,10 @@ def test_unknown_resource(client):
 
 def test_minimal_db_starts(minimal_client):
     assert minimal_client.get('/api/filters/users').status_code == 200
+
+
+@pytest.mark.parametrize('url', ['/api/users?filter=lastPasswordChangeDateTime:gt:2020-01-01',
+                                 '/api/groups?filter=createdDateTime:lt:2030-01-01T00:00:00Z'])
+def test_date_filters_accept_plain_dates(client, url):
+    r = client.get(url)
+    assert r.status_code == 200 and r.json()['total'] > 0

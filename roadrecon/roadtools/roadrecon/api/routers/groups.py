@@ -6,7 +6,7 @@ from sqlalchemy import Text, and_, case, func, not_, or_, select, type_coerce, u
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import (Db, F, descendant_groups, has_table, iso, member_groups_select, not_found, paginate, register,
+from ..common import (ci, Db, F, descendant_groups, has_table, iso, member_groups_select, not_found, paginate, register,
                       transitive_groups_of)
 from ..models import GroupDetail, GroupQuery, GroupRow, Page
 from . import governance, policies, roles
@@ -74,11 +74,11 @@ def list_groups(q: Annotated[GroupQuery, Query()], db: Db) -> Page[GroupRow]:
     if q.dynamic is not None:
         stmt = stmt.where(DYNAMIC if q.dynamic else not_(DYNAMIC))
     if q.kind:
-        stmt = stmt.where(UNIFIED if q.kind == 'microsoft365' else not_(UNIFIED))
+        stmt = stmt.where(KIND == ('Microsoft 365' if q.kind == 'microsoft365' else 'Security'))
     if q.dirSyncEnabled is not None:
         stmt = stmt.where(_flag(G.dirSyncEnabled, q.dirSyncEnabled))
     return paginate(db, stmt, q, resource='groups', search=[G.displayName, G.mail, G.objectId],
-                    sorts={'displayName': G.displayName, 'createdDateTime': G.createdDateTime},
+                    sorts={'displayName': ci(G.displayName), 'createdDateTime': G.createdDateTime},
                     build=lambda rows: [GroupRow(**_row(g)) for g in rows])
 
 

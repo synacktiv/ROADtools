@@ -34,7 +34,9 @@ Db = Annotated[Session, Depends(get_db)]
 def has_table(db: Session, name: str) -> bool:
     """Optional tables (PIM*, IG*, AZ*) are missing on older dumps: callers return empty results."""
     engine = db.get_bind()
-    cache = engine.__dict__.setdefault('_rr_tables', set(inspect(engine).get_table_names()))
+    cache = engine.__dict__.get('_rr_tables')
+    if cache is None:
+        cache = engine.__dict__['_rr_tables'] = set(inspect(engine).get_table_names())
     return name in cache
 
 
@@ -112,6 +114,11 @@ def parse_filters(raw: list[str], fields: dict[str, F]) -> list[tuple[F, str, st
     return out
 
 
+def ci(col):
+    """Case-insensitive sort key (SQLite sorts BINARY: 'Zeta' before 'alpha')."""
+    return func.lower(col)
+
+
 def json_text(col):
     """A roadlib JSON column as plain text, for LIKE (a JSON-typed column would JSON-encode the pattern)."""
     return type_coerce(col, Text)
@@ -146,6 +153,7 @@ def sql_clause(f: F, op: str, arg: str) -> ColumnElement:
         n = float(arg)
         return {'eq': c == n, 'ne': c != n, 'gt': c > n, 'lt': c < n}.get(op, true())
     if f.type == 'date' and op in ('gt', 'lt'):
+        c = type_coerce(c, Text)  # roadlib's DateTime bind would strptime the 'YYYY-MM-DD' argument
         return c > _date_arg(arg) if op == 'gt' else c < _date_arg(arg)
     e = like_escape(arg)
     like = {'contains': f'%{e}%', 'notContains': f'%{e}%', 'startsWith': f'{e}%', 'endsWith': f'%{e}', 'eq': e, 'ne': e}
@@ -408,7 +416,7 @@ def is_privileged_permission(value: str | None) -> bool:
 
 
 __all__ = [
-    'Db', 'F', 'FIELDS', 'register', 'catalog', 'paginate', 'paginate_list', 'sql_clause', 'json_text', 'like_escape', 'has_table', 'not_found', 'iso',
+    'Db', 'F', 'FIELDS', 'register', 'catalog', 'paginate', 'paginate_list', 'sql_clause', 'json_text', 'ci', 'like_escape', 'has_table', 'not_found', 'iso',
     'DIRECTORY', 'keyword', 'value', 'unresolved', 'resolve_refs', 'resolve_ref', 'resolve_appids',
     'descendant_groups', 'ancestor_groups', 'member_groups_select', 'transitive_groups_of',
     'mfa_summary', 'PRIVILEGED_ROLES', 'is_privileged_permission',

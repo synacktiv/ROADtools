@@ -208,7 +208,13 @@ def _conditions(db: Session, det: dict) -> tuple[list[Condition], list[Condition
         for side in ('Include', 'Exclude'):
             for crit in _crits(cond, key, side):
                 for sub, v in crit.items():
-                    if sub != 'IsAgentic':
+                    if sub == 'Acrs':  # user actions are stored as Acrs too: urn:user:registersecurityinfo
+                        vals = _vals(v)
+                        for s2, xs in (('UserActions', [x for x in vals if str(x).startswith('urn:user:')]),
+                                       ('Acrs', [x for x in vals if not str(x).startswith('urn:user:')])):
+                            if xs:
+                                acc.setdefault(SUB_CONDITIONS[s2], {'Include': [], 'Exclude': []})[side] += _items(key, s2, xs)
+                    elif sub != 'IsAgentic':
                         ck = SUB_CONDITIONS.get(sub, (key, LABELS.get(key, key)))
                         acc.setdefault(ck, {'Include': [], 'Exclude': []})[side] += _items(key, sub, v)
     raw = [x for sides in acc.values() for xs in sides.values() for x in xs if isinstance(x, tuple)]
@@ -262,7 +268,7 @@ def _guest_clause(spec):
 ALL_USERS = select(U.objectId)
 
 
-def _side(crits: list[dict], name: str) -> Select | None:
+def _side(crits: list[dict], name: str, active_only: bool = False) -> Select | None:
     """One-column select of the ids one side of the Users condition targets (non-user ids are filtered later)."""
     parts, groups, roles = [], [], []
     for crit in crits:
@@ -283,7 +289,7 @@ def _side(crits: list[dict], name: str) -> Select | None:
                 roles += vals
     if roles:
         h = _holders()
-        holders = select(h.c.principal).where(h.c.role.in_(roles))
+        holders = select(h.c.principal).where(h.c.role.in_(roles), *([h.c.kind == 'active'] if active_only else []))
         parts.append(holders)
         seed = select(d.Group.objectId).where(or_(d.Group.objectId.in_(groups), d.Group.objectId.in_(holders)))
     else:
@@ -299,7 +305,8 @@ def _scope(det: dict, effect: str = 'applies') -> Select:
     """One-column select of the user ids in scope (`applies`), or included but excluded (`excluded`)."""
     cond = det.get('Conditions') or {}
     inc = _side(_crits(cond, 'Users', 'Include'), 'scope_include')
-    exc = _side(_crits(cond, 'Users', 'Exclude'), 'scope_exclude')
+    # An eligible (not activated) role does not exclude: CA only sees active role assignments.
+    exc = _side(_crits(cond, 'Users', 'Exclude'), 'scope_exclude', active_only=True)
     if inc is None:
         return select(U.objectId).where(false())
     stmt = ALL_USERS if inc is ALL_USERS else select(U.objectId).where(U.objectId.in_(inc))
@@ -323,7 +330,9 @@ def _reason(condition: str, via=(), approximate=False, eligible=False) -> MatchR
 
 def _match(row: PolicyRow, included: list, excluded: list) -> PolicyMatch | None:
     if included or excluded:
-        return PolicyMatch(policy=row, effect='excluded' if excluded else 'included', included=included, excluded=excluded)
+        # Exclusion wins, except one that only holds through an eligible role (inactive until activated).
+        wins = excluded and (not included or any(not r.eligibleOnly for r in excluded))
+        return PolicyMatch(policy=row, effect='excluded' if wins else 'included', included=included, excluded=excluded)
     return None
 
 
