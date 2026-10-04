@@ -76,6 +76,7 @@ LABELS = {'Users': 'Users', 'ServicePrincipals': 'Workload identities', 'Applica
 # Criterion keys shown as their own condition: (Condition.key, label). Keys follow the frontend icons.
 SUB_CONDITIONS = {'Roles': ('Users', 'Directory roles'), 'Acrs': ('AuthenticationContext', 'Authentication context'),
                   'UserActions': ('UserActions', 'User actions')}
+FRONTEND_KEYS = {'AuthFlows': 'AuthenticationFlows'}  # policy JSON key -> frontend icon key
 WHO, TARGETS = {'Users', 'ServicePrincipals'}, {'Applications', 'UserActions', 'AuthenticationContext'}
 ALL = {'Users': 'All users', 'ServicePrincipals': 'All workload identities', 'Applications': 'All resources',
        'Locations': 'Any location', 'DevicePlatforms': 'Any platform'}
@@ -223,7 +224,7 @@ def _conditions(db: Session, det: dict) -> tuple[list[Condition], list[Condition
     groups = ([], [], [])
     for (key, label), sides in acc.items():
         groups[0 if key in WHO else 1 if key in TARGETS else 2].append(
-            Condition(key=key, label=label, include=refs(sides['Include']), exclude=refs(sides['Exclude'])))
+            Condition(key=FRONTEND_KEYS.get(key, key), label=label, include=refs(sides['Include']), exclude=refs(sides['Exclude'])))
     return groups
 
 
