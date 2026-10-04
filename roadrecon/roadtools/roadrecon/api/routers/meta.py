@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import Db, _like_escape, catalog, has_table
+from ..common import Db, like_escape, catalog, has_table
 from ..models import (AuthorizationPolicySummary, DirectorySettingSummary, Domain, FilterField, FilterResource,
                       ObjectRef, SearchGroup, SearchResult, Stats, Tenant)
 
@@ -151,7 +151,7 @@ def _search_sources(db: Session):
 def search(q: Annotated[str, Query(min_length=1)], db: Db, limit: Annotated[int, Query(ge=1, le=50)] = 5) -> SearchResult:
     """Objects of every type matching `q`, grouped by type, `limit` per type."""
     q = q.strip()
-    pattern = f'%{_like_escape(q)}%'
+    pattern = f'%{like_escape(q)}%'
     groups = []
     # ponytail: LIKE '%q%' full scan per type (~10 ms per 50k rows); FTS5 trigram if tenants get much larger.
     for typ, idcol, name, sub, extra, where in _search_sources(db):

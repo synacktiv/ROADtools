@@ -117,7 +117,7 @@ def json_text(col):
     return type_coerce(col, Text)
 
 
-def _like_escape(s: str) -> str:
+def like_escape(s: str) -> str:
     return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
 
 
@@ -147,7 +147,7 @@ def sql_clause(f: F, op: str, arg: str) -> ColumnElement:
         return {'eq': c == n, 'ne': c != n, 'gt': c > n, 'lt': c < n}.get(op, true())
     if f.type == 'date' and op in ('gt', 'lt'):
         return c > _date_arg(arg) if op == 'gt' else c < _date_arg(arg)
-    e = _like_escape(arg)
+    e = like_escape(arg)
     like = {'contains': f'%{e}%', 'notContains': f'%{e}%', 'startsWith': f'{e}%', 'endsWith': f'%{e}', 'eq': e, 'ne': e}
     if op in like:
         clause = c.ilike(like[op], escape='\\')
@@ -207,7 +207,7 @@ def paginate(db: Session, stmt: Select, q: PageQuery, *, resource: str | None = 
             stmt = stmt.where(or_(*clauses) if q.match == 'any' else and_(*clauses))
     search = list(search)
     if q.q and search:
-        pattern = f'%{_like_escape(q.q)}%'
+        pattern = f'%{like_escape(q.q)}%'
         stmt = stmt.where(or_(*(c.ilike(pattern, escape='\\') for c in search)))
     total = db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery()))
     sorts = sorts or {}
@@ -408,7 +408,7 @@ def is_privileged_permission(value: str | None) -> bool:
 
 
 __all__ = [
-    'Db', 'F', 'FIELDS', 'register', 'catalog', 'paginate', 'paginate_list', 'sql_clause', 'json_text', 'has_table', 'not_found', 'iso',
+    'Db', 'F', 'FIELDS', 'register', 'catalog', 'paginate', 'paginate_list', 'sql_clause', 'json_text', 'like_escape', 'has_table', 'not_found', 'iso',
     'DIRECTORY', 'keyword', 'value', 'unresolved', 'resolve_refs', 'resolve_ref', 'resolve_appids',
     'descendant_groups', 'ancestor_groups', 'member_groups_select', 'transitive_groups_of',
     'mfa_summary', 'PRIVILEGED_ROLES', 'is_privileged_permission',
