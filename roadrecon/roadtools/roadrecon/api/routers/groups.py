@@ -116,7 +116,7 @@ def get_group(id: str, db: Db) -> GroupDetail:
     return GroupDetail(
         **_row(g), pimEnabled=pim_enabled, securityIdentifier=g.cloudSecurityIdentifier,
         onPremisesSecurityIdentifier=g.onPremisesSecurityIdentifier,
-        counts=dict(c, roles=roles.count_roles(db, id), policies=policies.count_affecting(db, 'group', id),
+        counts=dict(c, roles=roles.count_roles(db, id, transitive=False), policies=policies.count_affecting(db, 'group', id),
                     azureRoles=governance.count_azure_roles(db, id)),
         raw=g.as_dict(),
     )

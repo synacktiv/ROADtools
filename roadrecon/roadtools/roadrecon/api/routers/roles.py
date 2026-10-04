@@ -85,9 +85,12 @@ ra = union_all(
     .join(members, members.c.root == direct.c.principal_id),
 ).subquery('ra')
 
+IS_DIR = or_(ra.c.scope.is_(None), ra.c.scope.in_(['/', '', 'null']))
 IS_AU = ra.c.scope.like('/administrativeUnits/%')
-SCOPE_TYPE = case((ra.c.scope == '/', 'Directory'), (IS_AU, 'Administrative unit'), else_='Application')
-SCOPE_ID = case((ra.c.scope == '/', None), (IS_AU, func.substr(ra.c.scope, len('/administrativeUnits/') + 1)),
+SCOPE_TYPE = case((IS_DIR, 'Directory'), (IS_AU, 'Administrative unit'), else_='Application')
+# '/<object id>' as gathered; the old GUI also saw '/applications/<id>' and '/servicePrincipals/<id>'.
+SCOPE_ID = case((IS_DIR, None), *((ra.c.scope.like(f'/{p}/%'), func.substr(ra.c.scope, len(p) + 3))
+                                  for p in ('administrativeUnits', 'applications', 'servicePrincipals')),
                 else_=func.substr(ra.c.scope, 2))
 PRINCIPAL_TYPE = case((U.objectId.isnot(None), 'user'), (G.objectId.isnot(None), 'group'),
                       (SP.objectId.isnot(None), 'servicePrincipal'))
@@ -114,9 +117,10 @@ ROLE_FIELDS = register('roles', {
 
 ASSIGNMENT_FIELDS = register('role-assignments', {
     'role': F('Role', 'enum', col=roles_sq.c.name,
-              options=lambda db: db.scalars(select(roles_sq.c.name).join(direct, direct.c.role_id == roles_sq.c.id))),
+              options=lambda db: db.scalars(select(roles_sq.c.name).join(direct, direct.c.role_id == roles_sq.c.id).distinct())),
     'principalType': F('Principal type', 'enum', col=PRINCIPAL_TYPE, labels=PRINCIPAL_TYPES),
-    'kind': F('Assignment', 'enum', col=ra.c.kind, labels={'active': 'Active', 'eligible': 'Eligible'}),
+    'kind': F('Assignment', 'enum', col=ra.c.kind, labels={'active': 'Active', 'eligible': 'Eligible'},
+              options=lambda db: ['active', 'eligible']),
     'scopeType': F('Scope', 'enum', col=SCOPE_TYPE, labels={'Directory': 'Directory', 'Administrative unit': 'Administrative unit', 'Application': 'Application'}),
     'principalEnabled': F('Principal enabled', 'bool', col=PRINCIPAL_ENABLED),
     'viaGroup': F('Through a group', 'bool', where=_via_group),
@@ -217,9 +221,10 @@ def list_role_assignments(q: Annotated[RoleAssignmentQuery, Query()], db: Db) ->
 
 # --- Shared with other slices (counts on object pages) ---
 
-def count_roles(db: Session, principal_id: str) -> int:
-    """Directory role assignments (active and eligible) of a user, group or SP, direct and through groups."""
-    return db.scalar(select(func.count()).select_from(ra).where(ra.c.principal_id == principal_id))
+def count_roles(db: Session, principal_id: str, transitive: bool = True) -> int:
+    """Directory role assignments (active and eligible) of a user, group or SP, direct and (`transitive`) through groups."""
+    return db.scalar(select(func.count()).select_from(ra).where(
+        ra.c.principal_id == principal_id, *([] if transitive else [ra.c.via.is_(None)])))
 
 
 def count_scoped_roles(db: Session, scope_id: str) -> int:

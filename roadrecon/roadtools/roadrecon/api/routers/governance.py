@@ -108,6 +108,12 @@ def list_azure_role_assignments(q: Annotated[AzureRoleAssignmentQuery, Query()],
 PIM_TYPES = {'aadroles': 'directoryRole', 'aadgroups': 'group'}
 PA, PR, PD, PS = (d.PIMgovernanceRoleAssignment, d.PIMgovernanceResource, d.PIMgovernanceRoleDefinition,
                   d.PIMgovernanceRoleSettingV2)
+PIM_CORE = (PA, PR, PD, d.lnk_pim_resource)
+
+
+def _has(db: Session, *tables) -> bool:
+    """Older dumps can miss any of these tables, not only the whole feature."""
+    return all(has_table(db, getattr(t, '__tablename__', None) or t.name) for t in tables)
 
 
 def _approval_required(setting) -> bool | None:
@@ -125,6 +131,8 @@ def _approval_required(setting) -> bool | None:
 
 def _settings(db: Session, role_def_ids) -> dict:
     out = {}
+    if not _has(db, PS):
+        return out
     for s in db.scalars(select(PS).where(PS.roleDefinitionId.in_(set(role_def_ids)))):
         if out.get(s.roleDefinitionId) is None:
             out[s.roleDefinitionId] = _approval_required(s)
@@ -134,7 +142,7 @@ def _settings(db: Session, role_def_ids) -> dict:
 @router.get('/pim-assignments')
 def list_pim_assignments(q: Annotated[PimAssignmentQuery, Query()], db: Db) -> Page[PimAssignmentRow]:
     pid = q.principalId
-    if not has_table(db, PA.__tablename__):
+    if not _has(db, *PIM_CORE):
         return paginate_list([], q, resource='pim-assignments')
     rows = db.scalars(select(PA).where(PA.subjectId.in_(_principal_ids(db, pid, q.transitive)))).all()
     res_ids = {a.resourceId for a in rows}
@@ -177,7 +185,7 @@ def get_group_pim(id: str, db: Db) -> GroupPim | None:
     if db.get(d.Group, id) is None:
         raise not_found('Group')
     lnk = d.lnk_pim_resource_aadgroup
-    if not has_table(db, lnk.name):
+    if not _has(db, lnk, *PIM_CORE):
         return None
     res = db.scalar(select(PR).join(lnk, lnk.c.PIMgovernanceResource == PR.id).where(lnk.c.Group == id))
     if res is None:
@@ -210,7 +218,7 @@ APPROVER_TYPES = {'requestorManager': 'Manager', 'internalSponsors': 'Internal s
 
 def _policy_reasons(db: Session, user_id: str) -> dict[str, str | ObjectRef]:
     """Policy id -> why the user is in scope: the user id (direct), a group id, or a keyword ref. First reason wins."""
-    if not has_table(db, AP.__tablename__):
+    if not _has(db, AP, PKG, d.lnk_ig_ap_assignment_policy_inscope_user, d.lnk_ig_ap_assignment_policy_inscope_group):
         return {}
     user = db.get(d.User, user_id)
     if user is None:
@@ -242,6 +250,8 @@ def _duration_days(p) -> int | None:
 def _package_resources(db: Session, pkg_ids) -> dict[str, list[AccessPackageResource]]:
     """Package -> resource role scopes -> role -> resource."""
     rrs, rrs_role, rr = d.lnk_ig_ap_rr_scope, d.lnk_ig_ap_rrs_role, d.lnk_ig_ap_rr
+    if not _has(db, rrs, rrs_role, rr, d.IGaccessPackageResource, d.IGaccessPackageResourceRole):
+        return {}
     R, Role = d.IGaccessPackageResource, d.IGaccessPackageResourceRole
     rows = db.execute(select(rrs.c.IGaccessPackage, R, Role.displayName).select_from(rrs)
                       .join(rrs_role, rrs_role.c.IGaccessPackageResourceRoleScope == rrs.c.IGaccessPackageResourceRoleScope)
@@ -327,7 +337,7 @@ def count_azure_roles(db: Session, principal_id: str) -> int:
 
 def count_pim(db: Session, principal_id: str) -> int:
     """PIM assignments, direct and through groups."""
-    if not has_table(db, PA.__tablename__):
+    if not _has(db, *PIM_CORE):
         return 0
     return _count(db, select(PA.id).where(PA.subjectId.in_(_principal_ids(db, principal_id, True))))
 
