@@ -259,7 +259,7 @@ function LocationPolicies({ l }: { l: NamedLocationRow }) {
   if (!data) return <Skeleton className="h-5 w-40" />
   return (
     <ul className="flex flex-col gap-1">
-      {data.policies.map((m) => (
+      {data.policyMatches.map((m) => (
         <li key={m.policy.id} className="flex min-w-0 items-center gap-1.5">
           <ObjectLink value={toRef('policy', m.policy)} wrap className="max-w-full" />
           {m.effect === 'excluded' && (
@@ -341,8 +341,8 @@ export function NamedLocationPage() {
         {
           key: 'policies',
           label: 'Used by',
-          count: l?.policies.length,
-          render: () => l && <PolicyMatchList matches={l.policies} showReasons={false} />,
+          count: l?.policyMatches.length,
+          render: () => l && <PolicyMatchList matches={l.policyMatches} showReasons={false} />,
         },
       ]}
     />

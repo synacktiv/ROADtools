@@ -229,11 +229,14 @@ add(intunePilot, ...devices.slice(0, 12).map((d) => d.id))
 
 // --- Applications and service principals -----------------------------------
 
-const role = (value: string, displayName: string, types = ['Application']): AppRoleDefinition => ({ id: guid(), value, displayName, description: displayName, allowedMemberTypes: types, isEnabled: true })
+const PRIV = /\.ReadWrite\.All$|^(RoleManagement|AppRoleAssignment|Directory|Policy\.ReadWrite|Mail)\.|FullControl|^full_access_as_app$|^EWS\.AccessAsUser\.All$|^user_impersonation$/i
+const isPriv = (v: string | null | undefined) => !!v && PRIV.test(v)
+const role = (value: string, displayName: string, types = ['Application']): AppRoleDefinition => ({ id: guid(), value, displayName, description: displayName, allowedMemberTypes: types, isEnabled: true, isPrivileged: isPriv(value) })
 const scope = (value: string, admin: boolean): PermissionScopeDefinition => ({
   id: guid(),
   value,
   type: admin ? 'Admin' : 'User',
+  isPrivileged: isPriv(value),
   adminConsentDisplayName: value,
   adminConsentDescription: `Allows the app to ${value.replace(/\./g, ' ').toLowerCase()} on behalf of the signed-in user.`,
   userConsentDisplayName: admin ? null : value,
@@ -319,6 +322,10 @@ function addApp(displayName: string, o: Partial<ApplicationDetail> = {}, spExtra
     oauth2PermissionCount: 0,
     hasCustomOwner: false,
     servicePrincipal: null,
+    publisherName: null,
+    appOwnerTenantId: null,
+    accountEnabled: null,
+    appRoleAssignmentRequired: null,
     replyUrls: [],
     identifierUris: [],
     credentials: [],
@@ -346,6 +353,7 @@ function addApp(displayName: string, o: Partial<ApplicationDetail> = {}, spExtra
     ...spExtra,
   })
   a.servicePrincipal = { id: s.id, type: 'servicePrincipal', displayName, sub: appId }
+  Object.assign(a, { publisherName: s.publisherName, appOwnerTenantId: s.appOwnerTenantId, accountEnabled: s.accountEnabled, appRoleAssignmentRequired: s.appRoleAssignmentRequired })
   apps.push(a)
   return [a, s] as const
 }
@@ -353,11 +361,11 @@ function addApp(displayName: string, o: Partial<ApplicationDetail> = {}, spExtra
 const graphRef: ObjectRef = { id: graph.id, type: 'servicePrincipal', displayName: graph.displayName, sub: graph.appId }
 const [hrApp, hrSp] = addApp('HR Sync Connector', {
   credentials: [cred('password', 'prod secret', 12), cred('password', 'old', -40)],
-  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[0].id, value: 'User.Read.All', type: 'Role' }, { id: graph.appRoles[1].id, value: 'Directory.ReadWrite.All', type: 'Role' }] }],
+  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[0].id, value: 'User.Read.All', type: 'Role', isPrivileged: isPriv('User.Read.All') }, { id: graph.appRoles[1].id, value: 'Directory.ReadWrite.All', type: 'Role', isPrivileged: isPriv('Directory.ReadWrite.All') }] }],
 })
 const [, mailSp] = addApp('Fleet Mail Archiver', {
   credentials: [cred('certificate', 'CN=archiver', 200)],
-  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[2].id, value: 'Mail.Read', type: 'Role' }] }],
+  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[2].id, value: 'Mail.Read', type: 'Role', isPrivileged: isPriv('Mail.Read') }] }],
 })
 const [portalApp, portalSp] = addApp('Crew Portal', {
   homepage: 'https://crew.halvorsen-maritime.com',
@@ -367,12 +375,12 @@ const [portalApp, portalSp] = addApp('Crew Portal', {
   availableToOtherTenants: true,
   appRoles: [role('Crew.Read', 'Read crew rosters', ['User']), role('Crew.Admin', 'Manage crew rosters', ['User'])],
   oauth2Permissions: [scope('access_as_user', false)],
-  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.oauth2Permissions[0].id, value: 'User.Read', type: 'Scope' }, { id: graph.oauth2Permissions[4].id, value: 'offline_access', type: 'Scope' }] }],
+  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.oauth2Permissions[0].id, value: 'User.Read', type: 'Scope', isPrivileged: isPriv('User.Read') }, { id: graph.oauth2Permissions[4].id, value: 'offline_access', type: 'Scope', isPrivileged: isPriv('offline_access') }] }],
   metadata: [{ key: 'ms.portal.branding', value: { logo: 'crew.png', theme: 'navy' } }],
 }, { appRoleAssignmentRequired: true })
 const [, deploySp] = addApp('GitHub Actions - infra', {
   credentials: [cred('certificate', 'federated', 90)],
-  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[3].id, value: 'RoleManagement.ReadWrite.Directory', type: 'Role' }, { id: graph.appRoles[4].id, value: 'Application.ReadWrite.All', type: 'Role' }] }],
+  requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[3].id, value: 'RoleManagement.ReadWrite.Directory', type: 'Role', isPrivileged: isPriv('RoleManagement.ReadWrite.Directory') }, { id: graph.appRoles[4].id, value: 'Application.ReadWrite.All', type: 'Role', isPrivileged: isPriv('Application.ReadWrite.All') }] }],
 })
 const [, cliSp] = addApp('Vessel Telemetry CLI', { publicClient: true })
 for (const n of ['Chartering Calendar', 'Expense Reports', 'Port Call Planner', 'Legal Hold Tool', 'Payroll Export', 'Bunker Pricing API', 'Safety Reporting'])
@@ -424,10 +432,11 @@ const roles: RoleDetail[] = ROLE_DEFS.map(([templateId, displayName, description
   isPrivileged: false,
   activeCount: 0,
   eligibleCount: 0,
+  holders: { user: 0, group: 0, servicePrincipal: 0, directory: 0, administrativeUnit: 0, application: 0 }, 
   allowedResourceActions: ['microsoft.directory/users/basic/update', 'microsoft.directory/groups/members/update', 'microsoft.directory/applications/credentials/update', 'microsoft.directory/servicePrincipals/appRoleAssignedTo/update'].slice(0, 2 + Math.floor(rand() * 3)),
   raw: {},
 }))
-const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
+const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, holders: { user: 0, group: 0, servicePrincipal: 0, directory: 0, administrativeUnit: 0, application: 0 }, allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
 roles.push(customRole)
 const roleByName = (n: string) => roles.find((r) => r.displayName === n)!
 
@@ -488,6 +497,7 @@ const ara = (principal: ObjectRef, resource: ServicePrincipalDetail, r?: AppRole
     appRoleId: r?.id ?? '00000000-0000-0000-0000-000000000000',
     value: r?.value ?? 'Default access',
     description: r?.displayName ?? null,
+    isPrivileged: isPriv(r?.value),
     createdDateTime: daysAgo(Math.floor(rand() * 500)),
   })
 ara(ref('servicePrincipal', hrSp), graph, graph.appRoles[0])
@@ -503,7 +513,7 @@ sample(memberUsers, 12).forEach((u) => ara(ref('user', u), portalSp))
 
 const grants: OAuth2GrantRow[] = []
 const grant = (client: ServicePrincipalDetail, resource: ServicePrincipalDetail, scopes: string[], principal?: UserDetail) =>
-  grants.push({ id: guid(), consentType: principal ? 'Principal' : 'AllPrincipals', principal: principal ? ref('user', principal) : null, client: ref('servicePrincipal', client), resource: ref('servicePrincipal', resource), scopes, expiryTime: daysAgo(-180) })
+  grants.push({ id: guid(), consentType: principal ? 'Principal' : 'AllPrincipals', principal: principal ? ref('user', principal) : null, client: ref('servicePrincipal', client), resource: ref('servicePrincipal', resource), scopes, privilegedScopes: scopes.filter(isPriv), expiryTime: daysAgo(-180) })
 grant(portalSp, graph, ['User.Read', 'offline_access', 'openid', 'profile'])
 grant(cliSp, graph, ['User.Read', 'Directory.AccessAsUser.All'])
 grant(azCli, graph, ['User.Read', 'Directory.AccessAsUser.All'])
@@ -516,9 +526,9 @@ sample(memberUsers, 8).forEach((u) => grant(sps.find((s) => s.displayName === 'Z
 // --- Named locations and Conditional Access ---------------------------------
 
 const locations: NamedLocationDetail[] = [
-  { id: guid(), displayName: 'Head office Bergen', kind: 'ip', trusted: true, ipRanges: ['193.69.120.0/24', '2a02:fe0:c410::/48'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], raw: {} },
-  { id: guid(), displayName: 'Vessel satellite uplinks', kind: 'ip', trusted: true, ipRanges: ['85.19.208.0/22', '212.62.231.64/27'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], raw: {} },
-  { id: guid(), displayName: 'Blocked countries', kind: 'country', trusted: false, ipRanges: [], countries: ['KP', 'IR', 'RU', 'BY'], includeUnknownCountries: true, policyCount: 0, policies: [], raw: {} },
+  { id: guid(), displayName: 'Head office Bergen', kind: 'ip', trusted: true, ipRanges: ['193.69.120.0/24', '2a02:fe0:c410::/48'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], policyMatches: [], raw: {} },
+  { id: guid(), displayName: 'Vessel satellite uplinks', kind: 'ip', trusted: true, ipRanges: ['85.19.208.0/22', '212.62.231.64/27'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], policyMatches: [], raw: {} },
+  { id: guid(), displayName: 'Blocked countries', kind: 'country', trusted: false, ipRanges: [], countries: ['KP', 'IR', 'RU', 'BY'], includeUnknownCountries: true, policyCount: 0, policies: [], policyMatches: [], raw: {} },
 ]
 const locRef = (l: NamedLocationDetail): ObjectRef => ({ id: l.id, type: 'namedLocation', displayName: l.displayName })
 const kw = (displayName: string): ObjectRef => ({ id: null, type: 'keyword', displayName })
@@ -782,7 +792,7 @@ const toPolicyRow = (p: PolicyDetail): PolicyRow => ({
 // Fill counts now that every relation exists.
 for (const p of policies) p.counts = { inScope: policyUsers(p, 'applies').length, excluded: policyUsers(p, 'excluded').length }
 for (const l of locations) {
-  l.policies = policies
+  l.policyMatches = policies
     .filter((p) => p.conditions.some((c) => [...c.include, ...c.exclude].some((r) => r.id === l.id)))
     .map((p) => {
       const reason = (side: 'include' | 'exclude'): MatchReason[] =>
@@ -790,11 +800,17 @@ for (const l of locations) {
       const excluded = reason('exclude')
       return { policy: toPolicyRow(p), effect: excluded.length ? 'excluded' : 'included', included: reason('include'), excluded }
     })
+  l.policies = l.policyMatches.map((m) => ({ id: m.policy.id, type: 'policy' as const, displayName: m.policy.displayName }))
   l.policyCount = l.policies.length
 }
 for (const r of roles) {
   r.activeCount = roleAssignments.filter((a) => a.role.id === r.id && a.kind === 'active').length
   r.eligibleCount = roleAssignments.filter((a) => a.role.id === r.id && a.kind === 'eligible').length
+  for (const a of roleAssignments.filter((x) => x.role.id === r.id)) {
+    const t = a.principal.type as 'user' | 'group' | 'servicePrincipal'
+    if (t in r.holders) r.holders[t]++
+    r.holders[a.scope.type === 'keyword' ? 'directory' : a.scope.type === 'administrativeUnit' ? 'administrativeUnit' : 'application']++
+  }
 }
 const memberOfCount = (id: string) => [...members.values()].filter((m) => m.has(id)).length
 const ownedBy = (id: string) => [...owners].filter(([, os]) => os.includes(id)).map(([o]) => o)
@@ -1470,7 +1486,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
     },
   ],
   ['/api/policies/affecting/{type}/{id}', ({ type, id }) => policyMatches(type, id)],
-  ['/api/named-locations', (_, q) => paginate(locations.map(({ policies: _p, raw: _r, ...l }) => l), q, (l) => l.displayName, byName, 'named-locations')], // eslint-disable-line @typescript-eslint/no-unused-vars
+  ['/api/named-locations', (_, q) => paginate(locations.map(({ policyMatches: _p, raw: _r, ...l }) => l), q, (l) => l.displayName, byName, 'named-locations')], // eslint-disable-line @typescript-eslint/no-unused-vars
   ['/api/named-locations/{id}', ({ id }) => locations.find((l) => l.id === id)],
 ]
 

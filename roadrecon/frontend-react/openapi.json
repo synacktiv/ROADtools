@@ -1,0 +1,8743 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "ROADrecon",
+  "version": "2.0.0"
+ },
+ "paths": {
+  "/api/filters/{resource}": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Get Filters",
+    "operationId": "get_filters_api_filters__resource__get",
+    "parameters": [
+     {
+      "name": "resource",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "enum": [
+        "users",
+        "groups",
+        "devices",
+        "administrative-units",
+        "service-principals",
+        "applications",
+        "roles",
+        "role-assignments",
+        "app-role-assignments",
+        "oauth2-grants",
+        "policies",
+        "named-locations",
+        "azure-role-assignments",
+        "pim-assignments",
+        "access-package-policies"
+       ],
+       "type": "string",
+       "title": "Resource"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/FilterField"
+         },
+         "title": "Response Get Filters Api Filters  Resource  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/stats": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Get Stats",
+    "operationId": "get_stats_api_stats_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Stats"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/tenant": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Get Tenant",
+    "operationId": "get_tenant_api_tenant_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Tenant"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/search": {
+   "get": {
+    "tags": [
+     "meta"
+    ],
+    "summary": "Search",
+    "description": "Objects of every type matching `q`, grouped by type, `limit` per type.",
+    "operationId": "search_api_search_get",
+    "parameters": [
+     {
+      "name": "q",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 1,
+       "title": "Q"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 50,
+       "minimum": 1,
+       "default": 5,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SearchResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/users": {
+   "get": {
+    "tags": [
+     "users"
+    ],
+    "summary": "List Users",
+    "operationId": "list_users_api_users_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "userType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "Member",
+          "Guest"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Usertype"
+      }
+     },
+     {
+      "name": "accountEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accountenabled"
+      }
+     },
+     {
+      "name": "dirSyncEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Dirsyncenabled"
+      }
+     },
+     {
+      "name": "memberOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Users that are members of this group.",
+       "title": "Memberof"
+      },
+      "description": "Users that are members of this group."
+     },
+     {
+      "name": "transitive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "With memberOf: include members of nested groups.",
+       "title": "Transitive"
+      },
+      "description": "With memberOf: include members of nested groups."
+     },
+     {
+      "name": "ownerOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Users that own this object.",
+       "title": "Ownerof"
+      },
+      "description": "Users that own this object."
+     },
+     {
+      "name": "memberOfAu",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Users in this administrative unit.",
+       "title": "Memberofau"
+      },
+      "description": "Users in this administrative unit."
+     },
+     {
+      "name": "mfa",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "app",
+          "phone",
+          "fido",
+          "windowsHello"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "none = no strong auth method registered.",
+       "title": "Mfa"
+      },
+      "description": "none = no strong auth method registered."
+     },
+     {
+      "name": "perUserMfa",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "Enabled",
+          "Enforced",
+          "Disabled"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Perusermfa"
+      }
+     },
+     {
+      "name": "excludeMailboxOnly",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Leave out shared and room mailboxes (the MFA view).",
+       "title": "Excludemailboxonly"
+      },
+      "description": "Leave out shared and room mailboxes (the MFA view)."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_UserRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/users/{id}": {
+   "get": {
+    "tags": [
+     "users"
+    ],
+    "summary": "Get User",
+    "operationId": "get_user_api_users__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/owners": {
+   "get": {
+    "tags": [
+     "users"
+    ],
+    "summary": "List Owners",
+    "description": "Owners of any object: users and service principals.",
+    "operationId": "list_owners_api_owners_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "ownerOf",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ownerof"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_ObjectRef_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/groups": {
+   "get": {
+    "tags": [
+     "groups"
+    ],
+    "summary": "List Groups",
+    "operationId": "list_groups_api_groups_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "memberId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Groups this object is a member of.",
+       "title": "Memberid"
+      },
+      "description": "Groups this object is a member of."
+     },
+     {
+      "name": "memberOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Child groups of this group.",
+       "title": "Memberof"
+      },
+      "description": "Child groups of this group."
+     },
+     {
+      "name": "ownerId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Groups owned by this object.",
+       "title": "Ownerid"
+      },
+      "description": "Groups owned by this object."
+     },
+     {
+      "name": "transitive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Transitive"
+      }
+     },
+     {
+      "name": "isAssignableToRole",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Isassignabletorole"
+      }
+     },
+     {
+      "name": "dynamic",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Dynamic"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "security",
+          "microsoft365"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Kind"
+      }
+     },
+     {
+      "name": "dirSyncEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Dirsyncenabled"
+      }
+     },
+     {
+      "name": "memberOfAu",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Groups in this administrative unit.",
+       "title": "Memberofau"
+      },
+      "description": "Groups in this administrative unit."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_GroupRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/groups/{id}": {
+   "get": {
+    "tags": [
+     "groups"
+    ],
+    "summary": "Get Group",
+    "operationId": "get_group_api_groups__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GroupDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/devices": {
+   "get": {
+    "tags": [
+     "devices"
+    ],
+    "summary": "List Devices",
+    "operationId": "list_devices_api_devices_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "memberOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Memberof"
+      }
+     },
+     {
+      "name": "ownerId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Ownerid"
+      }
+     },
+     {
+      "name": "memberOfAu",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Memberofau"
+      }
+     },
+     {
+      "name": "accountEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accountenabled"
+      }
+     },
+     {
+      "name": "isCompliant",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Iscompliant"
+      }
+     },
+     {
+      "name": "isManaged",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Ismanaged"
+      }
+     },
+     {
+      "name": "deviceTrustType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Devicetrusttype"
+      }
+     },
+     {
+      "name": "deviceOSType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Deviceostype"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_DeviceRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/devices/{id}": {
+   "get": {
+    "tags": [
+     "devices"
+    ],
+    "summary": "Get Device",
+    "operationId": "get_device_api_devices__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DeviceDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/administrative-units": {
+   "get": {
+    "tags": [
+     "devices"
+    ],
+    "summary": "List Administrative Units",
+    "operationId": "list_administrative_units_api_administrative_units_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "memberId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Memberid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AdministrativeUnitRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/administrative-units/{id}": {
+   "get": {
+    "tags": [
+     "devices"
+    ],
+    "summary": "Get Administrative Unit",
+    "operationId": "get_administrative_unit_api_administrative_units__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AdministrativeUnitDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/service-principals": {
+   "get": {
+    "tags": [
+     "apps"
+    ],
+    "summary": "List Service Principals",
+    "operationId": "list_service_principals_api_service_principals_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "memberOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Memberof"
+      }
+     },
+     {
+      "name": "ownerId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "SPs owned by this object.",
+       "title": "Ownerid"
+      },
+      "description": "SPs owned by this object."
+     },
+     {
+      "name": "ownerOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "SPs owning this object.",
+       "title": "Ownerof"
+      },
+      "description": "SPs owning this object."
+     },
+     {
+      "name": "servicePrincipalType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Serviceprincipaltype"
+      }
+     },
+     {
+      "name": "microsoftFirstParty",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Microsoftfirstparty"
+      }
+     },
+     {
+      "name": "accountEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accountenabled"
+      }
+     },
+     {
+      "name": "hasCredentials",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Hascredentials"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_ServicePrincipalRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/service-principals/{id}": {
+   "get": {
+    "tags": [
+     "apps"
+    ],
+    "summary": "Get Service Principal",
+    "operationId": "get_service_principal_api_service_principals__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ServicePrincipalDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/applications": {
+   "get": {
+    "tags": [
+     "apps"
+    ],
+    "summary": "List Applications",
+    "operationId": "list_applications_api_applications_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "ownerId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Ownerid"
+      }
+     },
+     {
+      "name": "availableToOtherTenants",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Availabletoothertenants"
+      }
+     },
+     {
+      "name": "publicClient",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Publicclient"
+      }
+     },
+     {
+      "name": "hasCredentials",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Hascredentials"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_ApplicationRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/applications/{id}": {
+   "get": {
+    "tags": [
+     "apps"
+    ],
+    "summary": "Get Application",
+    "operationId": "get_application_api_applications__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ApplicationDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/roles": {
+   "get": {
+    "tags": [
+     "roles"
+    ],
+    "summary": "List Roles",
+    "operationId": "list_roles_api_roles_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "isBuiltIn",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Isbuiltin"
+      }
+     },
+     {
+      "name": "hasAssignments",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Hasassignments"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_RoleRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/roles/{id}": {
+   "get": {
+    "tags": [
+     "roles"
+    ],
+    "summary": "Get Role",
+    "description": "`id` is the role template id.",
+    "operationId": "get_role_api_roles__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RoleDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/role-assignments": {
+   "get": {
+    "tags": [
+     "roles"
+    ],
+    "summary": "List Role Assignments",
+    "operationId": "list_role_assignments_api_role_assignments_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "roleId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Roleid"
+      }
+     },
+     {
+      "name": "principalId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Principalid"
+      }
+     },
+     {
+      "name": "transitive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "With principalId: also roles held through groups.",
+       "title": "Transitive"
+      },
+      "description": "With principalId: also roles held through groups."
+     },
+     {
+      "name": "expandGroups",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "List group members as principals (with via = the group).",
+       "title": "Expandgroups"
+      },
+      "description": "List group members as principals (with via = the group)."
+     },
+     {
+      "name": "scopeId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Scopeid"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "active",
+          "eligible"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Kind"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_RoleAssignmentRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/app-role-assignments": {
+   "get": {
+    "tags": [
+     "grants"
+    ],
+    "summary": "List App Role Assignments",
+    "operationId": "list_app_role_assignments_api_app_role_assignments_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "principalId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Principalid"
+      }
+     },
+     {
+      "name": "resourceId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Resourceid"
+      }
+     },
+     {
+      "name": "principalType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "User",
+          "Group",
+          "ServicePrincipal"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Principaltype"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AppRoleAssignmentRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/oauth2-grants": {
+   "get": {
+    "tags": [
+     "grants"
+    ],
+    "summary": "List Oauth2 Grants",
+    "operationId": "list_oauth2_grants_api_oauth2_grants_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "clientId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Clientid"
+      }
+     },
+     {
+      "name": "resourceId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Resourceid"
+      }
+     },
+     {
+      "name": "principalId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Principalid"
+      }
+     },
+     {
+      "name": "consentType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "AllPrincipals",
+          "Principal"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Consenttype"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_OAuth2GrantRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/azure-role-assignments": {
+   "get": {
+    "tags": [
+     "governance"
+    ],
+    "summary": "List Azure Role Assignments",
+    "operationId": "list_azure_role_assignments_api_azure_role_assignments_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "principalId",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Principalid"
+      }
+     },
+     {
+      "name": "transitive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Transitive"
+      }
+     },
+     {
+      "name": "kind",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "active",
+          "eligible"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Kind"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AzureRoleAssignmentRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/pim-assignments": {
+   "get": {
+    "tags": [
+     "governance"
+    ],
+    "summary": "List Pim Assignments",
+    "operationId": "list_pim_assignments_api_pim_assignments_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "principalId",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Principalid"
+      }
+     },
+     {
+      "name": "transitive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Transitive"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_PimAssignmentRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/groups/{id}/pim": {
+   "get": {
+    "tags": [
+     "governance"
+    ],
+    "summary": "Get Group Pim",
+    "description": "PIM for Groups settings and assignments; null when the group is not onboarded.",
+    "operationId": "get_group_pim_api_groups__id__pim_get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "anyOf": [
+          {
+           "$ref": "#/components/schemas/GroupPim"
+          },
+          {
+           "type": "null"
+          }
+         ],
+         "title": "Response Get Group Pim Api Groups  Id  Pim Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/access-package-policies": {
+   "get": {
+    "tags": [
+     "governance"
+    ],
+    "summary": "List Access Package Policies",
+    "description": "Access package policies the user can request, directly or through a group.",
+    "operationId": "list_access_package_policies_api_access_package_policies_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "userId",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Userid"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_AccessPackagePolicyRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/policies": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "List Policies",
+    "operationId": "list_policies_api_policies_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "state",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "enabled",
+          "reporting",
+          "disabled"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "State"
+      }
+     },
+     {
+      "name": "block",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Block"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_PolicyRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/policies/affecting/{type}/{id}": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "Policies Affecting",
+    "description": "Policies that include or exclude the object, directly or through groups and roles.",
+    "operationId": "policies_affecting_api_policies_affecting__type___id__get",
+    "parameters": [
+     {
+      "name": "type",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "enum": [
+        "user",
+        "group",
+        "role",
+        "servicePrincipal",
+        "application"
+       ],
+       "type": "string",
+       "title": "Type"
+      }
+     },
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/PolicyMatch"
+         },
+         "title": "Response Policies Affecting Api Policies Affecting  Type   Id  Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/policies/{id}": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "Get Policy",
+    "operationId": "get_policy_api_policies__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PolicyDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/policies/{id}/users": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "Policy Users",
+    "description": "Users in the policy scope (effect=applies, the default) or excluded from it.",
+    "operationId": "policy_users_api_policies__id__users_get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     },
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     },
+     {
+      "name": "userType",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "Member",
+          "Guest"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Usertype"
+      }
+     },
+     {
+      "name": "accountEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Accountenabled"
+      }
+     },
+     {
+      "name": "dirSyncEnabled",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Dirsyncenabled"
+      }
+     },
+     {
+      "name": "memberOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Users that are members of this group.",
+       "title": "Memberof"
+      },
+      "description": "Users that are members of this group."
+     },
+     {
+      "name": "transitive",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "With memberOf: include members of nested groups.",
+       "title": "Transitive"
+      },
+      "description": "With memberOf: include members of nested groups."
+     },
+     {
+      "name": "ownerOf",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Users that own this object.",
+       "title": "Ownerof"
+      },
+      "description": "Users that own this object."
+     },
+     {
+      "name": "memberOfAu",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Users in this administrative unit.",
+       "title": "Memberofau"
+      },
+      "description": "Users in this administrative unit."
+     },
+     {
+      "name": "mfa",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "app",
+          "phone",
+          "fido",
+          "windowsHello"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "none = no strong auth method registered.",
+       "title": "Mfa"
+      },
+      "description": "none = no strong auth method registered."
+     },
+     {
+      "name": "perUserMfa",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "Enabled",
+          "Enforced",
+          "Disabled"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Perusermfa"
+      }
+     },
+     {
+      "name": "excludeMailboxOnly",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Leave out shared and room mailboxes (the MFA view).",
+       "title": "Excludemailboxonly"
+      },
+      "description": "Leave out shared and room mailboxes (the MFA view)."
+     },
+     {
+      "name": "effect",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "applies",
+          "excluded"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Effect"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_UserRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/named-locations": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "List Named Locations",
+    "operationId": "list_named_locations_api_named_locations_get",
+    "parameters": [
+     {
+      "name": "page",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "default": 1,
+       "title": "Page"
+      }
+     },
+     {
+      "name": "page_size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 500,
+       "minimum": 1,
+       "default": 50,
+       "title": "Page Size"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Q"
+      }
+     },
+     {
+      "name": "sort",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Sort"
+      }
+     },
+     {
+      "name": "order",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "asc",
+        "desc"
+       ],
+       "type": "string",
+       "default": "asc",
+       "title": "Order"
+      }
+     },
+     {
+      "name": "filter",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "array",
+       "items": {
+        "type": "string"
+       },
+       "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items.",
+       "default": [],
+       "title": "Filter"
+      },
+      "description": "Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items."
+     },
+     {
+      "name": "match",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "all",
+        "any"
+       ],
+       "type": "string",
+       "description": "How filters combine.",
+       "default": "all",
+       "title": "Match"
+      },
+      "description": "How filters combine."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_NamedLocationRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/named-locations/{id}": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "Get Named Location",
+    "operationId": "get_named_location_api_named_locations__id__get",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/NamedLocationDetail"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AccessPackagePolicyRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "packageName": {
+      "type": "string",
+      "title": "Packagename"
+     },
+     "packageDescription": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Packagedescription"
+     },
+     "policyName": {
+      "type": "string",
+      "title": "Policyname"
+     },
+     "resources": {
+      "items": {
+       "$ref": "#/components/schemas/AccessPackageResource"
+      },
+      "type": "array",
+      "title": "Resources"
+     },
+     "approvalRequired": {
+      "type": "boolean",
+      "title": "Approvalrequired"
+     },
+     "approvers": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Approvers"
+     },
+     "durationDays": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Durationdays"
+     },
+     "renewable": {
+      "type": "boolean",
+      "title": "Renewable"
+     },
+     "via": {
+      "$ref": "#/components/schemas/ObjectRef",
+      "description": "Why the user can request it: direct, a group, or a keyword like \"All members\"."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "packageName",
+     "packageDescription",
+     "policyName",
+     "resources",
+     "approvalRequired",
+     "approvers",
+     "durationDays",
+     "renewable",
+     "via"
+    ],
+    "title": "AccessPackagePolicyRow"
+   },
+   "AccessPackageResource": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "resource": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "resource",
+     "role"
+    ],
+    "title": "AccessPackageResource"
+   },
+   "AdministrativeUnitCounts": {
+    "properties": {
+     "memberUsers": {
+      "type": "integer",
+      "title": "Memberusers"
+     },
+     "memberGroups": {
+      "type": "integer",
+      "title": "Membergroups"
+     },
+     "memberDevices": {
+      "type": "integer",
+      "title": "Memberdevices"
+     },
+     "scopedRoles": {
+      "type": "integer",
+      "title": "Scopedroles"
+     }
+    },
+    "type": "object",
+    "required": [
+     "memberUsers",
+     "memberGroups",
+     "memberDevices",
+     "scopedRoles"
+    ],
+    "title": "AdministrativeUnitCounts"
+   },
+   "AdministrativeUnitDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "membershipRule": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Membershiprule"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/AdministrativeUnitCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "description",
+     "membershipRule",
+     "counts",
+     "raw"
+    ],
+    "title": "AdministrativeUnitDetail"
+   },
+   "AdministrativeUnitRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "membershipRule": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Membershiprule"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "description",
+     "membershipRule"
+    ],
+    "title": "AdministrativeUnitRow"
+   },
+   "AppRoleAssignmentRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "principal": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "resource": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "appRoleId": {
+      "type": "string",
+      "title": "Approleid"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value",
+      "description": "Role value, or \"Default access\" for the zero GUID."
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "isPrivileged": {
+      "type": "boolean",
+      "title": "Isprivileged"
+     },
+     "createdDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Createddatetime"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "principal",
+     "resource",
+     "appRoleId",
+     "value",
+     "description",
+     "isPrivileged",
+     "createdDateTime"
+    ],
+    "title": "AppRoleAssignmentRow"
+   },
+   "AppRoleDefinition": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "allowedMemberTypes": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Allowedmembertypes"
+     },
+     "isEnabled": {
+      "type": "boolean",
+      "title": "Isenabled"
+     },
+     "isPrivileged": {
+      "type": "boolean",
+      "title": "Isprivileged",
+      "description": "High-impact permission (fixed list on the server)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "value",
+     "displayName",
+     "description",
+     "allowedMemberTypes",
+     "isEnabled",
+     "isPrivileged"
+    ],
+    "title": "AppRoleDefinition"
+   },
+   "ApplicationCounts": {
+    "properties": {
+     "owners": {
+      "type": "integer",
+      "title": "Owners"
+     },
+     "policies": {
+      "type": "integer",
+      "title": "Policies"
+     }
+    },
+    "type": "object",
+    "required": [
+     "owners",
+     "policies"
+    ],
+    "title": "ApplicationCounts"
+   },
+   "ApplicationDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "appId": {
+      "type": "string",
+      "title": "Appid"
+     },
+     "availableToOtherTenants": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Availabletoothertenants"
+     },
+     "homepage": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Homepage"
+     },
+     "publicClient": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Publicclient"
+     },
+     "oauth2AllowImplicitFlow": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Oauth2Allowimplicitflow"
+     },
+     "passwordCount": {
+      "type": "integer",
+      "title": "Passwordcount"
+     },
+     "keyCount": {
+      "type": "integer",
+      "title": "Keycount"
+     },
+     "appRoleCount": {
+      "type": "integer",
+      "title": "Approlecount"
+     },
+     "oauth2PermissionCount": {
+      "type": "integer",
+      "title": "Oauth2Permissioncount"
+     },
+     "hasCustomOwner": {
+      "type": "boolean",
+      "title": "Hascustomowner"
+     },
+     "servicePrincipal": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "publisherName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Publishername"
+     },
+     "appOwnerTenantId": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Appownertenantid"
+     },
+     "accountEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Accountenabled"
+     },
+     "appRoleAssignmentRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approleassignmentrequired"
+     },
+     "replyUrls": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Replyurls"
+     },
+     "identifierUris": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Identifieruris"
+     },
+     "credentials": {
+      "items": {
+       "$ref": "#/components/schemas/Credential"
+      },
+      "type": "array",
+      "title": "Credentials"
+     },
+     "appRoles": {
+      "items": {
+       "$ref": "#/components/schemas/AppRoleDefinition"
+      },
+      "type": "array",
+      "title": "Approles"
+     },
+     "oauth2Permissions": {
+      "items": {
+       "$ref": "#/components/schemas/PermissionScopeDefinition"
+      },
+      "type": "array",
+      "title": "Oauth2Permissions"
+     },
+     "requiredResourceAccess": {
+      "items": {
+       "$ref": "#/components/schemas/RequiredResourceAccess"
+      },
+      "type": "array",
+      "title": "Requiredresourceaccess"
+     },
+     "metadata": {
+      "items": {
+       "$ref": "#/components/schemas/MetadataEntry"
+      },
+      "type": "array",
+      "title": "Metadata"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/ApplicationCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "appId",
+     "availableToOtherTenants",
+     "homepage",
+     "publicClient",
+     "oauth2AllowImplicitFlow",
+     "passwordCount",
+     "keyCount",
+     "appRoleCount",
+     "oauth2PermissionCount",
+     "hasCustomOwner",
+     "servicePrincipal",
+     "publisherName",
+     "appOwnerTenantId",
+     "accountEnabled",
+     "appRoleAssignmentRequired",
+     "replyUrls",
+     "identifierUris",
+     "credentials",
+     "appRoles",
+     "oauth2Permissions",
+     "requiredResourceAccess",
+     "metadata",
+     "counts",
+     "raw"
+    ],
+    "title": "ApplicationDetail"
+   },
+   "ApplicationRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "appId": {
+      "type": "string",
+      "title": "Appid"
+     },
+     "availableToOtherTenants": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Availabletoothertenants"
+     },
+     "homepage": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Homepage"
+     },
+     "publicClient": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Publicclient"
+     },
+     "oauth2AllowImplicitFlow": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Oauth2Allowimplicitflow"
+     },
+     "passwordCount": {
+      "type": "integer",
+      "title": "Passwordcount"
+     },
+     "keyCount": {
+      "type": "integer",
+      "title": "Keycount"
+     },
+     "appRoleCount": {
+      "type": "integer",
+      "title": "Approlecount"
+     },
+     "oauth2PermissionCount": {
+      "type": "integer",
+      "title": "Oauth2Permissioncount"
+     },
+     "hasCustomOwner": {
+      "type": "boolean",
+      "title": "Hascustomowner"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "appId",
+     "availableToOtherTenants",
+     "homepage",
+     "publicClient",
+     "oauth2AllowImplicitFlow",
+     "passwordCount",
+     "keyCount",
+     "appRoleCount",
+     "oauth2PermissionCount",
+     "hasCustomOwner"
+    ],
+    "title": "ApplicationRow"
+   },
+   "AuthorizationPolicySummary": {
+    "properties": {
+     "selfServicePasswordReset": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Selfservicepasswordreset"
+     },
+     "blockMsolPowerShell": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Blockmsolpowershell"
+     },
+     "usersCanRegisterApps": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userscanregisterapps"
+     },
+     "usersCanCreateSecurityGroups": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userscancreatesecuritygroups"
+     },
+     "usersCanReadOtherUsers": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userscanreadotherusers"
+     },
+     "userConsent": {
+      "type": "string",
+      "title": "Userconsent"
+     },
+     "guestAccess": {
+      "type": "string",
+      "title": "Guestaccess"
+     },
+     "guestInvites": {
+      "type": "string",
+      "title": "Guestinvites"
+     },
+     "userConsentPolicy": {
+      "type": "string",
+      "enum": [
+       "none",
+       "verifiedPublishers",
+       "all"
+      ],
+      "title": "Userconsentpolicy"
+     },
+     "guestRole": {
+      "type": "string",
+      "enum": [
+       "member",
+       "limited",
+       "restricted"
+      ],
+      "title": "Guestrole"
+     },
+     "guestInvitesFrom": {
+      "type": "string",
+      "enum": [
+       "none",
+       "admins",
+       "adminsAndGuestInviters",
+       "members",
+       "everyone"
+      ],
+      "title": "Guestinvitesfrom"
+     }
+    },
+    "type": "object",
+    "required": [
+     "selfServicePasswordReset",
+     "blockMsolPowerShell",
+     "usersCanRegisterApps",
+     "usersCanCreateSecurityGroups",
+     "usersCanReadOtherUsers",
+     "userConsent",
+     "guestAccess",
+     "guestInvites",
+     "userConsentPolicy",
+     "guestRole",
+     "guestInvitesFrom"
+    ],
+    "title": "AuthorizationPolicySummary"
+   },
+   "AzureRole": {
+    "properties": {
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "isBuiltIn": {
+      "type": "boolean",
+      "title": "Isbuiltin"
+     }
+    },
+    "type": "object",
+    "required": [
+     "displayName",
+     "description",
+     "isBuiltIn"
+    ],
+    "title": "AzureRole"
+   },
+   "AzureRoleAssignmentRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "active",
+       "eligible"
+      ],
+      "title": "Kind"
+     },
+     "role": {
+      "$ref": "#/components/schemas/AzureRole"
+     },
+     "principal": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "via": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "scope": {
+      "type": "string",
+      "title": "Scope"
+     },
+     "conditional": {
+      "type": "boolean",
+      "title": "Conditional"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "role",
+     "principal",
+     "via",
+     "scope",
+     "conditional"
+    ],
+    "title": "AzureRoleAssignmentRow"
+   },
+   "BitLockerKey": {
+    "properties": {
+     "keyIdentifier": {
+      "type": "string",
+      "title": "Keyidentifier"
+     },
+     "keyMaterial": {
+      "type": "string",
+      "title": "Keymaterial"
+     },
+     "volumeType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Volumetype"
+     },
+     "creationTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Creationtime"
+     }
+    },
+    "type": "object",
+    "required": [
+     "keyIdentifier",
+     "keyMaterial",
+     "volumeType",
+     "creationTime"
+    ],
+    "title": "BitLockerKey"
+   },
+   "Condition": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key",
+      "description": "Key in the policy JSON, e.g. Users, Applications, Locations."
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "include": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Include"
+     },
+     "exclude": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Exclude"
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "label",
+     "include",
+     "exclude"
+    ],
+    "title": "Condition"
+   },
+   "Credential": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "password",
+       "certificate"
+      ],
+      "title": "Kind"
+     },
+     "keyId": {
+      "type": "string",
+      "title": "Keyid"
+     },
+     "displayName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Displayname"
+     },
+     "startDate": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Startdate"
+     },
+     "endDate": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Enddate"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "keyId",
+     "displayName",
+     "startDate",
+     "endDate"
+    ],
+    "title": "Credential"
+   },
+   "DeviceCounts": {
+    "properties": {
+     "owners": {
+      "type": "integer",
+      "title": "Owners"
+     },
+     "memberOf": {
+      "type": "integer",
+      "title": "Memberof"
+     },
+     "administrativeUnits": {
+      "type": "integer",
+      "title": "Administrativeunits"
+     }
+    },
+    "type": "object",
+    "required": [
+     "owners",
+     "memberOf",
+     "administrativeUnits"
+    ],
+    "title": "DeviceCounts"
+   },
+   "DeviceDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "deviceId": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deviceid"
+     },
+     "accountEnabled": {
+      "type": "boolean",
+      "title": "Accountenabled"
+     },
+     "deviceManufacturer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Devicemanufacturer"
+     },
+     "deviceModel": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Devicemodel"
+     },
+     "deviceOSType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deviceostype"
+     },
+     "deviceOSVersion": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deviceosversion"
+     },
+     "deviceTrustType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Devicetrusttype"
+     },
+     "isCompliant": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Iscompliant"
+     },
+     "isManaged": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ismanaged"
+     },
+     "isRooted": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Isrooted"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     },
+     "bitLockerKeys": {
+      "items": {
+       "$ref": "#/components/schemas/BitLockerKey"
+      },
+      "type": "array",
+      "title": "Bitlockerkeys"
+     },
+     "owners": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Owners"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/DeviceCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "deviceId",
+     "accountEnabled",
+     "deviceManufacturer",
+     "deviceModel",
+     "deviceOSType",
+     "deviceOSVersion",
+     "deviceTrustType",
+     "isCompliant",
+     "isManaged",
+     "isRooted",
+     "dirSyncEnabled",
+     "bitLockerKeys",
+     "owners",
+     "counts",
+     "raw"
+    ],
+    "title": "DeviceDetail"
+   },
+   "DeviceRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "deviceId": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deviceid"
+     },
+     "accountEnabled": {
+      "type": "boolean",
+      "title": "Accountenabled"
+     },
+     "deviceManufacturer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Devicemanufacturer"
+     },
+     "deviceModel": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Devicemodel"
+     },
+     "deviceOSType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deviceostype"
+     },
+     "deviceOSVersion": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Deviceosversion"
+     },
+     "deviceTrustType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Devicetrusttype"
+     },
+     "isCompliant": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Iscompliant"
+     },
+     "isManaged": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ismanaged"
+     },
+     "isRooted": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Isrooted"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "deviceId",
+     "accountEnabled",
+     "deviceManufacturer",
+     "deviceModel",
+     "deviceOSType",
+     "deviceOSVersion",
+     "deviceTrustType",
+     "isCompliant",
+     "isManaged",
+     "isRooted",
+     "dirSyncEnabled"
+    ],
+    "title": "DeviceRow"
+   },
+   "DirectorySettingSummary": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "values": {
+      "items": {
+       "$ref": "#/components/schemas/SettingValue"
+      },
+      "type": "array",
+      "title": "Values"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "values"
+    ],
+    "title": "DirectorySettingSummary"
+   },
+   "Domain": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "type": {
+      "type": "string",
+      "title": "Type"
+     },
+     "capabilities": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Capabilities"
+     },
+     "isDefault": {
+      "type": "boolean",
+      "title": "Isdefault"
+     },
+     "isInitial": {
+      "type": "boolean",
+      "title": "Isinitial"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "type",
+     "capabilities",
+     "isDefault",
+     "isInitial"
+    ],
+    "title": "Domain"
+   },
+   "FilterField": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "text",
+       "enum",
+       "bool",
+       "date",
+       "number"
+      ],
+      "title": "Type"
+     },
+     "options": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/FilterOption"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Options",
+      "description": "Enum values present in the dump (at most 200)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "label",
+     "type"
+    ],
+    "title": "FilterField",
+    "description": "A field the list endpoint of a resource can filter on."
+   },
+   "FilterOption": {
+    "properties": {
+     "value": {
+      "type": "string",
+      "title": "Value"
+     },
+     "label": {
+      "type": "string",
+      "title": "Label"
+     }
+    },
+    "type": "object",
+    "required": [
+     "value",
+     "label"
+    ],
+    "title": "FilterOption"
+   },
+   "GroupCounts": {
+    "properties": {
+     "memberUsers": {
+      "type": "integer",
+      "title": "Memberusers"
+     },
+     "transitiveMemberUsers": {
+      "type": "integer",
+      "title": "Transitivememberusers"
+     },
+     "memberGroups": {
+      "type": "integer",
+      "title": "Membergroups"
+     },
+     "memberServicePrincipals": {
+      "type": "integer",
+      "title": "Memberserviceprincipals"
+     },
+     "memberDevices": {
+      "type": "integer",
+      "title": "Memberdevices"
+     },
+     "memberOf": {
+      "type": "integer",
+      "title": "Memberof"
+     },
+     "owners": {
+      "type": "integer",
+      "title": "Owners"
+     },
+     "roles": {
+      "type": "integer",
+      "title": "Roles"
+     },
+     "administrativeUnits": {
+      "type": "integer",
+      "title": "Administrativeunits"
+     },
+     "appRoleAssignments": {
+      "type": "integer",
+      "title": "Approleassignments"
+     },
+     "policies": {
+      "type": "integer",
+      "title": "Policies"
+     },
+     "azureRoles": {
+      "type": "integer",
+      "title": "Azureroles"
+     }
+    },
+    "type": "object",
+    "required": [
+     "memberUsers",
+     "transitiveMemberUsers",
+     "memberGroups",
+     "memberServicePrincipals",
+     "memberDevices",
+     "memberOf",
+     "owners",
+     "roles",
+     "administrativeUnits",
+     "appRoleAssignments",
+     "policies",
+     "azureRoles"
+    ],
+    "title": "GroupCounts"
+   },
+   "GroupDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "groupTypes": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Grouptypes"
+     },
+     "securityEnabled": {
+      "type": "boolean",
+      "title": "Securityenabled"
+     },
+     "mailEnabled": {
+      "type": "boolean",
+      "title": "Mailenabled"
+     },
+     "mail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mail"
+     },
+     "isPublic": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ispublic"
+     },
+     "isAssignableToRole": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Isassignabletorole"
+     },
+     "membershipRule": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Membershiprule"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     },
+     "createdDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Createddatetime"
+     },
+     "pimEnabled": {
+      "type": "boolean",
+      "title": "Pimenabled"
+     },
+     "securityIdentifier": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Securityidentifier"
+     },
+     "onPremisesSecurityIdentifier": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Onpremisessecurityidentifier"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/GroupCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "description",
+     "groupTypes",
+     "securityEnabled",
+     "mailEnabled",
+     "mail",
+     "isPublic",
+     "isAssignableToRole",
+     "membershipRule",
+     "dirSyncEnabled",
+     "createdDateTime",
+     "pimEnabled",
+     "securityIdentifier",
+     "onPremisesSecurityIdentifier",
+     "counts",
+     "raw"
+    ],
+    "title": "GroupDetail"
+   },
+   "GroupPim": {
+    "properties": {
+     "onboardedDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Onboardeddatetime"
+     },
+     "memberApprovalRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Memberapprovalrequired"
+     },
+     "ownerApprovalRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ownerapprovalrequired"
+     },
+     "members": {
+      "items": {
+       "$ref": "#/components/schemas/PimSubject"
+      },
+      "type": "array",
+      "title": "Members"
+     },
+     "owners": {
+      "items": {
+       "$ref": "#/components/schemas/PimSubject"
+      },
+      "type": "array",
+      "title": "Owners"
+     }
+    },
+    "type": "object",
+    "required": [
+     "onboardedDateTime",
+     "memberApprovalRequired",
+     "ownerApprovalRequired",
+     "members",
+     "owners"
+    ],
+    "title": "GroupPim"
+   },
+   "GroupRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "groupTypes": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Grouptypes"
+     },
+     "securityEnabled": {
+      "type": "boolean",
+      "title": "Securityenabled"
+     },
+     "mailEnabled": {
+      "type": "boolean",
+      "title": "Mailenabled"
+     },
+     "mail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mail"
+     },
+     "isPublic": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ispublic"
+     },
+     "isAssignableToRole": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Isassignabletorole"
+     },
+     "membershipRule": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Membershiprule"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     },
+     "createdDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Createddatetime"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "description",
+     "groupTypes",
+     "securityEnabled",
+     "mailEnabled",
+     "mail",
+     "isPublic",
+     "isAssignableToRole",
+     "membershipRule",
+     "dirSyncEnabled",
+     "createdDateTime"
+    ],
+    "title": "GroupRow"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "MatchReason": {
+    "properties": {
+     "condition": {
+      "type": "string",
+      "title": "Condition",
+      "description": "Condition label, e.g. Users, Directory roles, Resources."
+     },
+     "via": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Via",
+      "description": "Chain from the object to what the policy references, e.g. [group, parent group]. Empty = direct."
+     },
+     "approximate": {
+      "type": "boolean",
+      "title": "Approximate"
+     },
+     "eligibleOnly": {
+      "type": "boolean",
+      "title": "Eligibleonly",
+      "description": "Only through an eligible (PIM) role assignment."
+     }
+    },
+    "type": "object",
+    "required": [
+     "condition",
+     "via",
+     "approximate",
+     "eligibleOnly"
+    ],
+    "title": "MatchReason",
+    "description": "Why a policy side (include or exclude) matches an object."
+   },
+   "MetadataEntry": {
+    "properties": {
+     "key": {
+      "type": "string",
+      "title": "Key"
+     },
+     "value": {
+      "title": "Value",
+      "description": "Decoded value: JSON if it parses, text otherwise."
+     }
+    },
+    "type": "object",
+    "required": [
+     "key",
+     "value"
+    ],
+    "title": "MetadataEntry"
+   },
+   "MfaSummary": {
+    "properties": {
+     "methods": {
+      "items": {
+       "type": "string",
+       "enum": [
+        "PhoneAppOTP",
+        "PhoneAppNotification",
+        "OneWaySms",
+        "TwoWayVoiceMobile",
+        "TwoWayVoiceOffice",
+        "TwoWayVoiceAlternateMobile",
+        "Email"
+       ]
+      },
+      "type": "array",
+      "title": "Methods"
+     },
+     "defaultMethod": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "PhoneAppOTP",
+         "PhoneAppNotification",
+         "OneWaySms",
+         "TwoWayVoiceMobile",
+         "TwoWayVoiceOffice",
+         "TwoWayVoiceAlternateMobile",
+         "Email"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Defaultmethod"
+     },
+     "perUserMfa": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Perusermfa",
+      "description": "Legacy per-user MFA state: Enabled, Enforced or null."
+     },
+     "fido": {
+      "type": "integer",
+      "title": "Fido"
+     },
+     "windowsHello": {
+      "type": "integer",
+      "title": "Windowshello"
+     }
+    },
+    "type": "object",
+    "required": [
+     "methods",
+     "defaultMethod",
+     "perUserMfa",
+     "fido",
+     "windowsHello"
+    ],
+    "title": "MfaSummary"
+   },
+   "NamedLocationDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "ip",
+       "country"
+      ],
+      "title": "Kind"
+     },
+     "trusted": {
+      "type": "boolean",
+      "title": "Trusted"
+     },
+     "ipRanges": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Ipranges"
+     },
+     "countries": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Countries"
+     },
+     "includeUnknownCountries": {
+      "type": "boolean",
+      "title": "Includeunknowncountries"
+     },
+     "policyCount": {
+      "type": "integer",
+      "title": "Policycount"
+     },
+     "policies": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Policies",
+      "description": "Policies that reference this location."
+     },
+     "policyMatches": {
+      "items": {
+       "$ref": "#/components/schemas/PolicyMatch"
+      },
+      "type": "array",
+      "title": "Policymatches"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "kind",
+     "trusted",
+     "ipRanges",
+     "countries",
+     "includeUnknownCountries",
+     "policyCount",
+     "policies",
+     "policyMatches",
+     "raw"
+    ],
+    "title": "NamedLocationDetail"
+   },
+   "NamedLocationRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "ip",
+       "country"
+      ],
+      "title": "Kind"
+     },
+     "trusted": {
+      "type": "boolean",
+      "title": "Trusted"
+     },
+     "ipRanges": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Ipranges"
+     },
+     "countries": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Countries"
+     },
+     "includeUnknownCountries": {
+      "type": "boolean",
+      "title": "Includeunknowncountries"
+     },
+     "policyCount": {
+      "type": "integer",
+      "title": "Policycount"
+     },
+     "policies": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Policies",
+      "description": "Policies that reference this location."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "kind",
+     "trusted",
+     "ipRanges",
+     "countries",
+     "includeUnknownCountries",
+     "policyCount",
+     "policies"
+    ],
+    "title": "NamedLocationRow"
+   },
+   "OAuth2GrantRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "consentType": {
+      "type": "string",
+      "enum": [
+       "AllPrincipals",
+       "Principal"
+      ],
+      "title": "Consenttype"
+     },
+     "principal": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "client": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "resource": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "scopes": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Scopes"
+     },
+     "privilegedScopes": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Privilegedscopes",
+      "description": "The scopes that are high-impact permissions."
+     },
+     "expiryTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expirytime"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "consentType",
+     "principal",
+     "client",
+     "resource",
+     "scopes",
+     "privilegedScopes",
+     "expiryTime"
+    ],
+    "title": "OAuth2GrantRow"
+   },
+   "ObjectRef": {
+    "properties": {
+     "id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Id"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "user",
+       "group",
+       "device",
+       "servicePrincipal",
+       "application",
+       "administrativeUnit",
+       "role",
+       "policy",
+       "namedLocation",
+       "keyword",
+       "value",
+       "unknown"
+      ],
+      "title": "Type"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "sub": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sub",
+      "description": "Secondary identifier: UPN for users, appId for apps and SPs."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "type",
+     "displayName"
+    ],
+    "title": "ObjectRef",
+    "description": "Every reference to an object, anywhere. `keyword`/`value`/`unknown` are not links."
+   },
+   "Page_AccessPackagePolicyRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AccessPackagePolicyRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[AccessPackagePolicyRow]"
+   },
+   "Page_AdministrativeUnitRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AdministrativeUnitRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[AdministrativeUnitRow]"
+   },
+   "Page_AppRoleAssignmentRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AppRoleAssignmentRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[AppRoleAssignmentRow]"
+   },
+   "Page_ApplicationRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ApplicationRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[ApplicationRow]"
+   },
+   "Page_AzureRoleAssignmentRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/AzureRoleAssignmentRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[AzureRoleAssignmentRow]"
+   },
+   "Page_DeviceRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/DeviceRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[DeviceRow]"
+   },
+   "Page_GroupRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/GroupRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[GroupRow]"
+   },
+   "Page_NamedLocationRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/NamedLocationRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[NamedLocationRow]"
+   },
+   "Page_OAuth2GrantRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/OAuth2GrantRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[OAuth2GrantRow]"
+   },
+   "Page_ObjectRef_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[ObjectRef]"
+   },
+   "Page_PimAssignmentRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PimAssignmentRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[PimAssignmentRow]"
+   },
+   "Page_PolicyRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/PolicyRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[PolicyRow]"
+   },
+   "Page_RoleAssignmentRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/RoleAssignmentRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[RoleAssignmentRow]"
+   },
+   "Page_RoleRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/RoleRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[RoleRow]"
+   },
+   "Page_ServicePrincipalRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ServicePrincipalRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[ServicePrincipalRow]"
+   },
+   "Page_UserRow_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/UserRow"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "page": {
+      "type": "integer",
+      "title": "Page"
+     },
+     "page_size": {
+      "type": "integer",
+      "title": "Page Size"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items",
+     "total",
+     "page",
+     "page_size"
+    ],
+    "title": "Page[UserRow]"
+   },
+   "PermissionScopeDefinition": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "User",
+       "Admin"
+      ],
+      "title": "Type"
+     },
+     "adminConsentDisplayName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adminconsentdisplayname"
+     },
+     "adminConsentDescription": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Adminconsentdescription"
+     },
+     "userConsentDisplayName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userconsentdisplayname"
+     },
+     "userConsentDescription": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userconsentdescription"
+     },
+     "isEnabled": {
+      "type": "boolean",
+      "title": "Isenabled"
+     },
+     "isPrivileged": {
+      "type": "boolean",
+      "title": "Isprivileged",
+      "description": "High-impact permission (fixed list on the server)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "value",
+     "type",
+     "adminConsentDisplayName",
+     "adminConsentDescription",
+     "userConsentDisplayName",
+     "userConsentDescription",
+     "isEnabled",
+     "isPrivileged"
+    ],
+    "title": "PermissionScopeDefinition"
+   },
+   "PimAssignmentRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "active",
+       "eligible"
+      ],
+      "title": "Kind"
+     },
+     "resourceType": {
+      "type": "string",
+      "enum": [
+       "directoryRole",
+       "group",
+       "other"
+      ],
+      "title": "Resourcetype"
+     },
+     "resource": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "role": {
+      "type": "string",
+      "title": "Role",
+      "description": "Role name, or Member / Owner for groups."
+     },
+     "via": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "approvalRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approvalrequired"
+     },
+     "startDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Startdatetime"
+     },
+     "endDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Enddatetime",
+      "description": "null = permanent."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "resourceType",
+     "resource",
+     "role",
+     "via",
+     "approvalRequired",
+     "startDateTime",
+     "endDateTime"
+    ],
+    "title": "PimAssignmentRow"
+   },
+   "PimSubject": {
+    "properties": {
+     "subject": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "active",
+       "eligible"
+      ],
+      "title": "Kind"
+     },
+     "startDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Startdatetime"
+     },
+     "endDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Enddatetime"
+     }
+    },
+    "type": "object",
+    "required": [
+     "subject",
+     "kind",
+     "startDateTime",
+     "endDateTime"
+    ],
+    "title": "PimSubject"
+   },
+   "PolicyCounts": {
+    "properties": {
+     "inScope": {
+      "type": "integer",
+      "title": "Inscope"
+     },
+     "excluded": {
+      "type": "integer",
+      "title": "Excluded"
+     }
+    },
+    "type": "object",
+    "required": [
+     "inScope",
+     "excluded"
+    ],
+    "title": "PolicyCounts"
+   },
+   "PolicyDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "state": {
+      "type": "string",
+      "enum": [
+       "enabled",
+       "reporting",
+       "disabled"
+      ],
+      "title": "State"
+     },
+     "targetsAllUsers": {
+      "type": "boolean",
+      "title": "Targetsallusers"
+     },
+     "targetsAllApps": {
+      "type": "boolean",
+      "title": "Targetsallapps"
+     },
+     "block": {
+      "type": "boolean",
+      "title": "Block"
+     },
+     "grant": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Grant"
+     },
+     "grantOperator": {
+      "type": "string",
+      "enum": [
+       "AND",
+       "OR"
+      ],
+      "title": "Grantoperator"
+     },
+     "sessionControls": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Sessioncontrols"
+     },
+     "modifiedDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Modifieddatetime"
+     },
+     "parseError": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parseerror"
+     },
+     "who": {
+      "items": {
+       "$ref": "#/components/schemas/Condition"
+      },
+      "type": "array",
+      "title": "Who",
+      "description": "Users, workload identities."
+     },
+     "targets": {
+      "items": {
+       "$ref": "#/components/schemas/Condition"
+      },
+      "type": "array",
+      "title": "Targets",
+      "description": "Applications, user actions, authentication contexts."
+     },
+     "conditions": {
+      "items": {
+       "$ref": "#/components/schemas/Condition"
+      },
+      "type": "array",
+      "title": "Conditions",
+      "description": "Platforms, locations, client apps, device filters, risks."
+     },
+     "grantControls": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Grantcontrols",
+      "description": "Grant controls and authentication strengths, as value refs."
+     },
+     "session": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Session"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/PolicyCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "state",
+     "targetsAllUsers",
+     "targetsAllApps",
+     "block",
+     "grant",
+     "grantOperator",
+     "sessionControls",
+     "modifiedDateTime",
+     "parseError",
+     "who",
+     "targets",
+     "conditions",
+     "grantControls",
+     "session",
+     "counts",
+     "raw"
+    ],
+    "title": "PolicyDetail"
+   },
+   "PolicyMatch": {
+    "properties": {
+     "policy": {
+      "$ref": "#/components/schemas/PolicyRow"
+     },
+     "effect": {
+      "type": "string",
+      "enum": [
+       "included",
+       "excluded"
+      ],
+      "title": "Effect"
+     },
+     "included": {
+      "items": {
+       "$ref": "#/components/schemas/MatchReason"
+      },
+      "type": "array",
+      "title": "Included"
+     },
+     "excluded": {
+      "items": {
+       "$ref": "#/components/schemas/MatchReason"
+      },
+      "type": "array",
+      "title": "Excluded"
+     }
+    },
+    "type": "object",
+    "required": [
+     "policy",
+     "effect",
+     "included",
+     "excluded"
+    ],
+    "title": "PolicyMatch",
+    "description": "One policy that concerns an object. Exclusion wins over inclusion."
+   },
+   "PolicyRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "state": {
+      "type": "string",
+      "enum": [
+       "enabled",
+       "reporting",
+       "disabled"
+      ],
+      "title": "State"
+     },
+     "targetsAllUsers": {
+      "type": "boolean",
+      "title": "Targetsallusers"
+     },
+     "targetsAllApps": {
+      "type": "boolean",
+      "title": "Targetsallapps"
+     },
+     "block": {
+      "type": "boolean",
+      "title": "Block"
+     },
+     "grant": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Grant"
+     },
+     "grantOperator": {
+      "type": "string",
+      "enum": [
+       "AND",
+       "OR"
+      ],
+      "title": "Grantoperator"
+     },
+     "sessionControls": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Sessioncontrols"
+     },
+     "modifiedDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Modifieddatetime"
+     },
+     "parseError": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parseerror"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "state",
+     "targetsAllUsers",
+     "targetsAllApps",
+     "block",
+     "grant",
+     "grantOperator",
+     "sessionControls",
+     "modifiedDateTime",
+     "parseError"
+    ],
+    "title": "PolicyRow"
+   },
+   "RequiredPermission": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value"
+     },
+     "type": {
+      "type": "string",
+      "enum": [
+       "Role",
+       "Scope"
+      ],
+      "title": "Type"
+     },
+     "isPrivileged": {
+      "type": "boolean",
+      "title": "Isprivileged"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "value",
+     "type",
+     "isPrivileged"
+    ],
+    "title": "RequiredPermission"
+   },
+   "RequiredResourceAccess": {
+    "properties": {
+     "resource": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "permissions": {
+      "items": {
+       "$ref": "#/components/schemas/RequiredPermission"
+      },
+      "type": "array",
+      "title": "Permissions"
+     }
+    },
+    "type": "object",
+    "required": [
+     "resource",
+     "permissions"
+    ],
+    "title": "RequiredResourceAccess"
+   },
+   "RoleAssignmentRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "active",
+       "eligible"
+      ],
+      "title": "Kind"
+     },
+     "role": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "principal": {
+      "$ref": "#/components/schemas/ObjectRef"
+     },
+     "via": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Group the principal holds the role through, when expanded."
+     },
+     "scope": {
+      "$ref": "#/components/schemas/ObjectRef",
+      "description": "Directory (keyword), an administrative unit or an application."
+     },
+     "principalEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Principalenabled"
+     },
+     "principalDirSync": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Principaldirsync"
+     },
+     "principalMfa": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/MfaSummary"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "kind",
+     "role",
+     "principal",
+     "via",
+     "scope",
+     "principalEnabled",
+     "principalDirSync",
+     "principalMfa"
+    ],
+    "title": "RoleAssignmentRow"
+   },
+   "RoleDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id",
+      "description": "The role template id (equal to the role definition id)."
+     },
+     "templateId": {
+      "type": "string",
+      "title": "Templateid"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "isBuiltIn": {
+      "type": "boolean",
+      "title": "Isbuiltin"
+     },
+     "isPrivileged": {
+      "type": "boolean",
+      "title": "Isprivileged",
+      "description": "Tier-0 / privileged role (fixed list of template IDs on the server)."
+     },
+     "activeCount": {
+      "type": "integer",
+      "title": "Activecount"
+     },
+     "eligibleCount": {
+      "type": "integer",
+      "title": "Eligiblecount"
+     },
+     "allowedResourceActions": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Allowedresourceactions"
+     },
+     "holders": {
+      "$ref": "#/components/schemas/RoleHolderCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "templateId",
+     "displayName",
+     "description",
+     "isBuiltIn",
+     "isPrivileged",
+     "activeCount",
+     "eligibleCount",
+     "allowedResourceActions",
+     "holders",
+     "raw"
+    ],
+    "title": "RoleDetail"
+   },
+   "RoleHolderCounts": {
+    "properties": {
+     "user": {
+      "type": "integer",
+      "title": "User"
+     },
+     "group": {
+      "type": "integer",
+      "title": "Group"
+     },
+     "servicePrincipal": {
+      "type": "integer",
+      "title": "Serviceprincipal"
+     },
+     "directory": {
+      "type": "integer",
+      "title": "Directory"
+     },
+     "administrativeUnit": {
+      "type": "integer",
+      "title": "Administrativeunit"
+     },
+     "application": {
+      "type": "integer",
+      "title": "Application"
+     }
+    },
+    "type": "object",
+    "required": [
+     "user",
+     "group",
+     "servicePrincipal",
+     "directory",
+     "administrativeUnit",
+     "application"
+    ],
+    "title": "RoleHolderCounts",
+    "description": "Assignments (active and eligible) by principal type and by scope."
+   },
+   "RoleRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id",
+      "description": "The role template id (equal to the role definition id)."
+     },
+     "templateId": {
+      "type": "string",
+      "title": "Templateid"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Description"
+     },
+     "isBuiltIn": {
+      "type": "boolean",
+      "title": "Isbuiltin"
+     },
+     "isPrivileged": {
+      "type": "boolean",
+      "title": "Isprivileged",
+      "description": "Tier-0 / privileged role (fixed list of template IDs on the server)."
+     },
+     "activeCount": {
+      "type": "integer",
+      "title": "Activecount"
+     },
+     "eligibleCount": {
+      "type": "integer",
+      "title": "Eligiblecount"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "templateId",
+     "displayName",
+     "description",
+     "isBuiltIn",
+     "isPrivileged",
+     "activeCount",
+     "eligibleCount"
+    ],
+    "title": "RoleRow"
+   },
+   "SearchGroup": {
+    "properties": {
+     "type": {
+      "type": "string",
+      "enum": [
+       "user",
+       "group",
+       "device",
+       "servicePrincipal",
+       "application",
+       "administrativeUnit",
+       "role",
+       "policy",
+       "namedLocation",
+       "keyword",
+       "value",
+       "unknown"
+      ],
+      "title": "Type"
+     },
+     "total": {
+      "type": "integer",
+      "title": "Total"
+     },
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ObjectRef"
+      },
+      "type": "array",
+      "title": "Items"
+     }
+    },
+    "type": "object",
+    "required": [
+     "type",
+     "total",
+     "items"
+    ],
+    "title": "SearchGroup"
+   },
+   "SearchResult": {
+    "properties": {
+     "groups": {
+      "items": {
+       "$ref": "#/components/schemas/SearchGroup"
+      },
+      "type": "array",
+      "title": "Groups"
+     }
+    },
+    "type": "object",
+    "required": [
+     "groups"
+    ],
+    "title": "SearchResult"
+   },
+   "ServicePrincipalCounts": {
+    "properties": {
+     "owners": {
+      "type": "integer",
+      "title": "Owners"
+     },
+     "memberOf": {
+      "type": "integer",
+      "title": "Memberof"
+     },
+     "roles": {
+      "type": "integer",
+      "title": "Roles"
+     },
+     "appRoleAssignments": {
+      "type": "integer",
+      "title": "Approleassignments"
+     },
+     "appRoleAssignedTo": {
+      "type": "integer",
+      "title": "Approleassignedto"
+     },
+     "oauth2GrantsAsClient": {
+      "type": "integer",
+      "title": "Oauth2Grantsasclient"
+     },
+     "oauth2GrantsAsResource": {
+      "type": "integer",
+      "title": "Oauth2Grantsasresource"
+     },
+     "policies": {
+      "type": "integer",
+      "title": "Policies"
+     },
+     "azureRoles": {
+      "type": "integer",
+      "title": "Azureroles"
+     }
+    },
+    "type": "object",
+    "required": [
+     "owners",
+     "memberOf",
+     "roles",
+     "appRoleAssignments",
+     "appRoleAssignedTo",
+     "oauth2GrantsAsClient",
+     "oauth2GrantsAsResource",
+     "policies",
+     "azureRoles"
+    ],
+    "title": "ServicePrincipalCounts"
+   },
+   "ServicePrincipalDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "appId": {
+      "type": "string",
+      "title": "Appid"
+     },
+     "servicePrincipalType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Serviceprincipaltype"
+     },
+     "publisherName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Publishername"
+     },
+     "microsoftFirstParty": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Microsoftfirstparty"
+     },
+     "accountEnabled": {
+      "type": "boolean",
+      "title": "Accountenabled"
+     },
+     "appRoleAssignmentRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approleassignmentrequired"
+     },
+     "passwordCount": {
+      "type": "integer",
+      "title": "Passwordcount"
+     },
+     "keyCount": {
+      "type": "integer",
+      "title": "Keycount"
+     },
+     "appRoleCount": {
+      "type": "integer",
+      "title": "Approlecount"
+     },
+     "oauth2PermissionCount": {
+      "type": "integer",
+      "title": "Oauth2Permissioncount"
+     },
+     "hasCustomOwner": {
+      "type": "boolean",
+      "title": "Hascustomowner"
+     },
+     "appOwnerTenantId": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Appownertenantid"
+     },
+     "homepage": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Homepage"
+     },
+     "replyUrls": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Replyurls"
+     },
+     "servicePrincipalNames": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Serviceprincipalnames"
+     },
+     "application": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "credentials": {
+      "items": {
+       "$ref": "#/components/schemas/Credential"
+      },
+      "type": "array",
+      "title": "Credentials"
+     },
+     "appRoles": {
+      "items": {
+       "$ref": "#/components/schemas/AppRoleDefinition"
+      },
+      "type": "array",
+      "title": "Approles"
+     },
+     "oauth2Permissions": {
+      "items": {
+       "$ref": "#/components/schemas/PermissionScopeDefinition"
+      },
+      "type": "array",
+      "title": "Oauth2Permissions"
+     },
+     "metadata": {
+      "items": {
+       "$ref": "#/components/schemas/MetadataEntry"
+      },
+      "type": "array",
+      "title": "Metadata"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/ServicePrincipalCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "appId",
+     "servicePrincipalType",
+     "publisherName",
+     "microsoftFirstParty",
+     "accountEnabled",
+     "appRoleAssignmentRequired",
+     "passwordCount",
+     "keyCount",
+     "appRoleCount",
+     "oauth2PermissionCount",
+     "hasCustomOwner",
+     "appOwnerTenantId",
+     "homepage",
+     "replyUrls",
+     "servicePrincipalNames",
+     "application",
+     "credentials",
+     "appRoles",
+     "oauth2Permissions",
+     "metadata",
+     "counts",
+     "raw"
+    ],
+    "title": "ServicePrincipalDetail"
+   },
+   "ServicePrincipalRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "appId": {
+      "type": "string",
+      "title": "Appid"
+     },
+     "servicePrincipalType": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Serviceprincipaltype"
+     },
+     "publisherName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Publishername"
+     },
+     "microsoftFirstParty": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Microsoftfirstparty"
+     },
+     "accountEnabled": {
+      "type": "boolean",
+      "title": "Accountenabled"
+     },
+     "appRoleAssignmentRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Approleassignmentrequired"
+     },
+     "passwordCount": {
+      "type": "integer",
+      "title": "Passwordcount"
+     },
+     "keyCount": {
+      "type": "integer",
+      "title": "Keycount"
+     },
+     "appRoleCount": {
+      "type": "integer",
+      "title": "Approlecount"
+     },
+     "oauth2PermissionCount": {
+      "type": "integer",
+      "title": "Oauth2Permissioncount"
+     },
+     "hasCustomOwner": {
+      "type": "boolean",
+      "title": "Hascustomowner"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "appId",
+     "servicePrincipalType",
+     "publisherName",
+     "microsoftFirstParty",
+     "accountEnabled",
+     "appRoleAssignmentRequired",
+     "passwordCount",
+     "keyCount",
+     "appRoleCount",
+     "oauth2PermissionCount",
+     "hasCustomOwner"
+    ],
+    "title": "ServicePrincipalRow"
+   },
+   "SettingValue": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "value": {
+      "type": "string",
+      "title": "Value"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "value"
+    ],
+    "title": "SettingValue"
+   },
+   "Stats": {
+    "properties": {
+     "users": {
+      "type": "integer",
+      "title": "Users"
+     },
+     "guests": {
+      "type": "integer",
+      "title": "Guests"
+     },
+     "groups": {
+      "type": "integer",
+      "title": "Groups"
+     },
+     "devices": {
+      "type": "integer",
+      "title": "Devices"
+     },
+     "servicePrincipals": {
+      "type": "integer",
+      "title": "Serviceprincipals"
+     },
+     "applications": {
+      "type": "integer",
+      "title": "Applications"
+     },
+     "administrativeUnits": {
+      "type": "integer",
+      "title": "Administrativeunits"
+     },
+     "roles": {
+      "type": "integer",
+      "title": "Roles"
+     },
+     "policies": {
+      "type": "integer",
+      "title": "Policies"
+     },
+     "namedLocations": {
+      "type": "integer",
+      "title": "Namedlocations"
+     }
+    },
+    "type": "object",
+    "required": [
+     "users",
+     "guests",
+     "groups",
+     "devices",
+     "servicePrincipals",
+     "applications",
+     "administrativeUnits",
+     "roles",
+     "policies",
+     "namedLocations"
+    ],
+    "title": "Stats"
+   },
+   "Tenant": {
+    "properties": {
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "tenantId": {
+      "type": "string",
+      "title": "Tenantid"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     },
+     "domains": {
+      "items": {
+       "$ref": "#/components/schemas/Domain"
+      },
+      "type": "array",
+      "title": "Domains"
+     },
+     "authorizationPolicy": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/AuthorizationPolicySummary"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "directorySettings": {
+      "items": {
+       "$ref": "#/components/schemas/DirectorySettingSummary"
+      },
+      "type": "array",
+      "title": "Directorysettings"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "displayName",
+     "tenantId",
+     "dirSyncEnabled",
+     "domains",
+     "authorizationPolicy",
+     "directorySettings",
+     "raw"
+    ],
+    "title": "Tenant"
+   },
+   "UserCounts": {
+    "properties": {
+     "memberOf": {
+      "type": "integer",
+      "title": "Memberof"
+     },
+     "roles": {
+      "type": "integer",
+      "title": "Roles"
+     },
+     "ownedDevices": {
+      "type": "integer",
+      "title": "Owneddevices"
+     },
+     "ownedServicePrincipals": {
+      "type": "integer",
+      "title": "Ownedserviceprincipals"
+     },
+     "ownedApplications": {
+      "type": "integer",
+      "title": "Ownedapplications"
+     },
+     "ownedGroups": {
+      "type": "integer",
+      "title": "Ownedgroups"
+     },
+     "administrativeUnits": {
+      "type": "integer",
+      "title": "Administrativeunits"
+     },
+     "appRoleAssignments": {
+      "type": "integer",
+      "title": "Approleassignments"
+     },
+     "oauth2Grants": {
+      "type": "integer",
+      "title": "Oauth2Grants"
+     },
+     "policies": {
+      "type": "integer",
+      "title": "Policies"
+     },
+     "azureRoles": {
+      "type": "integer",
+      "title": "Azureroles"
+     },
+     "pim": {
+      "type": "integer",
+      "title": "Pim"
+     },
+     "accessPackages": {
+      "type": "integer",
+      "title": "Accesspackages"
+     }
+    },
+    "type": "object",
+    "required": [
+     "memberOf",
+     "roles",
+     "ownedDevices",
+     "ownedServicePrincipals",
+     "ownedApplications",
+     "ownedGroups",
+     "administrativeUnits",
+     "appRoleAssignments",
+     "oauth2Grants",
+     "policies",
+     "azureRoles",
+     "pim",
+     "accessPackages"
+    ],
+    "title": "UserCounts"
+   },
+   "UserDetail": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "userPrincipalName": {
+      "type": "string",
+      "title": "Userprincipalname"
+     },
+     "accountEnabled": {
+      "type": "boolean",
+      "title": "Accountenabled"
+     },
+     "mail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mail"
+     },
+     "department": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Department"
+     },
+     "jobTitle": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jobtitle"
+     },
+     "mobile": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mobile"
+     },
+     "lastPasswordChangeDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lastpasswordchangedatetime"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     },
+     "userType": {
+      "type": "string",
+      "enum": [
+       "Member",
+       "Guest"
+      ],
+      "title": "Usertype"
+     },
+     "mfa": {
+      "$ref": "#/components/schemas/MfaSummary"
+     },
+     "onPremisesSamAccountName": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Onpremisessamaccountname"
+     },
+     "onPremisesSecurityIdentifier": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Onpremisessecurityidentifier"
+     },
+     "createdDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Createddatetime"
+     },
+     "lastDirSyncTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lastdirsynctime"
+     },
+     "counts": {
+      "$ref": "#/components/schemas/UserCounts"
+     },
+     "raw": {
+      "additionalProperties": true,
+      "type": "object",
+      "title": "Raw"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "userPrincipalName",
+     "accountEnabled",
+     "mail",
+     "department",
+     "jobTitle",
+     "mobile",
+     "lastPasswordChangeDateTime",
+     "dirSyncEnabled",
+     "userType",
+     "mfa",
+     "onPremisesSecurityIdentifier",
+     "createdDateTime",
+     "lastDirSyncTime",
+     "counts",
+     "raw"
+    ],
+    "title": "UserDetail"
+   },
+   "UserRow": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "userPrincipalName": {
+      "type": "string",
+      "title": "Userprincipalname"
+     },
+     "accountEnabled": {
+      "type": "boolean",
+      "title": "Accountenabled"
+     },
+     "mail": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mail"
+     },
+     "department": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Department"
+     },
+     "jobTitle": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Jobtitle"
+     },
+     "mobile": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mobile"
+     },
+     "lastPasswordChangeDateTime": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Lastpasswordchangedatetime"
+     },
+     "dirSyncEnabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dirsyncenabled"
+     },
+     "userType": {
+      "type": "string",
+      "enum": [
+       "Member",
+       "Guest"
+      ],
+      "title": "Usertype"
+     },
+     "mfa": {
+      "$ref": "#/components/schemas/MfaSummary"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "userPrincipalName",
+     "accountEnabled",
+     "mail",
+     "department",
+     "jobTitle",
+     "mobile",
+     "lastPasswordChangeDateTime",
+     "dirSyncEnabled",
+     "userType",
+     "mfa"
+    ],
+    "title": "UserRow"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}

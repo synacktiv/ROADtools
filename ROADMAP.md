@@ -61,10 +61,11 @@ Worktree agents: `podman compose -p rr-<worktree> run --rm py|node ...` (no publ
 - [ ] `roadrecon/tests/gendb.py` synthetic DB generator (parallel worktree), validated with `roadrecon plugin policies`
 
 ## Phase 3 — API spec
-- [ ] `api/db.py` (engine, pragmas, `ensure_indexes`, read-only), `api/app.py`, `api/__main__.py`
-- [ ] `api/common.py` (paginate, ObjectRef resolver, CTEs, props models) + `tests/test_common.py`
-- [ ] Pydantic models + router stubs for every route below
-- [ ] `openapi.json` exported, `schema.d.ts` generated, frontend switched to generated types (tsc clean)
+- [x] `api/db.py` (engine, pragmas, `ensure_indexes`, read-only), `api/app.py`, `api/__main__.py`
+- [x] `api/common.py` (paginate, filters, ObjectRef resolver, CTEs, MFA summary, privileged lists) + `tests/test_common.py`
+- [x] Pydantic models (`api/models.py`) + router stubs for every route below (`api/routers/<slice>.py`, 501 until implemented)
+- [x] Cross-slice hooks stubbed in the owning module: `users.page_users`, `roles.count_roles` / `count_scoped_roles`, `policies.count_affecting`, `governance.count_*` (counts return 0 until the slice lands)
+- [x] `openapi.json` exported, `schema.d.ts` generated, frontend switched to generated types (tsc clean)
 - [ ] Tag `spec-v1`
 
 ## Phase 4 — Route implementation (fan-out, worktrees)
@@ -286,3 +287,10 @@ The logo is `IconRoad`.
   - publisher, owner tenant, enabled and assignment required on `ApplicationDetail` (copied from the linked service principal);
   - a privilege tier per permission (replaces name patterns in the UI);
   - export is client-side today: a streaming `format=csv` on list routes if dumps exceed 50 000 rows. `PolicyUserQuery` extends `UserQuery`, so the in-scope users table has the same filters as the users list.
+- **Done in Phase 3 (spec-v1):**
+  - `RoleDetail.holders`: assignment counts by principal type and by scope;
+  - `NamedLocationRow.policies: ObjectRef[]`; the detail's `PolicyMatch[]` is renamed `policyMatches`;
+  - `ApplicationDetail.publisherName | appOwnerTenantId | accountEnabled | appRoleAssignmentRequired` (from the linked SP);
+  - `isPrivileged` on `AppRoleDefinition`, `PermissionScopeDefinition`, required permissions and `AppRoleAssignmentRow`, plus `OAuth2GrantRow.privilegedScopes` (server-side name pattern, `common.is_privileged_permission`);
+  - role ids are template ids everywhere;
+  - streaming CSV skipped until a dump needs it.

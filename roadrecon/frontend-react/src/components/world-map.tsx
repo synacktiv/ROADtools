@@ -132,8 +132,8 @@ const UnknownCountries = () => (
 /** Country-kind named location on a map, with legend and country chips. Null for IP locations. */
 export function NamedLocationMap({ location: l }: { location: NamedLocationDetail }) {
   if (l.kind === 'ip') return null
-  const tone = locationTone(l.trusted, l.policies)
-  const blockers = l.policies.filter((m) => m.effect === 'included' && m.policy.block && m.policy.state !== 'disabled').length
+  const tone = locationTone(l.trusted, l.policyMatches)
+  const blockers = l.policyMatches.filter((m) => m.effect === 'included' && m.policy.block && m.policy.state !== 'disabled').length
   return (
     <Card size="sm">
       <CardHeader>
@@ -183,7 +183,7 @@ export function NamedLocationsOverviewMap({ locations, size = 'lg' }: { location
 
   const byCountry = new Map<string, { l: NamedLocationRow; tone: MapTone }[]>()
   countryLocs.forEach((l, i) => {
-    const tone = locationTone(l.trusted, details[i].data?.policies)
+    const tone = locationTone(l.trusted, details[i].data?.policyMatches)
     for (const c of l.countries) byCountry.set(c.toUpperCase(), [...(byCountry.get(c.toUpperCase()) ?? []), { l, tone }])
   })
   const countries = Object.fromEntries([...byCountry].map(([c, ls]) => [c, ls.reduce<MapTone>((t, x) => (RANK[x.tone] > RANK[t] ? x.tone : t), 'neutral')]))
