@@ -432,11 +432,11 @@ const roles: RoleDetail[] = ROLE_DEFS.map(([templateId, displayName, description
   isPrivileged: false,
   activeCount: 0,
   eligibleCount: 0,
-  holders: { user: 0, group: 0, servicePrincipal: 0, directory: 0, administrativeUnit: 0, application: 0 }, 
+  holders: [], 
   allowedResourceActions: ['microsoft.directory/users/basic/update', 'microsoft.directory/groups/members/update', 'microsoft.directory/applications/credentials/update', 'microsoft.directory/servicePrincipals/appRoleAssignedTo/update'].slice(0, 2 + Math.floor(rand() * 3)),
   raw: {},
 }))
-const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, holders: { user: 0, group: 0, servicePrincipal: 0, directory: 0, administrativeUnit: 0, application: 0 }, allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
+const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, holders: [], allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
 roles.push(customRole)
 const roleByName = (n: string) => roles.find((r) => r.displayName === n)!
 
@@ -807,9 +807,11 @@ for (const r of roles) {
   r.activeCount = roleAssignments.filter((a) => a.role.id === r.id && a.kind === 'active').length
   r.eligibleCount = roleAssignments.filter((a) => a.role.id === r.id && a.kind === 'eligible').length
   for (const a of roleAssignments.filter((x) => x.role.id === r.id)) {
-    const t = a.principal.type as 'user' | 'group' | 'servicePrincipal'
-    if (t in r.holders) r.holders[t]++
-    r.holders[a.scope.type === 'keyword' ? 'directory' : a.scope.type === 'administrativeUnit' ? 'administrativeUnit' : 'application']++
+    const principalType = a.principal.type as 'user' | 'group' | 'servicePrincipal'
+    const scope = a.scope.type === 'keyword' ? 'directory' : a.scope.type === 'administrativeUnit' ? 'administrativeUnit' : 'application'
+    const h = r.holders.find((x) => x.kind === a.kind && x.principalType === principalType && x.scope === scope)
+    if (h) h.count++
+    else r.holders.push({ kind: a.kind, principalType, scope, count: 1 })
   }
 }
 const memberOfCount = (id: string) => [...members.values()].filter((m) => m.has(id)).length

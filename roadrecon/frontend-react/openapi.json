@@ -7679,7 +7679,11 @@
       "title": "Allowedresourceactions"
      },
      "holders": {
-      "$ref": "#/components/schemas/RoleHolderCounts"
+      "items": {
+       "$ref": "#/components/schemas/RoleHolderCount"
+      },
+      "type": "array",
+      "title": "Holders"
      },
      "raw": {
       "additionalProperties": true,
@@ -7703,44 +7707,49 @@
     ],
     "title": "RoleDetail"
    },
-   "RoleHolderCounts": {
+   "RoleHolderCount": {
     "properties": {
-     "user": {
-      "type": "integer",
-      "title": "User"
+     "kind": {
+      "type": "string",
+      "enum": [
+       "active",
+       "eligible"
+      ],
+      "title": "Kind"
      },
-     "group": {
-      "type": "integer",
-      "title": "Group"
+     "principalType": {
+      "type": "string",
+      "enum": [
+       "user",
+       "group",
+       "servicePrincipal",
+       "unknown"
+      ],
+      "title": "Principaltype"
      },
-     "servicePrincipal": {
-      "type": "integer",
-      "title": "Serviceprincipal"
+     "scope": {
+      "type": "string",
+      "enum": [
+       "directory",
+       "administrativeUnit",
+       "application"
+      ],
+      "title": "Scope"
      },
-     "directory": {
+     "count": {
       "type": "integer",
-      "title": "Directory"
-     },
-     "administrativeUnit": {
-      "type": "integer",
-      "title": "Administrativeunit"
-     },
-     "application": {
-      "type": "integer",
-      "title": "Application"
+      "title": "Count"
      }
     },
     "type": "object",
     "required": [
-     "user",
-     "group",
-     "servicePrincipal",
-     "directory",
-     "administrativeUnit",
-     "application"
+     "kind",
+     "principalType",
+     "scope",
+     "count"
     ],
-    "title": "RoleHolderCounts",
-    "description": "Assignments (active and eligible) by principal type and by scope."
+    "title": "RoleHolderCount",
+    "description": "Number of direct assignments of a role with this kind, principal type and scope."
    },
    "RoleRow": {
     "properties": {

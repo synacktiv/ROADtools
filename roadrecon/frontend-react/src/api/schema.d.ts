@@ -1682,29 +1682,35 @@ export interface components {
             eligibleCount: number;
             /** Allowedresourceactions */
             allowedResourceActions: string[];
-            holders: components["schemas"]["RoleHolderCounts"];
+            /** Holders */
+            holders: components["schemas"]["RoleHolderCount"][];
             /** Raw */
             raw: {
                 [key: string]: unknown;
             };
         };
         /**
-         * RoleHolderCounts
-         * @description Assignments (active and eligible) by principal type and by scope.
+         * RoleHolderCount
+         * @description Number of direct assignments of a role with this kind, principal type and scope.
          */
-        RoleHolderCounts: {
-            /** User */
-            user: number;
-            /** Group */
-            group: number;
-            /** Serviceprincipal */
-            servicePrincipal: number;
-            /** Directory */
-            directory: number;
-            /** Administrativeunit */
-            administrativeUnit: number;
-            /** Application */
-            application: number;
+        RoleHolderCount: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "active" | "eligible";
+            /**
+             * Principaltype
+             * @enum {string}
+             */
+            principalType: "user" | "group" | "servicePrincipal" | "unknown";
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "directory" | "administrativeUnit" | "application";
+            /** Count */
+            count: number;
         };
         /** RoleRow */
         RoleRow: {

@@ -14,7 +14,7 @@ from roadtools.roadlib.metadef import database as d
 
 from ..common import (DIRECTORY, PRIVILEGED_ROLES, Db, F, json_text, mfa_summary, not_found, paginate, register,
                       resolve_refs)
-from ..models import Page, RoleAssignmentQuery, RoleAssignmentRow, RoleDetail, RoleQuery, RoleRow
+from ..models import Page, RoleAssignmentQuery, RoleAssignmentRow, RoleDetail, RoleHolderCount, RoleQuery, RoleRow
 
 router = APIRouter(prefix='/api', tags=['roles'])
 
@@ -160,14 +160,12 @@ def get_role(id: str, db: Db) -> RoleDetail:
         raise not_found('Role')
     obj = db.scalar(select(RD).where(RD_ID == id)) or db.scalar(select(DR).where(DR.roleTemplateId == id))
     actions = [a for p in (getattr(obj, 'rolePermissions', None) or []) for a in (p.get('allowedResourceActions') or [])]
-    holders = dict.fromkeys(['user', 'group', 'servicePrincipal', 'directory', 'administrativeUnit', 'application'], 0)
     scope_key = {'Directory': 'directory', 'Administrative unit': 'administrativeUnit', 'Application': 'application'}
-    for ptype, stype, n in db.execute(_assignments_select().where(ra.c.role_id == id, ra.c.via.is_(None))
-                                      .with_only_columns(PRINCIPAL_TYPE, SCOPE_TYPE, func.count())
-                                      .group_by(PRINCIPAL_TYPE, SCOPE_TYPE)):
-        if ptype:
-            holders[ptype] += n
-        holders[scope_key[stype]] += n
+    holders = [RoleHolderCount(kind=kind, principalType=ptype or 'unknown', scope=scope_key[stype], count=n)
+               for kind, ptype, stype, n in db.execute(
+                   _assignments_select().where(ra.c.role_id == id, ra.c.via.is_(None))
+                   .with_only_columns(ra.c.kind, PRINCIPAL_TYPE, SCOPE_TYPE, func.count())
+                   .group_by(ra.c.kind, PRINCIPAL_TYPE, SCOPE_TYPE))]
     return RoleDetail(**_role_row(row), allowedResourceActions=actions, holders=holders, raw=obj.as_dict())
 
 

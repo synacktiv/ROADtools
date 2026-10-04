@@ -430,19 +430,17 @@ class RoleQuery(PageQuery):
     hasAssignments: bool | None = None
 
 
-class RoleHolderCounts(BaseModel):
-    """Assignments (active and eligible) by principal type and by scope."""
-    user: int
-    group: int
-    servicePrincipal: int
-    directory: int
-    administrativeUnit: int
-    application: int
+class RoleHolderCount(BaseModel):
+    """Number of direct assignments of a role with this kind, principal type and scope."""
+    kind: Kind
+    principalType: Literal['user', 'group', 'servicePrincipal', 'unknown']
+    scope: Literal['directory', 'administrativeUnit', 'application']
+    count: int
 
 
 class RoleDetail(RoleRow):
     allowedResourceActions: list[str]
-    holders: RoleHolderCounts
+    holders: list[RoleHolderCount]
     raw: Raw
 
 

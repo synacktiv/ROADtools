@@ -15,6 +15,10 @@ LINKS = [(d.lnk_role_member_user, 'User'), (d.lnk_role_member_serviceprincipal, 
          (d.lnk_role_member_group, 'Group')]
 
 
+def tally(holders, **match):
+    return sum(h.count for h in holders if all(getattr(h, k) == v for k, v in match.items()))
+
+
 def roles(client, **params):
     r = client.get('/api/roles', params=params)
     assert r.status_code == 200, r.text
@@ -107,10 +111,11 @@ def test_role_detail(client, db):
     types = Counter('user' if db.get(d.User, p) else 'servicePrincipal' if db.get(d.ServicePrincipal, p) else 'group'
                     for _, _, p, _ in mine)
     h = role.holders
-    assert (h.user, h.group, h.servicePrincipal) == (types['user'], types['group'], types['servicePrincipal'])
-    assert h.directory == len(mine) and h.administrativeUnit == h.application == 0
+    assert all(tally(h, principalType=t) == types[t] for t in ('user', 'group', 'servicePrincipal'))
+    assert tally(h, scope='directory') == len(mine) and tally(h, scope='administrativeUnit') == tally(h, scope='application') == 0
+    assert tally(h, kind='active') == role.activeCount and tally(h, kind='eligible') == role.eligibleCount
     ua = RoleDetail(**client.get('/api/roles/fe930be7-5e62-47db-91af-98c3a49a38b1').json())
-    assert (ua.holders.administrativeUnit, ua.holders.group, ua.eligibleCount) == (1, 1, 1)
+    assert (tally(ua.holders, scope='administrativeUnit'), tally(ua.holders, principalType='group'), ua.eligibleCount) == (1, 1, 1)
     assert client.get('/api/roles/nope').status_code == 404
 
 
@@ -237,4 +242,5 @@ def test_old_dump_fallback(old_dump_client, db):
     assert {(r.role.id, r.principal.id) for r in a.items} == lnk and a.total == len(lnk)
     assert all(r.kind == 'active' and r.scope.type == 'keyword' for r in a.items)
     ga = RoleDetail(**old_dump_client.get(f'/api/roles/{GA}').json())
-    assert ga.activeCount == ga.holders.user + ga.holders.servicePrincipal == 2 and ga.allowedResourceActions == []
+    assert ga.activeCount == tally(ga.holders, principalType='user') + tally(ga.holders, principalType='servicePrincipal') == 2
+    assert ga.allowedResourceActions == []

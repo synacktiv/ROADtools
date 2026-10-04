@@ -4,7 +4,6 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { IconClockHour4, IconPencilCog, IconShieldBolt, IconWorld } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DataTable, type FilterDef } from '@/components/data-table'
 import { ObjectLink, TYPE_LABEL, TypeGlyph } from '@/components/object-link'
@@ -14,7 +13,7 @@ import { Flag, flag, KindBadge, SourceIcon } from '@/components/badges'
 import { ListPage, Dash, orDash, toRef } from '@/components/page-parts'
 import { ObjectPolicies } from '@/components/policy-match-list'
 import { useApi } from '@/api/client'
-import type { ObjectType, RoleAssignmentQuery, RoleAssignmentRow, RoleQuery, RoleRow } from '@/api/types'
+import type { ObjectType, RoleAssignmentQuery, RoleAssignmentRow, RoleDetail, RoleQuery, RoleRow } from '@/api/types'
 import { useSettings } from '@/lib/settings'
 import { useSetCrumb } from '@/lib/crumb'
 import { cn } from '@/lib/utils'
@@ -210,11 +209,11 @@ function AssignmentSummary({ active, eligible }: { active: number; eligible: num
 
 type Tally = { key: string; label: string; icon: React.ReactNode; active: number; eligible: number }
 
-function tally(rows: RoleAssignmentRow[], buckets: Omit<Tally, 'active' | 'eligible'>[], keyOf: (r: RoleAssignmentRow) => string): Tally[] {
-  return buckets.map((b) => {
-    const mine = rows.filter((r) => keyOf(r) === b.key)
-    return { ...b, active: mine.filter((r) => r.kind === 'active').length, eligible: mine.filter((r) => r.kind === 'eligible').length }
-  })
+type Holder = RoleDetail['holders'][number]
+
+function tally(rows: Holder[], buckets: Omit<Tally, 'active' | 'eligible'>[], keyOf: (r: Holder) => string): Tally[] {
+  const sum = (key: string, kind: Holder['kind']) => rows.reduce((n, r) => n + (keyOf(r) === key && r.kind === kind ? r.count : 0), 0)
+  return buckets.map((b) => ({ ...b, active: sum(b.key, 'active'), eligible: sum(b.key, 'eligible') }))
 }
 
 const glyph = (t: ObjectType) => <TypeGlyph type={t} className="text-muted-foreground" />
@@ -243,10 +242,8 @@ function Breakdown({ title, items, total }: { title: string; items: Tally[]; tot
 }
 
 /** Who holds the role and where, from the direct assignments (groups are not expanded). */
-function HolderBreakdown({ roleId, active, eligible }: { roleId: string; active: number; eligible: number }) {
-  // ponytail: one large page; a real backend should return these counts with the role.
-  const { data } = useApi('/api/role-assignments', { query: { roleId, page_size: 1000 } })
-  const rows = data?.items ?? []
+function HolderBreakdown({ rows, active, eligible }: { rows: Holder[]; active: number; eligible: number }) {
+  const total = rows.reduce((n, r) => n + r.count, 0)
   return (
     <Card className="gap-4 py-4">
       <CardHeader className="px-4">
@@ -254,34 +251,28 @@ function HolderBreakdown({ roleId, active, eligible }: { roleId: string; active:
       </CardHeader>
       <CardContent className="flex flex-col gap-5 px-4 text-base">
         <AssignmentSummary active={active} eligible={eligible} />
-        {!data ? (
-          <Skeleton className="h-40 w-full" />
-        ) : (
-          <>
-            <Breakdown
-              title="By principal type"
-              total={rows.length}
-              items={tally(
-                rows,
-                (['user', 'group', 'servicePrincipal'] as const).map((t) => ({ key: t, label: `${TYPE_LABEL[t]}s`, icon: glyph(t) })),
-                (r) => r.principal.type,
-              )}
-            />
-            <Breakdown
-              title="By scope"
-              total={rows.length}
-              items={tally(
-                rows,
-                [
-                  { key: 'keyword', label: 'Directory', icon: <IconWorld className="size-4 shrink-0 text-muted-foreground" stroke={1.75} aria-hidden /> },
-                  { key: 'administrativeUnit', label: 'Administrative units', icon: glyph('administrativeUnit') },
-                  { key: 'application', label: 'Applications', icon: glyph('application') },
-                ],
-                (r) => r.scope.type,
-              )}
-            />
-          </>
-        )}
+        <Breakdown
+          title="By principal type"
+          total={total}
+          items={tally(
+            rows,
+            (['user', 'group', 'servicePrincipal'] as const).map((t) => ({ key: t, label: `${TYPE_LABEL[t]}s`, icon: glyph(t) })),
+            (r) => r.principalType,
+          )}
+        />
+        <Breakdown
+          title="By scope"
+          total={total}
+          items={tally(
+            rows,
+            [
+              { key: 'directory', label: 'Directory', icon: <IconWorld className="size-4 shrink-0 text-muted-foreground" stroke={1.75} aria-hidden /> },
+              { key: 'administrativeUnit', label: 'Administrative units', icon: glyph('administrativeUnit') },
+              { key: 'application', label: 'Applications', icon: glyph('application') },
+            ],
+            (r) => r.scope,
+          )}
+        />
       </CardContent>
     </Card>
   )
@@ -329,7 +320,7 @@ export function RolePage() {
           ['Template ID', r.templateId !== r.id ? r.templateId : null, { mono: true, copy: r.templateId }],
         ]
       }
-      aside={holders > 0 && r && <HolderBreakdown roleId={id} active={r.activeCount} eligible={r.eligibleCount} />}
+      aside={holders > 0 && r && <HolderBreakdown rows={r.holders} active={r.activeCount} eligible={r.eligibleCount} />}
       tabs={[
         {
           key: 'assignments',
