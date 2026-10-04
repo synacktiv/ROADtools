@@ -335,13 +335,13 @@ gm_user, gm_group = d.lnk_group_member_user, d.lnk_group_member_group
 
 def descendant_groups(group_id: str):
     """CTE (column `id`): the group and every group nested under it, at any depth. Cycle-safe (UNION)."""
-    cte = select(literal(group_id).label('id')).cte('descendants', recursive=True)
+    cte = select(literal(group_id).label('id')).cte(recursive=True)  # anonymous: several may meet in one query
     return cte.union(select(gm_group.c.childGroup).join(cte, gm_group.c.Group == cte.c.id))
 
 
 def ancestor_groups(seed: Select):
     """CTE (column `id`): groups listed by `seed` (a one-column select of group ids) and all their parents."""
-    cte = seed.cte('ancestors', recursive=True)
+    cte = seed.cte(recursive=True)
     return cte.union(select(gm_group.c.Group).join(cte, gm_group.c.childGroup == cte.c[0]))
 
 

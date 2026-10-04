@@ -16,7 +16,8 @@ router = APIRouter(prefix='/api', tags=['users'])
 
 MFA_LABELS = {
     'PhoneAppNotification': 'Authenticator notification', 'PhoneAppOTP': 'Authenticator code', 'OneWaySms': 'Text message',
-    'TwoWayVoiceMobile': 'Phone call', 'Fido': 'FIDO2 key', 'WindowsHello': 'Windows Hello',
+    'TwoWayVoiceMobile': 'Phone call', 'TwoWayVoiceOffice': 'Office phone call',
+    'TwoWayVoiceAlternateMobile': 'Alternate phone call', 'Email': 'Email', 'Fido': 'FIDO2 key', 'WindowsHello': 'Windows Hello',
 }
 
 U = d.User
