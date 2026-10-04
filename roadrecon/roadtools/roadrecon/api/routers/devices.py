@@ -1,4 +1,6 @@
 """S3 devices and administrative units."""
+import base64
+import binascii
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -67,6 +69,15 @@ def _count(db, table, col: str, oid: str) -> int:
     return db.scalar(select(func.count()).select_from(table).where(table.c[col] == oid))
 
 
+
+def recovery_key(material) -> str:
+    """The dump stores the recovery password base64-encoded (the old GUI ran atob on it)."""
+    try:
+        return base64.b64decode(material or '', validate=True).decode('ascii')
+    except (binascii.Error, UnicodeDecodeError):
+        return str(material or '')
+
+
 @router.get('/devices')
 def list_devices(q: Annotated[DeviceQuery, Query()], db: Db) -> Page[DeviceRow]:
     stmt = select(Dev)
@@ -93,7 +104,7 @@ def get_device(id: str, db: Db) -> DeviceDetail:
         raise not_found('Device')
     owner_ids = db.scalars(select(d.lnk_device_owner.c.User).where(d.lnk_device_owner.c.Device == id)).all()
     refs = resolve_refs(db, owner_ids)
-    keys = [BitLockerKey(keyIdentifier=str(k.get('keyIdentifier') or ''), keyMaterial=str(k.get('keyMaterial') or ''),
+    keys = [BitLockerKey(keyIdentifier=str(k.get('keyIdentifier') or ''), keyMaterial=recovery_key(k.get('keyMaterial')),
                          volumeType=_volume_type(k.get('volumeType')),
                          creationTime=iso(k.get('creationTime')))
             for k in dev.bitLockerKey or [] if isinstance(k, dict)]

@@ -11,7 +11,7 @@ from typing import Annotated, Any
 from urllib.parse import unquote
 
 from fastapi import Depends, HTTPException, Request
-from sqlalchemy import Select, and_, func, inspect, literal, not_, or_, select, true, union
+from sqlalchemy import Select, Text, and_, func, type_coerce, inspect, literal, not_, or_, select, true, union
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.schema import Column
@@ -110,6 +110,11 @@ def parse_filters(raw: list[str], fields: dict[str, F]) -> list[tuple[F, str, st
             raise HTTPException(422, f'Unknown filter operator: {op}')
         out.append((fields[key], op, arg))
     return out
+
+
+def json_text(col):
+    """A roadlib JSON column as plain text, for LIKE (a JSON-typed column would JSON-encode the pattern)."""
+    return type_coerce(col, Text)
 
 
 def _like_escape(s: str) -> str:
@@ -211,7 +216,9 @@ def paginate(db: Session, stmt: Select, q: PageQuery, *, resource: str | None = 
     key = q.sort or next(iter(sorts), None)
     if key:
         col = sorts[key]
-        stmt = stmt.order_by(col.desc() if q.order == 'desc' else col.asc())
+        # Primary key as tie-breaker keeps paging stable on columns with many equal values.
+        pks = [c for c in stmt.selected_columns if getattr(c, 'primary_key', False) and c is not col]
+        stmt = stmt.order_by(col.desc() if q.order == 'desc' else col.asc(), *pks)
     stmt = stmt.limit(q.page_size).offset((q.page - 1) * q.page_size)
     res = db.execute(stmt)
     rows = res.scalars().all() if len(stmt.column_descriptions) == 1 else res.all()
@@ -401,7 +408,7 @@ def is_privileged_permission(value: str | None) -> bool:
 
 
 __all__ = [
-    'Db', 'F', 'FIELDS', 'register', 'catalog', 'paginate', 'paginate_list', 'has_table', 'not_found', 'iso',
+    'Db', 'F', 'FIELDS', 'register', 'catalog', 'paginate', 'paginate_list', 'sql_clause', 'json_text', 'has_table', 'not_found', 'iso',
     'DIRECTORY', 'keyword', 'value', 'unresolved', 'resolve_refs', 'resolve_ref', 'resolve_appids',
     'descendant_groups', 'ancestor_groups', 'member_groups_select', 'transitive_groups_of',
     'mfa_summary', 'PRIVILEGED_ROLES', 'is_privileged_permission',
