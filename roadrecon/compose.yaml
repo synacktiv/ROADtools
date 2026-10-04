@@ -1,0 +1,44 @@
+# Dev environment for the new GUI. Nothing is installed on the host.
+#   podman compose --profile backend up     api on :8000 (internal), web on http://127.0.0.1:5173
+#   VITE_MOCK=1 podman compose up web       frontend on mock data only
+#   podman compose run --rm py pytest roadrecon/tests -q
+#   podman compose run --rm node npm run build
+# Worktree agents: podman compose -p rr-<worktree> run --rm py|node ...
+x-py: &py
+  image: localhost/roadrecon-dev-py
+  build: { context: ., dockerfile: Containerfile }
+  volumes: ["..:/src:z"]
+  working_dir: /src
+  environment:
+    ROADRECON_DB: /src/roadrecon/.dev/roadrecon.db
+x-node: &node
+  image: docker.io/library/node:22
+  working_dir: /src/roadrecon/frontend-react
+  volumes:
+    - "..:/src:z"
+    - "node_modules:/src/roadrecon/frontend-react/node_modules"
+    - "npm-cache:/root/.npm"
+services:
+  api:
+    <<: *py
+    command: >-
+      uvicorn roadtools.roadrecon.api.app:create_app --factory --reload
+      --reload-dir /src/roadrecon/roadtools --reload-dir /src/roadlib/roadtools
+      --host 0.0.0.0 --port 8000
+    profiles: [backend]
+  web:
+    <<: *node
+    command: sh -c "npm ci && npx vite --host 0.0.0.0"
+    environment:
+      API_URL: http://api:8000
+      VITE_MOCK: ${VITE_MOCK:-0}
+    ports: ["127.0.0.1:5173:5173"]
+  py:
+    <<: *py
+    profiles: [tools]
+  node:
+    <<: *node
+    profiles: [tools]
+volumes:
+  node_modules: {}
+  npm-cache: { name: roadrecon-npm-cache }

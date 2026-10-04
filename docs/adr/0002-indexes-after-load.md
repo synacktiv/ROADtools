@@ -1,0 +1,3 @@
+# Create indexes after the dump instead of declaring them in roadlib
+
+Indexes are created with `CREATE INDEX IF NOT EXISTS` by the GUI at startup and by `gather` once all data is loaded, not declared on the roadlib `Table` objects. Declared indexes would only reach freshly created databases (`create_all` never adds indexes to existing tables) and would slow down the bulk inserts of `gather` on multi-million-row link tables; building them in one pass afterwards is cheaper and also upgrades existing `roadrecon.db` files without any schema change. `--read-only` skips it for evidence databases that must not be modified.

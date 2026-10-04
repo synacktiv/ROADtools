@@ -23,3 +23,6 @@ geckodriver
 # Include roadtx data file
 !roadtx/roadtools/roadtx/*.json
 roadlib/roadtools/roadlib/*.xml
+# New React GUI config and API spec
+!roadrecon/frontend-react/*.json
+!roadrecon/frontend-react/src/**/*.json

@@ -1,0 +1,288 @@
+# ROADrecon GUI next — roadmap
+
+New ROADrecon GUI: FastAPI backend + React/shadcn frontend, reading the existing `roadrecon.db` unchanged.
+Branch: `gui-next`. Vocabulary: [CONTEXT.md](CONTEXT.md). Decisions: [docs/adr](docs/adr).
+
+## How to run (from `roadrecon/`, nothing installed on the host)
+
+```sh
+podman compose run --rm py python roadrecon/tests/gendb.py -o roadrecon/.dev/roadrecon.db   # synthetic DB
+podman compose --profile backend up            # api + web on http://127.0.0.1:5173
+VITE_MOCK=1 podman compose up web              # frontend on mock data only
+podman compose run --rm py pytest roadrecon/tests -q
+podman compose run --rm node npm run build
+```
+
+Worktree agents: `podman compose -p rr-<worktree> run --rm py|node ...` (no published ports, isolated project).
+
+## Conventions (summary)
+
+- Every list returns `Page[T] = {items, total, page, page_size}`; params `page`, `page_size` (≤500), `q`, `sort`, `order` + typed filters.
+- Relation tabs reuse the target type's list endpoint with a relation filter (`/api/users?memberOf=<group>&transitive=true`).
+- Every reference to an object is an `ObjectRef {id, type, displayName, sub?}` and renders as an `ObjectLink`.
+- Indexes are additive (`CREATE INDEX IF NOT EXISTS`), never schema changes. `--read-only` touches nothing.
+- Routes are plain `def`; no `create=True` on `database.init` (it drops all tables).
+
+---
+
+## Phase 0 — Setup
+- [x] Branch `gui-next` from master `f72a752`
+- [x] `.gitignore` negation for `roadrecon/frontend-react/*.json`
+- [x] `.claude/` in `.git/info/exclude`, `worktree.baseRef: head`
+- [x] `CONTEXT.md` glossary, ADR 0001 (live CA scope), ADR 0002 (indexes after load)
+- [x] `roadrecon/compose.yaml` + `roadrecon/Containerfile`, dev image built
+- [x] `ROADMAP.md`
+
+## Phase 1 — Component inventory
+- [x] Needed components mapped to shadcn (appendix A)
+- [x] Design plan via `frontend-design` skill (tokens: colour, type, layout, principles) — appendix B (revised to glass)
+
+## Phase 2 — Frontend mockup
+- [x] Scaffold `roadrecon/frontend-react` (Vite 8, React 19, TS 5.9, Tailwind v4, shadcn radix-nova, @fontsource)
+- [x] Shell: inset sidebar, breadcrumb, ⌘K command palette, theme switch
+- [x] Custom components (appendix A, "custom")
+- [x] Hand-written draft types `src/api/types.ts` + typed fixtures + mock `fetch` (`VITE_MOCK=1`)
+- [x] All list pages on mock data
+- [x] All object pages and tabs on mock data
+- [x] Policies list + detail (PolicyFlow) + in-scope users + named locations
+- [x] Screenshot review / self-critique pass (Playwright, both themes) — redesigned to the glass direction
+- [x] Bigger UI (16 px base), Tabler icons, two-pane object pages, visual indicators, advanced filter builder
+- [x] Per-page enhancement pass with the Taste skills (redesign / taste / minimalist), one agent per page (wave 1)
+- [x] Shared:
+  - real ROADrecon logo and favicon, bigger navbar;
+  - object page header shows each fact once;
+  - Raw tab with a collapsible, colourised JSON tree;
+  - table cell copy, CSV/JSON export (page or all rows), a Columns menu (hide or add, remembered per list);
+  - column-header menus (sort, search or pick values, hide) tied to the filter chips;
+  - expandable rows.
+- [x] Wave 2 per page: no duplicated info, markers next to names, `meta.filter` on columns, extra hidden columns, new spec fields, expandable Conditional Access rows
+- [x] World map component for named locations (`components/world-map.tsx`, `@svg-maps/world` CC BY 4.0, credited on the map): per-location map as the side card, overview map above the list
+- [ ] **User review of the mockup**
+- [ ] `roadrecon/tests/gendb.py` synthetic DB generator (parallel worktree), validated with `roadrecon plugin policies`
+
+## Phase 3 — API spec
+- [ ] `api/db.py` (engine, pragmas, `ensure_indexes`, read-only), `api/app.py`, `api/__main__.py`
+- [ ] `api/common.py` (paginate, ObjectRef resolver, CTEs, props models) + `tests/test_common.py`
+- [ ] Pydantic models + router stubs for every route below
+- [ ] `openapi.json` exported, `schema.d.ts` generated, frontend switched to generated types (tsc clean)
+- [ ] Tag `spec-v1`
+
+## Phase 4 — Route implementation (fan-out, worktrees)
+
+| Slice | Routes | Pages | Backend | Frontend | Tests |
+|---|---|---|---|---|---|
+| S1 users | `/api/users` (incl. MFA filters), `/api/users/{id}`, `/api/owners` | users, user page, mfa | [ ] | [ ] | [ ] |
+| S2 groups | `/api/groups`, `/api/groups/{id}` | groups, group page | [ ] | [ ] | [ ] |
+| S3 devices + AUs | `/api/devices[/{id}]`, `/api/administrative-units[/{id}]` | devices, AUs | [ ] | [ ] | [ ] |
+| S4 SPs + apps | `/api/service-principals[/{id}]`, `/api/applications[/{id}]` | SPs, apps | [ ] | [ ] | [ ] |
+| S5 policies | `/api/policies[/{id}]`, `/api/policies/{id}/users`, `/api/policies/affecting/{type}/{id}`, `/api/named-locations[/{id}]` | policies, named locations, Policies tab | [ ] | [ ] | [ ] |
+| S6 roles | `/api/roles[/{id}]`, `/api/role-assignments` | roles, role page, Roles tabs | [ ] | [ ] | [ ] |
+| S7 grants | `/api/app-role-assignments`, `/api/oauth2-grants` | app roles, OAuth2 grants, grant tabs | [ ] | [ ] | [ ] |
+| S8 governance | `/api/azure-role-assignments`, `/api/pim-assignments`, `/api/groups/{id}/pim`, `/api/access-package-policies` | Azure / PIM / access package tabs | [ ] | [ ] | [ ] |
+| S9 meta | `/api/stats`, `/api/tenant`, `/api/search` | dashboard, ⌘K, settings | [ ] | [ ] | [ ] |
+
+Batch 1: S5, S1, S2, S3, S4. Batch 2: S6, S7, S8, S9. Code review after each batch.
+
+## Phase 5 — Integration and parity
+
+Performance and compatibility
+- [ ] 50k-user synthetic DB: list, relation and in-scope endpoints < 300 ms
+- [ ] DB without PIM/IG/AZ tables returns empty results, not errors
+- [ ] `--read-only` on a read-only file works
+- [ ] Side-by-side with the Flask GUI on the same DB (optional `legacy` compose service)
+
+Parity with the old GUI — lists
+- [ ] Users (name, UPN, enabled, mail, department, last password change, job title, mobile, source, type, MFA)
+- [ ] Groups (name, description, type, source, mail, public, role assignable, dynamic)
+- [ ] Devices (name, manufacturer, enabled, model, OS, version, trust type, compliant, managed, rooted)
+- [ ] Service principals (name, type, publisher, Microsoft app, passwords, keys, roles, OAuth2 permissions, custom owner)
+- [ ] Applications (name, multitenant, homepage, public client, implicit flow, passwords, keys, roles, permissions, custom owner)
+- [ ] Administrative units (name, description, membership rule)
+- [ ] Application roles (principal, type, application, role, description)
+- [ ] OAuth2 permissions (consent type, principal, client, resource, scope, expiry)
+- [ ] MFA (name, UPN, enabled, per-user MFA, methods count, FIDO, app, phone, method icons)
+- [ ] Directory roles (per role: principal, scope, active/eligible, type, UPN, source, status, MFA)
+
+Parity — object pages
+- [ ] User: overview, groups, roles, owned devices/SPs/apps/groups, PIM (direct + via groups), access packages, Azure roles, policies, raw
+- [ ] Group: overview, parents, roles, owners (users + SPs), members (users, groups, SPs, devices), PIM roles, PIM rights, Azure roles, raw
+- [ ] Device: overview, owners, BitLocker keys, raw
+- [ ] Administrative unit: overview, members (users, groups, devices), raw
+- [ ] Service principal: overview, owners, roles, groups, app roles given / received, defined permissions, Azure roles, metadata, raw
+- [ ] Application: overview, owners, defined permissions, metadata, raw, link to service principal
+
+Parity — other
+- [ ] Dashboard: stats, directory settings, tenant information + domains, authorization policy
+- [x] Settings page removed at the user's request (2026-10-04). Where each setting went:
+  - theme: toggle in the header;
+  - page size: the table footer;
+  - MFA columns: the Columns menu;
+  - Entra admin center links: always shown;
+  - blue-team badge colours: dropped (red-team colours are the default);
+  - paging: always server-side.
+
+New features
+- [ ] Policies list + detail with every GUID resolved to a link
+- [ ] Users in scope of a policy (paginated, include/exclude)
+- [ ] Policies tab on user, group, role, service principal, application (with "via")
+- [ ] Named locations list + detail with the policies using them
+- [ ] Owner service principals shown (old GUI only showed owner users)
+- [ ] Every object mention is a link (incl. scopes, grants, policy conditions)
+- [ ] ⌘K global search, dark mode
+
+## Phase 6 — Switch
+- [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
+- [ ] `gather` calls `ensure_indexes` before policyanalysis
+- [ ] `roadrecon/setup.py`: add fastapi + uvicorn, drop flask / marshmallow deps, `sqlalchemy>=2`
+- [ ] Vite `outDir` → `roadtools/roadrecon/dist_gui` (keep `.gitkeep`)
+- [ ] `azure-pipelines.yml` builds `frontend-react`
+- [ ] Delete `server.py`, `roadrecon/frontend/`, mock fetch; rewrite `tests/test_guiserver.py`
+- [ ] README / docs
+
+## Known approximations (shown as such in the UI)
+- Guest and external user types: inferred from `userType`.
+- App bundles (`Office365`, `MicrosoftAdminPortals`) are not expanded to their apps.
+- Device filter rules and service principal filter rules are shown, not evaluated.
+- Scope through eligible roles is flagged as eligible-only.
+
+## Later (deliberately skipped)
+- Clean up the `mfa_` column-id prefix in `pages/users.tsx`. It worked around a column-visibility key bug that has since been fixed in `DataTable`.
+- Unify the status marker icons across pages in a single shared helper (no MFA, not compliant, disabled, risky).
+- Code-split the bundle (about 740 kB) if the start-up time matters.
+- FTS5 trigram search if `LIKE '%q%'` gets slow on very large tenants (>500k users)
+- Column-compat shim for dumps made by very old roadlib versions
+- policyanalysis fixes (Postgres `on_conflict`, roles via groups, duplicates, `ALLUSERS` in exclude)
+- Postgres compose service + test run
+- Playwright smoke test
+- Collapsible JSON tree for the raw tab
+- Azure resource / subscription pages
+
+---
+
+## Appendix A — Component inventory
+
+Existing shadcn registry components, used as is:
+
+| Need | shadcn component |
+|---|---|
+| App navigation, mobile navigation | `sidebar` (includes `sheet`) |
+| Location in the app | `breadcrumb` |
+| Global search (⌘K) | `command`, `kbd`, `dialog` |
+| Tables | `table` + TanStack Table |
+| Table toolbar | `input-group` (search), `button`, `button-group` (pager), `dropdown-menu` (columns), `select` (filters, page size), `switch` (toggle filters), `spinner` (refetch) |
+| Object page | `tabs` (segmented), `card`, `separator`, `scroll-area`, `badge`, `toggle-group` (sub-views) |
+| Overview page | `card` (stat cards, sections), `item` |
+| Previews and hints | `hover-card`, `tooltip` |
+| Loading and empty states | `skeleton`, `empty` |
+| Feedback (copy id) | `sonner` |
+| Settings | `field`, `switch`, `select` |
+| Raw JSON, policy sections | `collapsible` |
+
+Not used: `pagination` (link-based; the table footer needs buttons + page size), `chart` (no charts in scope), `form` (no forms).
+
+Custom components (no shadcn equivalent):
+
+| Component | Why custom | Built from |
+|---|---|---|
+| `ObjectLink` | Type glyph + name + hover preview, used for every reference | `hover-card`, router `Link` |
+| `TypeGlyph` | One consistent mark per object type | inline SVG |
+| `DataTable` | Server-side paging/sort/search with state in the URL; also used for every relation tab | `table`, TanStack Table, toolbar components |
+| `ObjectPage` | Header (glyph, name, badges, copyable id, portal link) + tabs with counts, tab in the URL | `tabs`, `badge`, `button` |
+| `PropertyList` | Label/value grid with formatters (bool, date, GUID, lists) | plain markup |
+| `JsonView` | Raw tab | `pre` + copy button |
+| `MfaMethods` | Method icons with the default method marked | `tooltip`, lucide icons |
+| `CredentialList` | Password/key credentials with expiry state | `table`, `badge` |
+| `PolicyFlow` | Who → target resources → conditions → grant/session, include/exclude chips | `ObjectLink`, `badge` |
+| `PolicyMatchList` | Policies concerning an object, with side and "via" chain | `ObjectLink`, `badge` |
+| `StateBadge` | Policy state, enabled/disabled, active/eligible, approval (blue team aware) | `badge` |
+| `AzureScope` | Port of `utils.parseAzureScope` | plain markup |
+
+## Appendix B — Design plan (frontend-design)
+
+**Brief.** Modern, glassy and minimal, inspired by a dark shadcn dashboard shot: an inset content panel floating over a vivid blurred gradient, translucent surfaces, hairline borders, segmented tabs, stat cards, and colour used only for meaning. The audience is pentesters and blue teamers going through a tenant dump. Its job: get from object to object fast, and see what applies to an object and what excludes it.
+
+The first direction (road-signage palette with Overpass) was replaced on 2026-10-04, at the user's request, by the glass direction below. Two parts of it carry information and were kept: the object-type glyphs and the policy route.
+
+**Colour.** UI chrome is greyscale only. Hue is reserved for meaning.
+
+| Token | Dark | Light | Use |
+|---|---|---|---|
+| `background` | `#09090b` | `#f4f4f5` | page; the glass panel sits on it |
+| `card` | white 3.5 % | white 62 % | translucent surfaces (`.glass`: blur 16 px plus a top highlight) |
+| `border` | white 9 % | black 8 % | hairlines |
+| `muted-foreground` | `#a1a1aa` | `#71717a` | secondary text |
+| `guide` | `#4ade80` | `#15803d` | applies, enabled, active |
+| `warning` | `#fbbf24` | `#b45309` | report-only, eligible, approximate |
+| `regulatory` | `#f87171` | `#dc2626` | block, excluded, disabled, no MFA |
+| backdrop | teal `#14b8a6`, indigo `#6366f1`, magenta `#db2777`, red `#ef4444` | same | fixed, blurred 80 px, 30 % opacity in dark and 35 % in light |
+
+**Type.**
+- Geist Variable for all text and Geist Mono for GUIDs, IP ranges and JSON, bundled via @fontsource so the app works offline.
+- Base size 16 px (the user asked for a bigger UI). Scale: 14 / 16 (body) / 18 / 20 / 24 / 30.
+- Weights: 400, 500 and 600.
+- Sentence case everywhere.
+
+**Icons.** Tabler Icons (`@tabler/icons-react`, picked by the user from shadcn.io/icons; stroke 1.75). shadcn's `iconLibrary` is set to `tabler`, so the shadcn internals use Tabler too.
+
+One icon per object type, carried by every reference:
+
+| Object | Icon |
+|---|---|
+| user | `IconUser` |
+| group | `IconUsersGroup` |
+| device | `IconDeviceLaptop` |
+| service principal | `IconRobot` |
+| application | `IconAppWindow` |
+| administrative unit | `IconHierarchy2` |
+| directory role | `IconCrown` |
+| policy | `IconShieldLock` |
+| named location | `IconMapPin` |
+| unresolved reference | `IconHelpCircle` |
+
+The logo is `IconRoad`.
+
+**Layout.**
+- shadcn `sidebar` uses the `inset` variant. The content panel is translucent with `backdrop-blur` and a 1 px ring.
+- The header holds the sidebar trigger, the breadcrumb, a ⌘K search and the theme toggle. Dark is the default theme.
+- Lists are a toolbar plus a table inside a glass frame (rounded-xl).
+- Object pages follow the frontend-ng detail view: a header, then two panes.
+  - Left: a sticky glass properties panel (stacked label / value, visual values) and an optional `aside` card.
+  - Right: segmented `tabs` with counts for the relations.
+  - The raw object opens in a shadcn `sheet`.
+- Visual indication is preferred over text: `Flag` (with risky colouring), `StatusDot`, `SourceIcon`, method icons, meters.
+- The overview page has 4 stat `card`s, a Conditional Access state bar, a role assignment bar list, then tenant settings.
+
+**Principles.**
+1. shadcn components first. Custom code only where shadcn has nothing: glyphs, `PolicyFlow`, property rows, data table glue.
+2. Every object mention is an `ObjectLink` with a hover preview.
+3. Colour means something or it is not used.
+4. One expressive element: the policy route (a dashed amber line for report-only, grey for disabled, a no-entry stop for block).
+5. Motion only answers an action.
+
+## Appendix C — Spec changes made during the mockup
+
+- Dropped `/api/mfa`. The MFA view is `/api/users` with the `mfa`, `perUserMfa` and `excludeMailboxOnly` filters, which reuses `UserRow`.
+- Added `/api/owners?ownerOf=`: owners of any object, users and service principals in one list (the old GUI hid SP owners).
+- `PolicyMatch` is now one entry per policy: `effect` (exclusion wins), plus `included[]` and `excluded[]` reasons, each with `condition`, a `via` chain, `approximate` and `eligibleOnly`.
+- **Advanced filtering on every list.**
+  - Every `PageQuery` accepts a repeatable `filter=field:op:value` and `match=all|any`.
+  - Operators: `contains notContains eq ne startsWith endsWith empty notEmpty in notIn gt lt`. `in` / `notIn` take a comma list of URI-encoded items.
+  - New route `GET /api/filters/{resource}` returns `FilterField[]` (`key`, `label`, `type` text|enum|bool|date|number, and `options` for enums, up to 200 distinct values from the dump).
+  - Resources: users, groups, devices, administrative-units, service-principals, applications, roles, role-assignments, app-role-assignments, oauth2-grants, policies, named-locations.
+  - Backend: one shared helper maps each resource's whitelisted fields to columns or expressions. Unknown fields or operators give a 422.
+  - The field catalogues to mirror are in `mock.ts` `FIELDS`.
+- The single-select quick filters were replaced by the filter builder. Relation switches (transitive, expand groups) stay as plain query params.
+- `GroupQuery.memberOfAu` was added for AU member groups.
+- **Fields added on 2026-10-04**, all from real roadrecon.db columns or computed server-side:
+  - `UserDetail.onPremisesSecurityIdentifier`;
+  - `GroupDetail.securityIdentifier` (`cloudSecurityIdentifier`) and `GroupDetail.onPremisesSecurityIdentifier`;
+  - `DeviceDetail.owners: ObjectRef[]`;
+  - `RoleRow.isPrivileged` (fixed set of tier-0 template IDs);
+  - `Tenant.authorizationPolicy.userConsentPolicy | guestRole | guestInvitesFrom`: enums decoded from `permissionGrantPolicyIdsAssignedToDefaultUserRole`, `guestUserRoleId` and `allowInvitesFrom`.
+- `FilterResource` adds `azure-role-assignments`, `pim-assignments` and `access-package-policies`.
+- **Spec requests from the agents, for Phase 3:**
+  - holder counts by principal type and scope on `RoleDetail` (today the page fetches up to 1000 assignments);
+  - policy refs on `NamedLocationRow` (avoids one detail request per row);
+  - publisher, owner tenant, enabled and assignment required on `ApplicationDetail` (copied from the linked service principal);
+  - a privilege tier per permission (replaces name patterns in the UI);
+  - export is client-side today: a streaming `format=csv` on list routes if dumps exceed 50 000 rows. `PolicyUserQuery` extends `UserQuery`, so the in-scope users table has the same filters as the users list.

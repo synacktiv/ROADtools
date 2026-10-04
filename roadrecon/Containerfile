@@ -1,0 +1,8 @@
+# Dev/test image for the new GUI. Source is bind-mounted, see compose.yaml.
+FROM docker.io/library/python:3.12-slim
+RUN pip install --no-cache-dir \
+      "sqlalchemy>=2" fastapi "uvicorn[standard]" pytest httpx \
+      requests cryptography pyjwt cbor2 aiohttp \
+      "flask<3" "flask-sqlalchemy>=3" flask-marshmallow "marshmallow<4" "marshmallow-sqlalchemy>=0.29" flask-cors openpyxl
+ENV PYTHONPATH=/src/roadlib:/src/roadrecon PYTHONDONTWRITEBYTECODE=1
+WORKDIR /src
