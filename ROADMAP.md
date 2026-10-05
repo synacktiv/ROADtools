@@ -163,6 +163,7 @@ New features
 - [x] Named locations map: trusted countries in green (already handled; mock and gendb had no trusted country location, now they do).
 
 ## Phase 6 — Switch
+- [ ] Default prod target: `podman compose up` builds the frontend and serves it from the FastAPI app on one port (`python -m roadtools.roadrecon.api`), no Vite
 - [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
 - [ ] `gather` calls `ensure_indexes` before policyanalysis
 - [ ] `roadrecon/setup.py`: add fastapi + uvicorn, drop flask / marshmallow deps, `sqlalchemy>=2`
