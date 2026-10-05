@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import (DIRECTORY, PRIVILEGED_ROLES, Db, F, json_text, mfa_summary, not_found, paginate, register,
-                      resolve_refs)
+from ..common import (DIRECTORY, PRIVILEGED_ROLES, Db, F, flag, gm_group, json_text, mfa_summary, not_found, paginate,
+                      register, resolve_refs)
 from ..models import Page, RoleAssignmentQuery, RoleAssignmentRow, RoleDetail, RoleHolderCount, RoleQuery, RoleRow
 
 router = APIRouter(prefix='/api', tags=['roles'])
@@ -22,7 +22,6 @@ PRINCIPAL_TYPES = {'user': 'User', 'group': 'Group', 'servicePrincipal': 'Servic
 
 RD, DR, RA, ERA = d.RoleDefinition, d.DirectoryRole, d.RoleAssignment, d.EligibleRoleAssignment
 U, G, SP = d.User, d.Group, d.ServicePrincipal
-gm_group = d.lnk_group_member_group
 ROLE_MEMBER_LINKS = [(d.lnk_role_member_user, 'User'), (d.lnk_role_member_serviceprincipal, 'ServicePrincipal'),
                      (d.lnk_role_member_group, 'Group')]
 
@@ -145,15 +144,11 @@ def _role_row(r) -> dict:
                 activeCount=r.active, eligibleCount=r.eligible, syncedCount=r.synced)
 
 
-def _flag(col, want: bool):
-    return col.is_(True) if want else or_(col.is_(False), col.is_(None))
-
-
 @router.get('/roles')
 def list_roles(q: Annotated[RoleQuery, Query()], db: Db) -> Page[RoleRow]:
     stmt = _roles_select()
     if q.isBuiltIn is not None:
-        stmt = stmt.where(_flag(roles_sq.c.isBuiltIn, q.isBuiltIn))
+        stmt = stmt.where(flag(roles_sq.c.isBuiltIn, q.isBuiltIn))
     if q.hasAssignments is not None:
         held = ACTIVE + ELIGIBLE > 0
         stmt = stmt.where(held if q.hasAssignments else not_(held))

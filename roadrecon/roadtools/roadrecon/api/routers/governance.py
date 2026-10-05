@@ -8,12 +8,12 @@ import re
 from typing import Annotated
 
 from fastapi import APIRouter, Query
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import (Db, F, has_table, iso, keyword, not_found, paginate_list, register, resolve_refs,
+from ..common import (Db, F, count_rows, has_table, iso, keyword, not_found, paginate_list, register, resolve_refs,
                       transitive_groups_of, value)
 from ..models import (AccessPackagePolicyQuery, AccessPackagePolicyRow, AccessPackageResource, AzureRole,
                       AzureRoleAssignmentQuery, AzureRoleAssignmentRow, GroupPim, ObjectRef, Page, PimAssignmentQuery,
@@ -63,10 +63,6 @@ ACCESS_PACKAGE_FIELDS = register('access-package-policies', {
 def _principal_ids(db: Session, principal_id: str, transitive: bool | None) -> list[str]:
     groups = db.scalars(select(transitive_groups_of(principal_id).c.id)) if transitive else []
     return list(dict.fromkeys([principal_id, *groups]))
-
-
-def _count(db: Session, stmt) -> int:
-    return db.scalar(select(func.count()).select_from(stmt.subquery()))
 
 
 # --- Azure RBAC --------------------------------------------------------------
@@ -332,17 +328,17 @@ def list_access_package_policies(q: Annotated[AccessPackagePolicyQuery, Query()]
 def count_azure_roles(db: Session, principal_id: str) -> int:
     """Azure role assignments (active and eligible), direct and through groups."""
     ids = _principal_ids(db, principal_id, True)
-    return sum(_count(db, stmt) for _, stmt in _azure_selects(db, ids))
+    return sum(count_rows(db, stmt) for _, stmt in _azure_selects(db, ids))
 
 
 def count_pim(db: Session, principal_id: str, transitive: bool = True) -> int:
     """PIM assignments, direct and (with `transitive`) through groups."""
     if not _has(db, *PIM_CORE):
         return 0
-    return _count(db, select(PA.id).where(PA.subjectId.in_(_principal_ids(db, principal_id, transitive))))
+    return count_rows(db, select(PA.id).where(PA.subjectId.in_(_principal_ids(db, principal_id, transitive))))
 
 
 def count_access_packages(db: Session, user_id: str) -> int:
     """Access package policies the user can request."""
     reasons = _policy_reasons(db, user_id)
-    return _count(db, _requestable(reasons)) if reasons else 0
+    return count_rows(db, _requestable(reasons)) if reasons else 0

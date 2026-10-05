@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import (ci, Db, F, iso, is_privileged_permission, json_text, not_found, paginate, register,
+from ..common import (ci, count_of, Db, F, flag, iso, is_privileged_permission, json_text, not_found, paginate, register,
                       resolve_appids, sql_clause)
 from ..models import (AppRoleDefinition, ApplicationCounts, ApplicationDetail, ApplicationQuery, ApplicationRow,
                       Credential, MetadataEntry, ObjectRef, Page, PermissionScopeDefinition, RequiredPermission,
@@ -28,10 +28,6 @@ app_owner_user, app_owner_sp = d.lnk_application_owner_user, d.lnk_application_o
 def _len(col):
     # ponytail: json_array_length is SQLite json1 (Postgres needs `CAST(col AS json)`: the JSON columns are TEXT).
     return func.coalesce(func.json_array_length(col), 0)
-
-
-def _flag(col, want: bool):
-    return col.is_(True) if want else or_(col.is_(False), col.is_(None))
 
 
 def _url_where(op: str, arg: str):
@@ -163,10 +159,6 @@ def _metadata(o) -> list[MetadataEntry]:
     return out
 
 
-def _count(table, *where):
-    return select(func.count()).select_from(table).where(*where).scalar_subquery()
-
-
 # --- Service principals ------------------------------------------------------
 
 @router.get('/service-principals')
@@ -188,9 +180,9 @@ def list_service_principals(q: Annotated[ServicePrincipalQuery, Query()], db: Db
     if q.servicePrincipalType:
         stmt = stmt.where(SP.servicePrincipalType == q.servicePrincipalType)
     if q.microsoftFirstParty is not None:
-        stmt = stmt.where(_flag(SP.microsoftFirstParty, q.microsoftFirstParty))
+        stmt = stmt.where(flag(SP.microsoftFirstParty, q.microsoftFirstParty))
     if q.accountEnabled is not None:
-        stmt = stmt.where(_flag(SP.accountEnabled, q.accountEnabled))
+        stmt = stmt.where(flag(SP.accountEnabled, q.accountEnabled))
     if q.hasCredentials is not None:
         stmt = stmt.where((sp_pw + sp_key > 0) if q.hasCredentials else (sp_pw + sp_key == 0))
     return paginate(db, stmt, q, resource='service-principals', search=[SP.displayName, SP.appId, SP.objectId],
@@ -205,12 +197,12 @@ def get_service_principal(id: str, db: Db) -> ServicePrincipalDetail:
     sp = db.get(SP, id)
     app = db.execute(select(App.objectId, App.displayName).where(App.appId == sp.appId)).first() if sp.appId else None
     c = db.execute(select(
-        _count(sp_owner_user, sp_owner_user.c.ServicePrincipal == id) + _count(sp_owner_sp, sp_owner_sp.c.ServicePrincipal == id),
-        _count(d.lnk_group_member_serviceprincipal, d.lnk_group_member_serviceprincipal.c.ServicePrincipal == id),
-        _count(d.AppRoleAssignment, d.AppRoleAssignment.principalId == id),
-        _count(d.AppRoleAssignment, d.AppRoleAssignment.resourceId == id),
-        _count(d.OAuth2PermissionGrant, d.OAuth2PermissionGrant.clientId == id),
-        _count(d.OAuth2PermissionGrant, d.OAuth2PermissionGrant.resourceId == id),
+        count_of(sp_owner_user, sp_owner_user.c.ServicePrincipal == id) + count_of(sp_owner_sp, sp_owner_sp.c.ServicePrincipal == id),
+        count_of(d.lnk_group_member_serviceprincipal, d.lnk_group_member_serviceprincipal.c.ServicePrincipal == id),
+        count_of(d.AppRoleAssignment, d.AppRoleAssignment.principalId == id),
+        count_of(d.AppRoleAssignment, d.AppRoleAssignment.resourceId == id),
+        count_of(d.OAuth2PermissionGrant, d.OAuth2PermissionGrant.clientId == id),
+        count_of(d.OAuth2PermissionGrant, d.OAuth2PermissionGrant.resourceId == id),
     )).one()
     return ServicePrincipalDetail(
         **row._mapping,
@@ -240,9 +232,9 @@ def list_applications(q: Annotated[ApplicationQuery, Query()], db: Db) -> Page[A
             select(app_owner_user.c.Application).where(app_owner_user.c.User == q.ownerId),
             select(app_owner_sp.c.Application).where(app_owner_sp.c.ServicePrincipal == q.ownerId))))
     if q.availableToOtherTenants is not None:
-        stmt = stmt.where(_flag(App.availableToOtherTenants, q.availableToOtherTenants))
+        stmt = stmt.where(flag(App.availableToOtherTenants, q.availableToOtherTenants))
     if q.publicClient is not None:
-        stmt = stmt.where(_flag(App.publicClient, q.publicClient))
+        stmt = stmt.where(flag(App.publicClient, q.publicClient))
     if q.hasCredentials is not None:
         stmt = stmt.where((app_pw + app_key > 0) if q.hasCredentials else (app_pw + app_key == 0))
     return paginate(db, stmt, q, resource='applications', search=[App.displayName, App.appId, App.objectId],
@@ -281,8 +273,8 @@ def get_application(id: str, db: Db) -> ApplicationDetail:
     app = db.get(App, id)
     sp = db.execute(select(SP.objectId, SP.displayName, SP.publisherName, SP.appOwnerTenantId, SP.accountEnabled,
                            SP.appRoleAssignmentRequired).where(SP.appId == app.appId)).first() if app.appId else None
-    owners = db.scalar(select(_count(app_owner_user, app_owner_user.c.Application == id)
-                              + _count(app_owner_sp, app_owner_sp.c.Application == id)))
+    owners = db.scalar(select(count_of(app_owner_user, app_owner_user.c.Application == id)
+                              + count_of(app_owner_sp, app_owner_sp.c.Application == id)))
     return ApplicationDetail(
         **row._mapping,
         servicePrincipal=sp and ObjectRef(id=sp.objectId, type='servicePrincipal', displayName=sp.displayName or app.appId,
