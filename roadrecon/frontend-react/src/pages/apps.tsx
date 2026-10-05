@@ -62,7 +62,6 @@ const DEFAULT_ACCESS = '00000000-0000-0000-0000-000000000000'
 const isRiskyUrl = (u: string) => /^http:\/\//i.test(u) || /^[a-z][\w+.-]*:\/\/(localhost|127\.0\.0\.1|\[::1\])([:/]|$)/i.test(u)
 
 // ponytail: name pattern, not a privilege model. Swap for a per-permission tier once the API ships one.
-const isHighPriv = (v: string) => /\.ReadWrite\.All$|^RoleManagement\.|^AppRoleAssignment\.|FullControl|full_access/i.test(v)
 
 /** Icon (and optional text) with the explanation in a tooltip. */
 function Hint({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
@@ -194,9 +193,14 @@ const EXPIRY: [ExpiryState, Icon, string, string][] = [
   ['expired', IconClockX, 'text-muted-foreground', 'expired'],
 ]
 
+interface Permission {
+  value: string
+  isPrivileged: boolean
+}
+
 interface PermissionGroup {
   resource: ObjectRef
-  values: string[]
+  values: Permission[]
 }
 
 function CardHeading({ title, count }: { title: string; count: number }) {
@@ -213,7 +217,7 @@ function CardHeading({ title, count }: { title: string; count: number }) {
  * and the high privilege application permissions only. Full lists live in the Credentials and permission tabs.
  */
 function RiskCard({ credentials, permissions, permissionsTitle }: { credentials: Credential[]; permissions: PermissionGroup[]; permissionsTitle: string }) {
-  const hot = permissions.map((g) => ({ ...g, values: g.values.filter(isHighPriv) })).filter((g) => g.values.length > 0)
+  const hot = permissions.map((g) => ({ ...g, values: g.values.filter((p) => p.isPrivileged) })).filter((g) => g.values.length > 0)
   const hotCount = hot.reduce((n, g) => n + g.values.length, 0)
   const states = EXPIRY.map(([state, I, tone, word]) => [I, tone, word, credentials.filter((c) => expiryState(c.endDate) === state).length] as const).filter(([, , , n]) => n > 0)
   if (states.length === 0 && hotCount === 0) return null
@@ -240,9 +244,9 @@ function RiskCard({ credentials, permissions, permissionsTitle }: { credentials:
             <div key={g.resource.id ?? g.resource.displayName} className="flex flex-col gap-1.5">
               <ObjectLink value={g.resource} className="text-sm text-muted-foreground" />
               <ul className="flex flex-wrap gap-1.5">
-                {g.values.map((v) => (
-                  <li key={v}>
-                    <PermissionChip value={v} app />
+                {g.values.map((p) => (
+                  <li key={p.value}>
+                    <PermissionChip p={p} app />
                   </li>
                 ))}
               </ul>
@@ -255,12 +259,12 @@ function RiskCard({ credentials, permissions, permissionsTitle }: { credentials:
 }
 
 /** Application permissions are amber (no signed-in user), high privilege ones red. Delegated ones are outlined. */
-function PermissionChip({ value, app }: { value: string; app: boolean }) {
-  const hot = app && isHighPriv(value)
+function PermissionChip({ p, app }: { p: Permission; app: boolean }) {
+  const hot = app && p.isPrivileged
   const chip = (
     <Badge variant={hot ? 'regulatory' : app ? 'warning' : 'outline'} className="h-6 px-2 font-mono text-sm font-normal">
       {hot && <IconAlertTriangle stroke={1.75} aria-hidden />}
-      {value}
+      {p.value}
     </Badge>
   )
   return hot ? (
@@ -285,7 +289,7 @@ function useHeldPermissions(principalId: string, enabled: boolean): PermissionGr
     if (a.appRoleId === DEFAULT_ACCESS) continue
     const key = a.resource.id ?? a.resource.displayName
     const g = groups.get(key) ?? { resource: a.resource, values: [] }
-    if (!g.values.includes(a.value)) g.values.push(a.value)
+    if (!g.values.some((p) => p.value === a.value)) g.values.push(a)
     groups.set(key, g)
   }
   return [...groups.values()]
@@ -502,12 +506,9 @@ export function ApplicationsPage() {
 export function ApplicationPage() {
   const { id = '' } = useParams()
   const { data: a, isLoading, error } = useApi('/api/applications/{id}', { path: { id } })
-  // Publisher, owner tenant, status and assignment live on the service principal.
-  const spId = a?.servicePrincipal?.id ?? ''
-  const { data: sp } = useApi('/api/service-principals/{id}', { path: { id: spId } }, !!spId)
   useSetCrumb(a?.displayName)
   const appPermissions: PermissionGroup[] = (a?.requiredResourceAccess ?? [])
-    .map((r) => ({ resource: r.resource, values: r.permissions.filter((p) => p.type === 'Role').map((p) => p.value) }))
+    .map((r) => ({ resource: r.resource, values: r.permissions.filter((p) => p.type === 'Role') }))
     .filter((g) => g.values.length > 0)
   return (
     <ObjectPage
@@ -519,7 +520,7 @@ export function ApplicationPage() {
       badges={
         a && (
           <>
-            {sp?.accountEnabled === false && <EnabledBadge enabled={false} />}
+            {a.accountEnabled === false && <EnabledBadge enabled={false} />}
             {a.availableToOtherTenants && <Badge variant="outline">Multitenant</Badge>}
             {a.oauth2AllowImplicitFlow && <Badge variant="regulatory">Implicit flow</Badge>}
             {a.passwordCount + a.keyCount > 0 && <Badge variant="regulatory">Has credentials</Badge>}
@@ -530,9 +531,9 @@ export function ApplicationPage() {
         a && [
           ['Application ID', a.appId, { mono: true, copy: a.appId }],
           ['Service principal', a.servicePrincipal && <ObjectLink value={a.servicePrincipal} />],
-          ['Publisher', sp?.publisherName],
-          ['Owner tenant', sp?.appOwnerTenantId, { mono: true, copy: sp?.appOwnerTenantId ?? undefined }],
-          ['Assignment required', flag(sp?.appRoleAssignmentRequired)],
+          ['Publisher', a.publisherName],
+          ['Owner tenant', a.appOwnerTenantId, { mono: true, copy: a.appOwnerTenantId ?? undefined }],
+          ['Assignment required', flag(a.appRoleAssignmentRequired)],
           ['Public client', flag(a.publicClient)],
           ['Homepage', urls([a.homepage])],
           ['Reply URLs', urls(a.replyUrls)],
@@ -594,8 +595,8 @@ function DefinedPermissions({ appRoles, scopes }: { appRoles: AppRoleDefinition[
               <TableBody>
                 {appRoles.map((r) => (
                   <TableRow key={r.id} className={r.isEnabled ? undefined : 'text-muted-foreground'}>
-                    <TableCell className={cn('px-3 font-mono text-sm', r.value && r.allowedMemberTypes.includes('Application') && isHighPriv(r.value) && 'text-regulatory')}>
-                      {r.value && r.allowedMemberTypes.includes('Application') && isHighPriv(r.value) && <IconAlertTriangle className="mr-1.5 inline size-4 align-[-3px]" stroke={1.75} aria-label="High privilege" />}
+                    <TableCell className={cn('px-3 font-mono text-sm', r.isPrivileged && r.allowedMemberTypes.includes('Application') && 'text-regulatory')}>
+                      {r.isPrivileged && r.allowedMemberTypes.includes('Application') && <IconAlertTriangle className="mr-1.5 inline size-4 align-[-3px]" stroke={1.75} aria-label="High privilege" />}
                       {orDash(r.value)}
                       <div className="text-xs text-muted-foreground">{r.id}</div>
                     </TableCell>
@@ -659,8 +660,8 @@ function RequiredPermissions({ items }: { items: RequiredResourceAccess[] }) {
               <span className="ml-auto text-muted-foreground tabular-nums">{plural(r.permissions.length, 'permission')}</span>
             </header>
             <div className="divide-y">
-              {app.length > 0 && <PermissionRow app values={app.map((p) => p.value)} />}
-              {delegated.length > 0 && <PermissionRow app={false} values={delegated.map((p) => p.value)} />}
+              {app.length > 0 && <PermissionRow app values={app} />}
+              {delegated.length > 0 && <PermissionRow app={false} values={delegated} />}
             </div>
           </section>
         )
@@ -669,7 +670,7 @@ function RequiredPermissions({ items }: { items: RequiredResourceAccess[] }) {
   )
 }
 
-function PermissionRow({ app, values }: { app: boolean; values: string[] }) {
+function PermissionRow({ app, values }: { app: boolean; values: Permission[] }) {
   const I = app ? IconServerBolt : IconUserShare
   return (
     <div className="grid items-start gap-x-6 gap-y-2 px-4 py-3 sm:grid-cols-[14rem_minmax(0,1fr)]">
@@ -684,10 +685,10 @@ function PermissionRow({ app, values }: { app: boolean; values: string[] }) {
       </div>
       <ul className="flex flex-wrap gap-1.5 pt-0.5">
         {[...values]
-          .sort((a, b) => Number(app && isHighPriv(b)) - Number(app && isHighPriv(a)))
-          .map((v) => (
-            <li key={v}>
-              <PermissionChip value={v} app={app} />
+          .sort((a, b) => Number(app && b.isPrivileged) - Number(app && a.isPrivileged))
+          .map((p) => (
+            <li key={p.value}>
+              <PermissionChip p={p} app={app} />
             </li>
           ))}
       </ul>

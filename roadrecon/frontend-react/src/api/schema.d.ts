@@ -1180,6 +1180,11 @@ export interface components {
              * @description Policies that reference this location.
              */
             policies: components["schemas"]["ObjectRef"][];
+            /**
+             * Excludedby
+             * @description Ids of the policies in `policies` that exclude this location.
+             */
+            excludedBy: string[];
             /** Policymatches */
             policyMatches: components["schemas"]["PolicyMatch"][];
             /** Raw */
@@ -1213,6 +1218,11 @@ export interface components {
              * @description Policies that reference this location.
              */
             policies: components["schemas"]["ObjectRef"][];
+            /**
+             * Excludedby
+             * @description Ids of the policies in `policies` that exclude this location.
+             */
+            excludedBy: string[];
         };
         /** OAuth2GrantRow */
         OAuth2GrantRow: {

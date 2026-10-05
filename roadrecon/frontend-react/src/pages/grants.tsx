@@ -58,15 +58,13 @@ export function AppRoleAssignmentsPage() {
   )
 }
 
-// Scopes that read or change the whole tenant, every mailbox or every file.
-const RISKY_SCOPE = /\.ReadWrite\.All$|^(Directory|Mail|RoleManagement)\.|^full_access_as_app$|^EWS\.AccessAsUser\.All$/i
-
-function Scopes({ scopes }: { scopes: string[] }) {
-  const sorted = [...scopes].sort((a, b) => Number(RISKY_SCOPE.test(b)) - Number(RISKY_SCOPE.test(a)))
+function Scopes({ scopes, privileged }: { scopes: string[]; privileged: string[] }) {
+  const risky = (s: string) => privileged.includes(s)
+  const sorted = [...scopes].sort((a, b) => Number(risky(b)) - Number(risky(a)))
   return (
     <span className="inline-flex flex-wrap gap-1">
       {sorted.map((s) =>
-        RISKY_SCOPE.test(s) ? (
+        risky(s) ? (
           <Tooltip key={s}>
             <TooltipTrigger asChild>
               <Badge variant="regulatory" className="font-mono font-normal">
@@ -139,7 +137,7 @@ export function OAuth2GrantsTable({ query }: { query?: Partial<OAuth2GrantQuery>
       ),
     },
     { id: 'resource', header: 'On API', meta: { sort: 'resource', filter: 'resource' }, cell: ({ row }) => <ObjectLink value={row.original.resource} /> },
-    { id: 'scopes', header: 'Scopes', meta: { filter: 'scope', className: 'max-w-[60ch] whitespace-normal' }, cell: ({ row }) => <Scopes scopes={row.original.scopes} /> },
+    { id: 'scopes', header: 'Scopes', meta: { filter: 'scope', className: 'max-w-[60ch] whitespace-normal' }, cell: ({ row }) => <Scopes scopes={row.original.scopes} privileged={row.original.privilegedScopes} /> },
     { id: 'expiry', header: 'Expires', meta: { filter: 'expiryTime', defaultHidden: true }, cell: ({ row }) => <Expiry value={row.original.expiryTime} /> },
     { id: 'id', header: 'Grant ID', meta: { defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.id },
   ]

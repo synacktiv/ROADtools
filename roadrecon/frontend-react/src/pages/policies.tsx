@@ -252,17 +252,14 @@ function Ranges({ l }: { l: NamedLocationRow }) {
 }
 
 /** Policies referencing a location; excluded references get a red minus. */
-// ponytail: one detail request per row (the row only has policyCount). Add policy refs to NamedLocationRow to drop it.
 function LocationPolicies({ l }: { l: NamedLocationRow }) {
-  const { data } = useApi('/api/named-locations/{id}', { path: { id: l.id } }, l.policyCount > 0)
-  if (l.policyCount === 0) return <Dash />
-  if (!data) return <Skeleton className="h-5 w-40" />
+  if (l.policies.length === 0) return <Dash />
   return (
     <ul className="flex flex-col gap-1">
-      {data.policyMatches.map((m) => (
-        <li key={m.policy.id} className="flex min-w-0 items-center gap-1.5">
-          <ObjectLink value={toRef('policy', m.policy)} wrap className="max-w-full" />
-          {m.effect === 'excluded' && (
+      {l.policies.map((p) => (
+        <li key={p.id} className="flex min-w-0 items-center gap-1.5">
+          <ObjectLink value={p} wrap className="max-w-full" />
+          {l.excludedBy.includes(p.id!) && (
             <span className="inline-flex shrink-0 items-center text-sm text-regulatory">
               <IconMinus className="size-3.5" stroke={2.25} aria-hidden />
               excluded

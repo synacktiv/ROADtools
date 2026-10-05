@@ -468,7 +468,8 @@ def _location_matches(policies, key: str | None, trusted: bool) -> list[PolicyMa
 def _location_row(key, fields, policies) -> tuple[NamedLocationRow, list[PolicyMatch]]:
     matches = _location_matches(policies, key, fields['trusted'])
     refs = [ObjectRef(id=m.policy.id, type='policy', displayName=m.policy.displayName) for m in matches]
-    return NamedLocationRow(**fields, policyCount=len(refs), policies=refs), matches
+    excluded = [m.policy.id for m in matches if m.effect == 'excluded']
+    return NamedLocationRow(**fields, policyCount=len(refs), policies=refs, excludedBy=excluded), matches
 
 
 # --- Routes ----------------------------------------------------------------------

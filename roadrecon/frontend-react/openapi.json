@@ -6260,6 +6260,14 @@
       "title": "Policies",
       "description": "Policies that reference this location."
      },
+     "excludedBy": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Excludedby",
+      "description": "Ids of the policies in `policies` that exclude this location."
+     },
      "policyMatches": {
       "items": {
        "$ref": "#/components/schemas/PolicyMatch"
@@ -6284,6 +6292,7 @@
      "includeUnknownCountries",
      "policyCount",
      "policies",
+     "excludedBy",
      "policyMatches",
      "raw"
     ],
@@ -6340,6 +6349,14 @@
       "type": "array",
       "title": "Policies",
       "description": "Policies that reference this location."
+     },
+     "excludedBy": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Excludedby",
+      "description": "Ids of the policies in `policies` that exclude this location."
      }
     },
     "type": "object",
@@ -6352,7 +6369,8 @@
      "countries",
      "includeUnknownCountries",
      "policyCount",
-     "policies"
+     "policies",
+     "excludedBy"
     ],
     "title": "NamedLocationRow"
    },

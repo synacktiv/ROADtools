@@ -4,7 +4,6 @@ import { copy } from '@/lib/copy'
 
 export type Property = [label: string, value: React.ReactNode, opts?: { mono?: boolean; copy?: string }]
 
-/** Label / value grid. Rows with an empty value are skipped. */
 /**
  * Label / value pairs. Rows with an empty value are skipped.
  * `rows`: glass panel with label and value side by side. `plain`: same, without the panel (inside a card).
@@ -23,7 +22,7 @@ export function PropertyList({ items, plain, layout = 'rows' }: { items: Propert
       <dl className="flex flex-col divide-y">
         {shown.map(([label, value, opts]) => (
           <div key={label} className="flex flex-col gap-1 py-2.5">
-            <dt className="text-sm text-muted-foreground">{label}</dt>
+            <dt className="text-sm break-words text-muted-foreground">{label}</dt>
             <dd className={`flex min-w-0 items-start justify-between gap-2 break-words ${opts?.mono ? 'font-mono text-sm' : ''}`}>
               <div className="min-w-0">{Array.isArray(value) ? <List items={value} /> : value}</div>
               {copyButton(label, opts?.copy)}
@@ -36,7 +35,7 @@ export function PropertyList({ items, plain, layout = 'rows' }: { items: Propert
     <dl className={plain ? '' : 'glass max-w-4xl rounded-xl border px-4'}>
       {shown.map(([label, value, opts]) => (
         <div key={label} className="flex gap-6 border-b py-2.5 last:border-b-0">
-          <dt className={`shrink-0 text-muted-foreground ${plain ? 'w-48' : 'w-56'}`}>{label}</dt>
+          <dt className={`shrink-0 break-words text-muted-foreground ${plain ? 'w-48' : 'w-56'}`}>{label}</dt>
           <dd className={`flex min-w-0 flex-1 items-start gap-2 break-words ${opts?.mono ? 'font-mono text-sm' : ''}`}>
             <div className="min-w-0">{Array.isArray(value) ? <List items={value} /> : value}</div>
             {copyButton(label, opts?.copy)}

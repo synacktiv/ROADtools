@@ -661,6 +661,7 @@ class NamedLocationRow(BaseModel):
     includeUnknownCountries: bool
     policyCount: int
     policies: list[ObjectRef] = Field(description='Policies that reference this location.')
+    excludedBy: list[str] = Field(description='Ids of the policies in `policies` that exclude this location.')
 
 
 class NamedLocationDetail(NamedLocationRow):

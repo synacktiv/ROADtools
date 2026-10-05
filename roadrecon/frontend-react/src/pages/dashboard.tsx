@@ -312,6 +312,10 @@ function DomainsCard({ domains }: { domains?: Tenant['domains'] }) {
   )
 }
 
+
+// Setting names are CamelCase: a zero-width space before each word lets them wrap between words.
+const camelBreaks = (s: string) => s.replace(/(?<=[a-z])(?=[A-Z])/g, '\u200b')
+
 export function DashboardPage() {
   const { data: t, isLoading } = useApi('/api/tenant')
   const { data: stats } = useApi('/api/stats')
@@ -349,7 +353,7 @@ export function DashboardPage() {
                 <CardTitle>{s.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <PropertyList plain items={s.values.map((v) => [v.name, v.value] as [string, string])} />
+                <PropertyList plain items={s.values.map((v) => [camelBreaks(v.name), v.value] as [string, string])} />
               </CardContent>
             </Card>
           ))}

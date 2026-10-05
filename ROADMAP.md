@@ -15,6 +15,8 @@ podman compose run --rm node npm run build
 
 Worktree agents: `podman compose -p rr-<worktree> run --rm py|node ...` (no published ports, isolated project).
 
+If `podman compose` fails with `pasta failed` / `unable to upgrade to tcp`, the host network setup is broken. Tests and builds need no network: `podman run --rm --network none -v $PWD:/src:z -w /src localhost/roadrecon-dev-py pytest roadrecon/tests -q`. For screenshots, run api, vite and Playwright in one `podman pod create --network none` pod; they share localhost.
+
 ## Conventions (summary)
 
 - Every list returns `Page[T] = {items, total, page, page_size}`; params `page`, `page_size` (≤500), `q`, `sort`, `order` + typed filters.
@@ -86,12 +88,17 @@ Batch 1: S5, S1, S2, S3, S4. Batch 2: S6, S7, S8, S9. Code review after each bat
 
 Backend status (2026-10-04): every route implemented in its worktree, merged into `gui-next`; both batch reviews applied; 201 tests (`pytest roadrecon/tests`).
 - End-to-end smoke: all 29 pages render against the real API (gendb DB, Vite proxy, Playwright) with no HTTP or page errors.
-- Frontend column stays open for the per-page follow-ups:
-  - the app page still fetches the SP detail (`ApplicationDetail` now carries those fields);
-  - `LocationPolicies` makes one request per row (`NamedLocationRow.policies` exists now);
-  - `grants.tsx` `RISKY_SCOPE` and `apps.tsx` `isHighPriv` should use `isPrivileged` / `privilegedScopes`;
-  - the governance tables could set `meta.sort` (the backend accepts `role`, `kind`, `resourceType`, `packageName`).
-- Spec changes after `spec-v1`: `RoleDetail.holders` is a list of `{kind, principalType, scope, count}` (the role page tallied 1000 assignments, over the 500 cap).
+- Per-page frontend follow-ups (2026-10-05):
+  - [x] the app page reads publisher, owner tenant, status and assignment from `ApplicationDetail`, without fetching the SP;
+  - [x] `LocationPolicies` uses `NamedLocationRow.policies` + `excludedBy`, with no request per row;
+  - [x] `grants.tsx` and `apps.tsx` use the server's `isPrivileged` / `privilegedScopes` (the regex copies are gone);
+  - [ ] the governance tables could set `meta.sort` (the backend accepts `role`, `kind`, `resourceType`, `packageName`).
+- Dashboard directory settings:
+  - [x] long CamelCase setting names (`BannedPasswordCheckOnPremisesMode` in Password Rule Settings, `Group.Unified`) overlapped the value; they now wrap between words;
+  - [ ] rework the "Password Rule Settings" section.
+- Spec changes after `spec-v1`:
+  - `RoleDetail.holders` is a list of `{kind, principalType, scope, count}` (the role page tallied 1000 assignments, over the 500 cap);
+  - `NamedLocationRow.excludedBy`: ids of the policies that exclude the location.
 - SQLite-only SQL, marked `ponytail:`: `json_array_length` (SP / app credential counts) and `json_each` / `json_extract` (app role value filter). Needs `CAST(... AS json)` variants for Postgres.
 - Open questions for a real tenant:
   - do deny access-package policies block a package that an allow policy grants? (Today they are only hidden.)

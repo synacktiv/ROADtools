@@ -526,9 +526,9 @@ sample(memberUsers, 8).forEach((u) => grant(sps.find((s) => s.displayName === 'Z
 // --- Named locations and Conditional Access ---------------------------------
 
 const locations: NamedLocationDetail[] = [
-  { id: guid(), displayName: 'Head office Bergen', kind: 'ip', trusted: true, ipRanges: ['193.69.120.0/24', '2a02:fe0:c410::/48'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], policyMatches: [], raw: {} },
-  { id: guid(), displayName: 'Vessel satellite uplinks', kind: 'ip', trusted: true, ipRanges: ['85.19.208.0/22', '212.62.231.64/27'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], policyMatches: [], raw: {} },
-  { id: guid(), displayName: 'Blocked countries', kind: 'country', trusted: false, ipRanges: [], countries: ['KP', 'IR', 'RU', 'BY'], includeUnknownCountries: true, policyCount: 0, policies: [], policyMatches: [], raw: {} },
+  { id: guid(), displayName: 'Head office Bergen', kind: 'ip', trusted: true, ipRanges: ['193.69.120.0/24', '2a02:fe0:c410::/48'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
+  { id: guid(), displayName: 'Vessel satellite uplinks', kind: 'ip', trusted: true, ipRanges: ['85.19.208.0/22', '212.62.231.64/27'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
+  { id: guid(), displayName: 'Blocked countries', kind: 'country', trusted: false, ipRanges: [], countries: ['KP', 'IR', 'RU', 'BY'], includeUnknownCountries: true, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
 ]
 const locRef = (l: NamedLocationDetail): ObjectRef => ({ id: l.id, type: 'namedLocation', displayName: l.displayName })
 const kw = (displayName: string): ObjectRef => ({ id: null, type: 'keyword', displayName })
@@ -801,6 +801,7 @@ for (const l of locations) {
       return { policy: toPolicyRow(p), effect: excluded.length ? 'excluded' : 'included', included: reason('include'), excluded }
     })
   l.policies = l.policyMatches.map((m) => ({ id: m.policy.id, type: 'policy' as const, displayName: m.policy.displayName }))
+  l.excludedBy = l.policyMatches.filter((m) => m.effect === 'excluded').map((m) => m.policy.id)
   l.policyCount = l.policies.length
 }
 for (const r of roles) {
