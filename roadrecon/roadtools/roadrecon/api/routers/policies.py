@@ -125,7 +125,26 @@ def _crits(cond: dict, key: str, side: str) -> list[dict]:
     return [x for x in (c.get(side) if isinstance(c, dict) else None) or [] if isinstance(x, dict)]
 
 
-def _grants(det: dict) -> list[tuple[str, ObjectRef]]:
+def _custom_strengths(db: Session) -> dict[str, tuple[AuthenticationStrength, bool]]:
+    """id -> (strength def, satisfies MFA). Custom authentication strengths the dump collects as policyType-44 rows
+    (AAD Graph exposes them); the tenant default "container" row (tenantDefaultPolicy set, no allowedCombinations) is
+    skipped. Empty on an old dump without such rows, so custom ids then fall back to unresolved."""
+    out = {}
+    for p in db.scalars(select(d.Policy).where(d.Policy.policyType == 44, d.Policy.tenantDefaultPolicy.is_(None))):
+        try:
+            det = json.loads(p.policyDetail[0])
+        except Exception:  # noqa: BLE001 - a malformed strength just stays unresolved
+            continue
+        # allowedCombinations: each string is one combination of ", "-separated PascalCase methods.
+        combos = [' + '.join(METHODS.get(m[:1].lower() + m[1:], m) for m in c.split(', '))
+                  for c in det.get('allowedCombinations') or []]
+        out[p.objectId] = (AuthenticationStrength(id=p.objectId, displayName=p.displayName or p.objectId,
+                                                  builtIn=False, combinations=combos),
+                           det.get('requirementsSatisfied') == 'Mfa')
+    return out
+
+
+def _grants(det: dict, strengths: dict) -> list[tuple[str, ObjectRef]]:
     out = []
     for c in det.get('Controls') or []:
         for k, v in c.items() if isinstance(c, dict) else ():
@@ -135,28 +154,40 @@ def _grants(det: dict) -> list[tuple[str, ObjectRef]]:
                 if k == 'Control' and x != 'Block':
                     short, long = CONTROLS.get(x, (x, x))
                     out.append((short, value(long)))
-                elif k == 'AuthStrengthIds' and x in BUILTIN_STRENGTHS:
-                    name = BUILTIN_STRENGTHS[x].displayName
+                elif k == 'AuthStrengthIds' and (x in BUILTIN_STRENGTHS or x in strengths):
+                    name = (BUILTIN_STRENGTHS.get(x) or strengths[x][0]).displayName
                     out.append((name, ObjectRef(id=x, type='value', displayName=f'Authentication strength: {name}')))
-                elif k == 'AuthStrengthIds':  # custom strength: only its id is in the dump
+                elif k == 'AuthStrengthIds':  # custom strength not in the dump: only its id is known
                     out.append((CUSTOM_STRENGTH, ObjectRef(id=x, type='unknown', displayName=f'Authentication strength: {x}')))
                 elif k != 'Control':
                     out.append((k, value(f'{k}: {x}')))
     return out
 
 
-def _mfa(controls: list[dict]) -> tuple[bool, bool]:
+def _mfa(controls: list[dict], strengths: dict) -> tuple[bool, bool]:
     """(requiresMfa, mfaApproximate). Entries are ANDed and each is met by any of its controls, so one entry whose
-    every control is MFA or an authentication strength is enough. A custom strength counts as MFA without its
-    combinations: approximate, unless an entry without a custom strength settles it."""
+    every control is MFA or an MFA authentication strength is enough. Built-in strengths are all MFA; a resolved
+    custom strength uses its requirementsSatisfied; an unresolved custom strength counts as MFA but approximately,
+    unless an entry without an unresolved strength settles it."""
+    def is_mfa(k, x):  # this control, chosen alone, forces MFA
+        if (k, x) == ('Control', 'Mfa') or (k == 'AuthStrengthIds' and x in BUILTIN_STRENGTHS):
+            return True
+        if k == 'AuthStrengthIds':
+            return strengths[x][1] if x in strengths else True  # unresolved: assume MFA (approximate)
+        return False
+
+    def unresolved(k, x):
+        return k == 'AuthStrengthIds' and x not in BUILTIN_STRENGTHS and x not in strengths
+
     entries = [[(k, x) for k, v in c.items() if isinstance(v, list) for x in v] for c in controls]
-    mfa = [e for e in entries if e and all(k == 'AuthStrengthIds' or (k, x) == ('Control', 'Mfa') for k, x in e)]
-    return bool(mfa), bool(mfa) and all(any(k == 'AuthStrengthIds' and x not in BUILTIN_STRENGTHS for k, x in e) for e in mfa)
+    mfa = [e for e in entries if e and all(is_mfa(k, x) for k, x in e)]
+    return bool(mfa), bool(mfa) and all(any(unresolved(k, x) for k, x in e) for e in mfa)
 
 
-def _strength_defs(det: dict) -> list[AuthenticationStrength]:
+def _strength_defs(det: dict, strengths: dict) -> list[AuthenticationStrength]:
     ids = [x for c in det.get('Controls') or [] if isinstance(c, dict) for x in _vals(c.get('AuthStrengthIds') or [])]
-    return [BUILTIN_STRENGTHS.get(x) or AuthenticationStrength(id=x, displayName=CUSTOM_STRENGTH, builtIn=False, combinations=[])
+    return [BUILTIN_STRENGTHS.get(x) or (strengths[x][0] if x in strengths else
+            AuthenticationStrength(id=x, displayName=CUSTOM_STRENGTH, builtIn=False, combinations=[]))
             for x in dict.fromkeys(ids)]
 
 
@@ -173,18 +204,18 @@ def _sessions(det: dict) -> list[tuple[str, str]]:
     return out
 
 
-def _row(p: d.Policy, det: dict, error: str | None) -> PolicyRow:
+def _row(p: d.Policy, det: dict, error: str | None, strengths: dict) -> PolicyRow:
     cond = det.get('Conditions') or {}
     controls = [c for c in det.get('Controls') or [] if isinstance(c, dict)]
     block = any('Block' in _vals(c.get('Control') or []) for c in controls)
-    mfa, approximate = (False, False) if block else _mfa(controls)
+    mfa, approximate = (False, False) if block else _mfa(controls, strengths)
     return PolicyRow(
         id=p.objectId, displayName=p.displayName or p.objectId,
         state=STATES.get(det.get('State'), 'disabled'),
         targetsAllUsers=any('All' in _vals(v) for c in _crits(cond, 'Users', 'Include') for v in c.values()),
         targetsAllApps=any('All' in _vals(c.get('Applications') or []) for c in _crits(cond, 'Applications', 'Include')),
         block=block,
-        grant=list(dict.fromkeys(s for s, _ in _grants(det))),
+        grant=list(dict.fromkeys(s for s, _ in _grants(det, strengths))),
         # One controls entry = any of its controls; several entries must all be met (old policies plugin).
         grantOperator='AND' if len(controls) > 1 else 'OR',
         requiresMfa=mfa, mfaApproximate=approximate,
@@ -194,26 +225,28 @@ def _row(p: d.Policy, det: dict, error: str | None) -> PolicyRow:
     )
 
 
-def _parse(p: d.Policy) -> tuple[d.Policy, dict, PolicyRow]:
+def _parse(p: d.Policy, strengths: dict) -> tuple[d.Policy, dict, PolicyRow]:
     """(policy, decoded JSON, row). A malformed policy gets an empty JSON and `parseError`, never a 500."""
     try:
         det = json.loads(p.policyDetail[0])
         if not isinstance(det, dict):
             raise ValueError('policy detail is not a JSON object')
-        return p, det, _row(p, det, None)
+        return p, det, _row(p, det, None, strengths)
     except Exception as e:  # noqa: BLE001
-        return p, {}, _row(p, {}, f'{type(e).__name__}: {e}')
+        return p, {}, _row(p, {}, f'{type(e).__name__}: {e}', strengths)
 
 
 def _policies(db: Session) -> list[tuple[d.Policy, dict, PolicyRow]]:
-    return [_parse(p) for p in db.scalars(select(d.Policy).where(d.Policy.policyType == 18))]
+    strengths = _custom_strengths(db)
+    return [_parse(p, strengths) for p in db.scalars(select(d.Policy).where(d.Policy.policyType == 18))]
 
 
-def _get(db: Session, id: str) -> tuple[d.Policy, dict, PolicyRow]:
+def _get(db: Session, id: str) -> tuple[d.Policy, dict, PolicyRow, dict]:
     p = db.scalar(select(d.Policy).where(d.Policy.objectId == id, d.Policy.policyType == 18))
     if p is None:
         raise not_found('Policy')
-    return _parse(p)
+    strengths = _custom_strengths(db)
+    return (*_parse(p, strengths), strengths)
 
 
 def _items(key: str, sub: str, v) -> list:
@@ -529,23 +562,23 @@ def policies_affecting(type: PolicyTargetType, id: str, db: Db) -> list[PolicyMa
 
 @router.get('/policies/{id}')
 def get_policy(id: str, db: Db) -> PolicyDetail:
-    p, det, row = _get(db, id)
+    p, det, row, strengths = _get(db, id)
     try:
         who, targets, conditions = _conditions(db, det)
-        grants, sessions = [r for _s, r in _grants(det)], [value(long) for _s, long in _sessions(det)]
-        strengths = _strength_defs(det)
+        grants, sessions = [r for _s, r in _grants(det, strengths)], [value(long) for _s, long in _sessions(det)]
+        strength_defs = _strength_defs(det, strengths)
     except Exception as e:  # noqa: BLE001 - unexpected shapes: show what the row has, flag the rest
         row.parseError = row.parseError or f'{type(e).__name__}: {e}'
-        who, targets, conditions, grants, sessions, strengths = [], [], [], [], [], []
+        who, targets, conditions, grants, sessions, strength_defs = [], [], [], [], [], []
     counts = PolicyCounts(inScope=count_rows(db, _scope(det)), excluded=count_rows(db, _scope(det, 'excluded')))
     return PolicyDetail(**row.model_dump(), who=who, targets=targets, conditions=conditions, grantControls=grants,
-                        authenticationStrengths=strengths, session=sessions, counts=counts, raw=p.as_dict())
+                        authenticationStrengths=strength_defs, session=sessions, counts=counts, raw=p.as_dict())
 
 
 @router.get('/policies/{id}/users')
 def policy_users(id: str, q: Annotated[PolicyUserQuery, Query()], db: Db) -> Page[UserRow]:
     """Users in the policy scope (effect=applies, the default) or excluded from it."""
-    _p, det, _row = _get(db, id)
+    _p, det, _row, _s = _get(db, id)
     return users.page_users(db, q, within=_scope(det, q.effect or 'applies'))
 
 

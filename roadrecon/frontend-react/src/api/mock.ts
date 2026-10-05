@@ -570,6 +570,7 @@ function addPolicy(p: Omit<PolicyDetail, 'id' | 'targetsAllUsers' | 'targetsAllA
 }
 const exceptBg = [ref('group', bgGroup)]
 const customStrength = guid()
+const unresolvedStrength = guid()
 addPolicy({
   displayName: 'CA001 - Require MFA for all users',
   state: 'enabled',
@@ -675,16 +676,28 @@ addPolicy({
   session: [val('Sign-in frequency: every time')],
 })
 addPolicy({
-  displayName: 'Legacy - Intune enrollment MFA',
+  displayName: 'Intune enrollment - custom strength',
   state: 'enabled',
   block: false,
-  grant: ['Custom authentication strength'],
-  mfaApproximate: true,
+  grant: ['Password + Microsoft Authenticator (push)'],
   who: [cond('Users', 'Users', [kw('All users')]), cond('Users', 'Directory roles', [], [roleRef('Directory Synchronization Accounts')])],
   targets: [cond('Applications', 'Resources', [ref('servicePrincipal', intune)]), cond('UserActions', 'User actions', [val('Register or join devices')])],
   conditions: [],
-  grantControls: [{ id: customStrength, type: 'unknown', displayName: `Authentication strength: ${customStrength}` }],
-  authenticationStrengths: [{ id: customStrength, displayName: 'Custom authentication strength', builtIn: false, combinations: [] }],
+  grantControls: [{ id: customStrength, type: 'value', displayName: 'Authentication strength: Password + Microsoft Authenticator (push)' }],
+  authenticationStrengths: [{ id: customStrength, displayName: 'Password + Microsoft Authenticator (push)', builtIn: false, combinations: ['Password + Microsoft Authenticator (push notification)'] }],
+  session: [],
+})
+addPolicy({
+  displayName: 'Legacy - unresolved custom strength',
+  state: 'enabled',
+  block: false,
+  grant: ['Custom authentication strength'],
+  mfaApproximate: true,  // no policyType-44 row collected: combinations unknown, counted as MFA approximately
+  who: [cond('Users', 'Users', [kw('All users')])],
+  targets: [cond('UserActions', 'User actions', [val('Register security information')])],
+  conditions: [],
+  grantControls: [{ id: unresolvedStrength, type: 'unknown', displayName: `Authentication strength: ${unresolvedStrength}` }],
+  authenticationStrengths: [{ id: unresolvedStrength, displayName: 'Custom authentication strength', builtIn: false, combinations: [] }],
   session: [],
   parseError: 'Unknown condition key "AgentIdRisks" was ignored',
 })

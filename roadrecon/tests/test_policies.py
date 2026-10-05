@@ -135,7 +135,8 @@ def test_list_filters(client, params, expected):
 def test_policy_filter_catalogue(client):
     cat = {f['key']: f for f in client.get('/api/filters/policies').json()}
     assert {o['value'] for o in cat['grant']['options']} == {
-        'MFA', 'Compliant device', 'Phishing-resistant MFA', 'Custom authentication strength'}
+        'MFA', 'Compliant device', 'Phishing-resistant MFA', 'Custom authentication strength',
+        'Password + Microsoft Authenticator (push)'}  # resolved custom strength name
     assert {o['value'] for o in cat['state']['options']} == {'enabled', 'reporting', 'disabled'}
 
 
@@ -381,7 +382,7 @@ def test_old_format_location_and_trusted_keyword():
     key, row = pol._location(p)
     assert (key, row['displayName'], row['ipRanges'], row['trusted']) == ('net1', 'Old office', ['10.0.0.0/8'], True)
     det = {'Conditions': {'Locations': {'Include': [{'Locations': ['All']}], 'Exclude': [{'Locations': ['AllTrusted']}]}}}
-    [m] = pol._location_matches([(None, det, pol._row(p, det, None))], key, True)
+    [m] = pol._location_matches([(None, det, pol._row(p, det, None, {}))], key, True)
     assert m.effect == 'excluded' and m.excluded[0].via[0].displayName == 'All trusted locations'
 
 
@@ -389,7 +390,7 @@ def test_old_format_location_and_trusted_keyword():
 
 def test_minimal_db(minimal_client):
     page = minimal_client.get('/api/policies').json()
-    assert page['total'] == 7
+    assert page['total'] == 8
     pid = page['items'][0]['id']
     assert minimal_client.get(f'/api/policies/{pid}').status_code == 200
     assert minimal_client.get('/api/named-locations').json()['total'] == 3

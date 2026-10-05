@@ -602,9 +602,11 @@ class PolicyRow(BaseModel):
     grantOperator: Literal['AND', 'OR']
     requiresMfa: bool = Field(description=(
         'The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; '
-        'custom ones are counted as MFA). False for a block.'))
+        'a resolved custom one by its requirementsSatisfied; an unresolved custom one is counted as MFA). '
+        'False for a block.'))
     mfaApproximate: bool = Field(description=(
-        'requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump.'))
+        'requiresMfa only holds through an unresolved custom authentication strength (no policyType-44 row in the '
+        'dump), so it is assumed to be MFA.'))
     sessionControls: list[str]
     modifiedDateTime: str | None
     parseError: str | None
@@ -631,7 +633,7 @@ class AuthenticationStrength(BaseModel):
     id: str
     displayName: str
     builtIn: bool
-    combinations: list[str] = Field(description='Allowed method combinations, e.g. "Password + SMS". Empty for custom strengths (not in the dump).')
+    combinations: list[str] = Field(description='Allowed method combinations, e.g. "Password + SMS". Empty for an unresolved custom strength (no policyType-44 row in the dump).')
 
 
 class PolicyDetail(PolicyRow):
