@@ -1,5 +1,5 @@
 import { useSearchParams } from 'react-router'
-import { IconExternalLink } from '@tabler/icons-react'
+import { IconExternalLink, type Icon } from '@tabler/icons-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { PropertyList, type Property } from '@/components/property-list'
 import { JsonView } from '@/components/json-view'
@@ -28,7 +28,8 @@ interface ObjectPageProps {
   aside?: React.ReactNode
   /** Raw dump object, shown in a final Raw tab as a JSON tree. */
   raw?: unknown
-  type: ObjectType
+  /** A directory object type, or the label and icon of a page that is not one (compliance policy). */
+  type: ObjectType | { label: string; icon: Icon }
   title?: string
   /** Kept for callers; identifiers are shown once, in the summary panel. */
   sub?: string | null
@@ -49,12 +50,13 @@ export function ObjectPage({ type, title, badges, portalUrl, tabs, loading, erro
   // While loading, hidden-ness is unknown: keep every tab so the requested one exists and stays reachable by keyboard.
   const visible = [...tabs, ...rawTab].filter((t) => loading || !t.hidden)
   const tab = visible.some((t) => t.key === params.get('tab')) ? params.get('tab')! : visible[0]?.key
+  const label = typeof type === 'string' ? TYPE_LABEL[type] : type.label
 
   if (error)
     return (
       <Empty className="mt-16">
         <EmptyHeader>
-          <EmptyTitle>{error instanceof ApiError && error.status === 404 ? `${TYPE_LABEL[type]} not found` : 'Could not load this object'}</EmptyTitle>
+          <EmptyTitle>{error instanceof ApiError && error.status === 404 ? `${label} not found` : 'Could not load this object'}</EmptyTitle>
           <EmptyDescription>
             {error instanceof ApiError && error.status === 404
               ? 'No object with this ID exists in the dump. It may have been deleted before the dump was made.'
@@ -67,11 +69,11 @@ export function ObjectPage({ type, title, badges, portalUrl, tabs, loading, erro
   return (
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span className="grid size-10 place-items-center rounded-lg border glass" title={TYPE_LABEL[type]}>
-          <TypeGlyph type={type} className="size-5" />
+        <span className="grid size-10 place-items-center rounded-lg border glass" title={label}>
+          {typeof type === 'string' ? <TypeGlyph type={type} className="size-5" /> : <type.icon aria-hidden stroke={1.75} className="size-5" />}
         </span>
         <div className="flex min-w-0 flex-col">
-          <span className="text-sm text-muted-foreground">{TYPE_LABEL[type]}</span>
+          <span className="text-sm text-muted-foreground">{label}</span>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {loading ? <Skeleton className="h-7 w-72" /> : <h1 className="text-2xl leading-tight font-semibold tracking-tight">{title}</h1>}
             <div className="flex flex-wrap items-center gap-1.5">{badges}</div>

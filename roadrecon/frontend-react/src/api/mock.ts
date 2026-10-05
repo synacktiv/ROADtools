@@ -7,11 +7,13 @@ import type {
   AppRoleDefinition,
   ApplicationDetail,
   AzureRoleAssignmentRow,
+  CompliancePolicyDetail,
   Condition,
   FilterField,
   FilterResource,
   FilterType,
   Credential,
+  DeviceComplianceSettings,
   DeviceDetail,
   GroupDetail,
   GroupPim,
@@ -940,6 +942,45 @@ const tenant: Tenant = {
   raw: { objectId: TENANT_ID, displayName: 'Halvorsen Maritime' },
 }
 
+// --- Device compliance (Intune, compliancegather) ----------------------------
+
+// Devices with no policy count as compliant: the risky tenant default to show.
+const complianceSettings: DeviceComplianceSettings = { noPolicyDevicesCompliant: true, checkinThresholdDays: 30, enhancedJailBreak: false, isScheduledActionEnabled: true }
+const block = (h: number) => ({ actionType: 'block', gracePeriodHours: h, notificationTemplateId: null })
+const settingsOf = (o: Record<string, unknown>) => Object.entries(o).map(([name, value]) => ({ name, value }))
+const compliancePolicies: CompliancePolicyDetail[] = [
+  {
+    id: guid(), displayName: 'Windows - corporate baseline', description: 'BitLocker, Secure Boot and Defender on every Windows device', platform: 'Windows 10/11',
+    assignments: [ref('group', allStaff)], exclusions: [ref('group', intunePilot)], gracePeriodHours: 72, createdDateTime: daysAgo(420), lastModifiedDateTime: daysAgo(12), version: 7,
+    settings: settingsOf({ bitLockerEnabled: true, secureBootEnabled: true, codeIntegrityEnabled: true, osMinimumVersion: '10.0.19045', passwordRequired: true, passwordMinimumLength: 12, defenderEnabled: true, deviceThreatProtectionRequiredSecurityLevel: 'medium' }),
+    actions: [block(72), { actionType: 'notification', gracePeriodHours: 24, notificationTemplateId: guid() }],
+    raw: {},
+  },
+  {
+    id: guid(), displayName: 'iOS - company phones', description: null, platform: 'iOS/iPadOS',
+    assignments: [kw('All devices')], exclusions: [], gracePeriodHours: 0, createdDateTime: daysAgo(300), lastModifiedDateTime: daysAgo(40), version: 3,
+    settings: settingsOf({ passcodeRequired: true, passcodeMinimumLength: 6, securityBlockJailbrokenDevices: true, osMinimumVersion: '17.0', managedEmailProfileRequired: false }),
+    actions: [block(0)],
+    raw: {},
+  },
+  {
+    id: guid(), displayName: 'Android - BYOD work profile', description: 'Personal phones with Outlook and Teams', platform: 'Android Enterprise (work profile)',
+    assignments: [kw('All users')], exclusions: [ref('group', guestsGroup), ref('group', bgGroup)], gracePeriodHours: null, createdDateTime: daysAgo(200), lastModifiedDateTime: daysAgo(150), version: 1,
+    settings: settingsOf({ passwordRequired: false, securityBlockJailbrokenDevices: false, securityRequireVerifyApps: true, osMinimumVersion: '11.0' }),
+    actions: [],
+    raw: {},
+  },
+  {
+    id: guid(), displayName: 'macOS - fleet laptops', description: 'Draft, not assigned yet', platform: 'macOS',
+    assignments: [], exclusions: [], gracePeriodHours: 720, createdDateTime: daysAgo(20), lastModifiedDateTime: daysAgo(2), version: 2,
+    settings: settingsOf({ storageRequireEncryption: true, firewallEnabled: true, systemIntegrityProtectionEnabled: true, osMinimumBuildVersion: null, validOperatingSystemBuildRanges: [{ lowestVersion: '14.0', highestVersion: '15.9' }] }).filter((x) => x.value !== null),
+    actions: [block(720), { actionType: 'retire', gracePeriodHours: 2160, notificationTemplateId: null }],
+    raw: {},
+  },
+]
+for (const p of compliancePolicies) p.raw = { id: p.id, displayName: p.displayName, description: p.description, version: p.version, ...Object.fromEntries(p.settings.map((x) => [x.name, x.value])) }
+const toComplianceRow = ({ createdDateTime: _c, version: _v, settings: _s, actions: _a, raw: _r, ...row }: CompliancePolicyDetail) => row // eslint-disable-line @typescript-eslint/no-unused-vars
+
 // --- Advanced filtering ------------------------------------------------------
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -1099,6 +1140,12 @@ const FIELDS: Record<FilterResource, Record<string, FieldSpec>> = {
     trusted: bool_('Trusted', (l) => l.trusted),
     policyCount: num('Used by policies', 'policyCount'),
   },
+  'device-compliance': {
+    displayName: text('Name', 'displayName'),
+    platform: enum_('Platform', (p) => p.platform),
+    gracePeriodHours: num('Grace period (hours)', 'gracePeriodHours'),
+    lastModifiedDateTime: date('Modified', 'lastModifiedDateTime'),
+  },
 }
 
 const SOURCES: Record<FilterResource, () => any[]> = {
@@ -1114,6 +1161,7 @@ const SOURCES: Record<FilterResource, () => any[]> = {
   'oauth2-grants': () => grants,
   policies: () => policies,
   'named-locations': () => locations,
+  'device-compliance': () => compliancePolicies,
   // Per-principal lists: enum options come from the labels.
   'azure-role-assignments': () => [],
   'pim-assignments': () => [],
@@ -1259,7 +1307,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
   ['/api/sql', runSql],
   ['/api/sql/schema', () => sqlSchema],
   ['/api/filters/{resource}', ({ resource }) => (resource in FIELDS ? fieldCatalog(resource as FilterResource) : undefined)],
-  ['/api/stats', (): Stats => ({ users: users.length, guests: users.filter((u) => u.userType === 'Guest').length, groups: groups.length, devices: devices.length, servicePrincipals: sps.length, applications: apps.length, administrativeUnits: aus.length, roles: roles.length, policies: policies.length, namedLocations: locations.length })],
+  ['/api/stats', (): Stats => ({ users: users.length, guests: users.filter((u) => u.userType === 'Guest').length, groups: groups.length, devices: devices.length, servicePrincipals: sps.length, applications: apps.length, administrativeUnits: aus.length, roles: roles.length, policies: policies.length, namedLocations: locations.length, compliancePolicies: compliancePolicies.length })],
   ['/api/tenant', () => tenant],
   [
     '/api/search',
@@ -1537,6 +1585,13 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
   ['/api/policies/affecting/{type}/{id}', ({ type, id }) => policyMatches(type, id)],
   ['/api/named-locations', (_, q) => paginate(locations.map(({ policyMatches: _p, raw: _r, ...l }) => l), q, (l) => l.displayName, byName, 'named-locations')], // eslint-disable-line @typescript-eslint/no-unused-vars
   ['/api/named-locations/{id}', ({ id }) => locations.find((l) => l.id === id)],
+  [
+    '/api/device-compliance',
+    (_, q) => paginate(compliancePolicies.map(toComplianceRow), q, (p) => `${p.displayName} ${p.description ?? ''}`, { ...byName, platform: (p) => p.platform, gracePeriodHours: (p) => p.gracePeriodHours ?? -1, lastModifiedDateTime: (p) => p.lastModifiedDateTime ?? '' }, 'device-compliance'),
+  ],
+  // Before {id}, which would match "settings".
+  ['/api/device-compliance/settings', () => complianceSettings],
+  ['/api/device-compliance/{id}', ({ id }) => compliancePolicies.find((p) => p.id === id)],
 ]
 
 const compiled = handlers.map(([tpl, fn]) => {

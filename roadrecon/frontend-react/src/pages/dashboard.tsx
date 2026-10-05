@@ -13,10 +13,10 @@ import { copy } from '@/components/object-page'
 import { JsonView } from '@/components/json-view'
 import { PropertyList, type Property } from '@/components/property-list'
 import { toRef } from '@/components/page-parts'
-import { flag, SourceIcon } from '@/components/badges'
+import { flag, Setting, SourceIcon } from '@/components/badges'
 import { useApi } from '@/api/client'
 import type { ObjectType, Route, Stats, Tenant } from '@/api/types'
-import { fmtNumber } from '@/lib/format'
+import { camelBreaks, fmtNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useSetCrumb } from '@/lib/crumb'
 
@@ -287,16 +287,6 @@ function RolesCard({ i }: { i: number }) {
   )
 }
 
-/** Setting text with a warning mark when the value is the risky option. */
-function Setting({ text, risky }: { text: string; risky: boolean }) {
-  return (
-    <span className={cn('inline-flex items-start gap-1.5', risky && 'text-regulatory')}>
-      {risky && <IconAlertTriangle className="mt-1 size-4 shrink-0" stroke={1.75} aria-label="Risky" />}
-      {text}
-    </span>
-  )
-}
-
 function AuthorizationPolicyCard({ ap, i }: { ap: Tenant['authorizationPolicy']; i: number }) {
   const consentRisky = ap?.userConsentPolicy === 'all'
   const guestRisky = ap?.guestRole === 'member'
@@ -379,9 +369,6 @@ function DomainsCard({ domains, i }: { domains?: Tenant['domains']; i: number })
     </Card>
   )
 }
-
-// Setting names are CamelCase: a zero-width space before each word lets them wrap between words.
-const camelBreaks = (s: string) => s.replace(/(?<=[a-z])(?=[A-Z])/g, '\u200b')
 
 type DirectorySetting = Tenant['directorySettings'][number]
 

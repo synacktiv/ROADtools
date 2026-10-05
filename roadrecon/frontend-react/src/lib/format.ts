@@ -12,3 +12,6 @@ export const fmtNumber = (n: number) => n.toLocaleString()
 export function plural(n: number, one: string, many = `${one}s`) {
   return `${fmtNumber(n)} ${n === 1 ? one : many}`
 }
+
+// Setting names are CamelCase: a zero-width space before each word lets them wrap between words.
+export const camelBreaks = (s: string) => s.replace(/(?<=[a-z])(?=[A-Z])/g, '\u200b')

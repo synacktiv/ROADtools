@@ -21,6 +21,7 @@ const apps = () => import('@/pages/apps')
 const roles = () => import('@/pages/roles')
 const grants = () => import('@/pages/grants')
 const policies = () => import('@/pages/policies')
+const compliance = () => import('@/pages/compliance')
 const sql = () => import('@/pages/sql')
 
 const queryClient = new QueryClient({
@@ -39,6 +40,8 @@ const router = createBrowserRouter([
       { path: '/groups/:id', element: page(groups, 'GroupPage') },
       { path: '/devices', element: page(devices, 'DevicesPage') },
       { path: '/devices/:id', element: page(devices, 'DevicePage') },
+      { path: '/device-compliance', element: page(compliance, 'DeviceCompliancePage') },
+      { path: '/device-compliance/:id', element: page(compliance, 'CompliancePolicyPage') },
       { path: '/administrative-units', element: page(devices, 'AdministrativeUnitsPage') },
       { path: '/administrative-units/:id', element: page(devices, 'AdministrativeUnitPage') },
       { path: '/service-principals', element: page(apps, 'ServicePrincipalsPage') },
