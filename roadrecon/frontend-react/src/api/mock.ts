@@ -150,7 +150,7 @@ function addGroup(displayName: string, o: Partial<GroupDetail> = {}) {
     pimEnabled: false,
     securityIdentifier: `S-1-12-1-${Math.floor(rand() * 4e9)}-${Math.floor(rand() * 4e9)}-${Math.floor(rand() * 4e9)}-${Math.floor(rand() * 4e9)}`,
     onPremisesSecurityIdentifier: null,
-    counts: { memberUsers: 0, transitiveMemberUsers: 0, memberGroups: 0, memberServicePrincipals: 0, memberDevices: 0, memberOf: 0, owners: 0, roles: 0, administrativeUnits: 0, appRoleAssignments: 0, policies: 0, azureRoles: 0 },
+    counts: { memberUsers: 0, transitiveMemberUsers: 0, memberGroups: 0, memberServicePrincipals: 0, memberDevices: 0, memberOf: 0, owners: 0, roles: 0, administrativeUnits: 0, appRoleAssignments: 0, policies: 0, azureRoles: 0, pim: 0 },
     raw: {},
     ...o,
   }
@@ -858,6 +858,7 @@ for (const g of groups) {
     appRoleAssignments: appRoleAssignments.filter((a) => a.principal.id === g.id).length,
     policies: policyMatches('group', g.id).length,
     azureRoles: g === devAdmins ? 1 : 0,
+    pim: g === tier0 ? 1 : 0,
   }
   g.raw = { objectId: g.id, displayName: g.displayName, securityEnabled: g.securityEnabled, groupTypes: g.groupTypes, membershipRule: g.membershipRule }
 }
@@ -970,6 +971,9 @@ const FIELDS: Record<FilterResource, Record<string, FieldSpec>> = {
       TwoWayVoiceMobile: 'Phone call', Fido: 'FIDO2 key', WindowsHello: 'Windows Hello',
     }),
     hasMfa: bool_('Has MFA', (u) => mfaKinds(u).length > 0),
+    hasApp: bool_('Authenticator app', (u) => u.mfa.methods.some((m: string) => m.startsWith('PhoneApp'))),
+    hasPhone: bool_('Phone', (u) => u.mfa.methods.some((m: string) => m === 'OneWaySms' || m.startsWith('TwoWayVoice'))),
+    hasFido: bool_('FIDO2 key', (u) => u.mfa.fido > 0),
     perUserMfa: enum_('Per-user MFA', (u) => u.mfa.perUserMfa ?? 'Disabled'),
   },
   groups: {
@@ -1474,6 +1478,8 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
         rows.push({ id: guid(), kind: 'eligible', resourceType: 'group', resource: ref('group', tier0), role: 'Member', via: null, approvalRequired: false, startDateTime: daysAgo(300), endDateTime: pid === bob.id ? daysAgo(-150) : null })
         rows.push({ id: guid(), kind: 'eligible', resourceType: 'directoryRole', resource: roleRef('Global Administrator'), role: 'Global Administrator', via: ref('group', tier0), approvalRequired: true, startDateTime: daysAgo(300), endDateTime: null })
       }
+      if (pid === tier0.id)
+        rows.push({ id: guid(), kind: 'eligible', resourceType: 'directoryRole', resource: roleRef('Global Administrator'), role: 'Global Administrator', via: null, approvalRequired: true, startDateTime: daysAgo(300), endDateTime: null })
       return paginate(rows, q, (r) => r.role, { role: (r) => r.role.toLowerCase(), kind: (r) => r.kind, resourceType: (r) => r.resourceType }, 'pim-assignments')
     },
   ],

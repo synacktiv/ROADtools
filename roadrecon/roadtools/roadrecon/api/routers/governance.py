@@ -335,11 +335,11 @@ def count_azure_roles(db: Session, principal_id: str) -> int:
     return sum(_count(db, stmt) for _, stmt in _azure_selects(db, ids))
 
 
-def count_pim(db: Session, principal_id: str) -> int:
-    """PIM assignments, direct and through groups."""
+def count_pim(db: Session, principal_id: str, transitive: bool = True) -> int:
+    """PIM assignments, direct and (with `transitive`) through groups."""
     if not _has(db, *PIM_CORE):
         return 0
-    return _count(db, select(PA.id).where(PA.subjectId.in_(_principal_ids(db, principal_id, True))))
+    return _count(db, select(PA.id).where(PA.subjectId.in_(_principal_ids(db, principal_id, transitive))))
 
 
 def count_access_packages(db: Session, user_id: str) -> int:

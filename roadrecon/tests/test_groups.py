@@ -144,6 +144,10 @@ def test_detail(client, db):
     assert c.administrativeUnits == count(d.lnk_au_member_group, d.lnk_au_member_group.c.Group, top)
     it = GroupDetail(**client.get(f'/api/groups/{chain[1]}').json())
     assert (it.counts.memberOf, it.counts.memberServicePrincipals, it.pimEnabled) == (1, 1, True)
+    pa = d.PIMgovernanceRoleAssignment
+    held = db.scalar(select(pa.subjectId).join(d.Group, d.Group.objectId == pa.subjectId))
+    assert GroupDetail(**client.get(f'/api/groups/{held}').json()).counts.pim == \
+        db.scalar(select(func.count()).where(pa.subjectId == held)) > 0
     assert GroupDetail(**client.get(f'/api/groups/{gid(db, "Dynamic Devices")}').json()).counts.memberDevices == 1
     ara = db.scalar(select(d.AppRoleAssignment.principalId).where(d.AppRoleAssignment.principalType == 'Group'))
     assert client.get(f'/api/groups/{ara}').json()['counts']['appRoleAssignments'] == \

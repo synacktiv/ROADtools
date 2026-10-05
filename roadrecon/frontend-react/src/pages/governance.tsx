@@ -133,7 +133,7 @@ export function AzureRolesTable({ principalId }: { principalId: string }) {
 
 const RESOURCE_TYPE: Record<PimAssignmentRow['resourceType'], string> = { directoryRole: 'Directory role', group: 'Group', other: 'Other' }
 
-export function PimAssignmentsTable({ principalId }: { principalId: string }) {
+export function PimAssignmentsTable({ principalId, transitive = true }: { principalId: string; transitive?: boolean }) {
   const columns: ColumnDef<PimAssignmentRow>[] = [
     {
       id: 'resource',
@@ -154,7 +154,7 @@ export function PimAssignmentsTable({ principalId }: { principalId: string }) {
     { id: 'start', header: 'Start', meta: { defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => orDash(fmtDate(row.original.startDateTime)) },
     { id: 'end', header: 'End', meta: { defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => orDash(fmtDate(row.original.endDateTime)) },
   ]
-  return <DataTable route="/api/pim-assignments" query={{ principalId, transitive: true }} columns={columns} resource="pim-assignments" noun="PIM assignment" hideSearch />
+  return <DataTable route="/api/pim-assignments" query={{ principalId, transitive }} columns={columns} resource="pim-assignments" noun="PIM assignment" hideSearch />
 }
 
 function GrantedResource({ r }: { r: AccessPackagePolicyRow['resources'][number] }) {
