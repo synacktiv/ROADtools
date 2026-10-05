@@ -438,9 +438,10 @@ const roles: RoleDetail[] = ROLE_DEFS.map(([templateId, displayName, description
   syncedCount: 0,
   holders: [], 
   allowedResourceActions: ['microsoft.directory/users/basic/update', 'microsoft.directory/groups/members/update', 'microsoft.directory/applications/credentials/update', 'microsoft.directory/servicePrincipals/appRoleAssignedTo/update'].slice(0, 2 + Math.floor(rand() * 3)),
+  policyCount: 0,
   raw: {},
 }))
-const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, syncedCount: 0, holders: [], allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
+const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, syncedCount: 0, holders: [], allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], policyCount: 0, raw: {} }
 roles.push(customRole)
 const roleByName = (n: string) => roles.find((r) => r.displayName === n)!
 

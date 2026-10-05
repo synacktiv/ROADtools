@@ -130,6 +130,7 @@ def test_role_detail(client, db):
     assert all(tally(h, principalType=t) == types[t] for t in ('user', 'group', 'servicePrincipal'))
     assert tally(h, scope='directory') == len(mine) and tally(h, scope='administrativeUnit') == tally(h, scope='application') == 0
     assert tally(h, kind='active') == role.activeCount and tally(h, kind='eligible') == role.eligibleCount
+    assert role.policyCount == len(client.get(f'/api/policies/affecting/role/{GA}').json()) == 2
     ua = RoleDetail(**client.get('/api/roles/fe930be7-5e62-47db-91af-98c3a49a38b1').json())
     assert (tally(ua.holders, scope='administrativeUnit'), tally(ua.holders, principalType='group'), ua.eligibleCount) == (1, 1, 1)
     assert client.get('/api/roles/nope').status_code == 404
