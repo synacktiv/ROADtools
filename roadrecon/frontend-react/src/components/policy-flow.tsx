@@ -150,9 +150,10 @@ function Block({ title, icon: I, children }: { title: string; icon?: Icon; child
   )
 }
 
-/** What an authentication strength accepts. A custom one is only an id in the dump: counted as MFA, approximately. */
+/** What an authentication strength accepts. An unresolved custom one (no type-44 row collected) has no combinations:
+ * counted as MFA, approximately. Built-in and resolved custom strengths list their combinations. */
 function Strength({ strength: s }: { strength: PolicyDetail['authenticationStrengths'][number] }) {
-  if (!s.builtIn)
+  if (!s.builtIn && s.combinations.length === 0)
     return <p className="text-sm text-pretty text-warning">Custom authentication strength: combinations not collected, counted as MFA.</p>
   return (
     <details className="text-sm text-muted-foreground">

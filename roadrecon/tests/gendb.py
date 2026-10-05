@@ -48,8 +48,10 @@ ZERO_GUID = '00000000-0000-0000-0000-000000000000'
 # Built-in Conditional Access authentication strengths (see policies plugin).
 AUTHSTRENGTH_MFA = '00000000-0000-0000-0000-000000000002'
 AUTHSTRENGTH_PHISHRESISTANT = '00000000-0000-0000-0000-000000000004'
-# A custom strength ("Password + Microsoft Authenticator (Push Notification)"): the dump has only its id.
+# A custom strength ("Password + Microsoft Authenticator (push)"): resolved from its policyType-44 row.
 AUTHSTRENGTH_CUSTOM = '5d3c6a1e-7b2f-4c8e-9a41-2f6b8d0c1e01'
+# A second custom strength with no policyType-44 row (old dump): stays unresolved, counted as MFA approximately.
+AUTHSTRENGTH_CUSTOM_UNRESOLVED = '7f1a2b3c-4d5e-6f70-8192-a3b4c5d6e7f8'
 
 EPOCH = datetime.datetime(2020, 1, 1)
 
@@ -785,6 +787,40 @@ class Gen:
         })
         self.named_locations.append((lid3, 'Nordic countries'))
 
+    def gen_auth_strengths(self):
+        """Custom Conditional Access authentication strengths, as AAD Graph stores them: policyType-44 Policy rows.
+
+        The tenant default "container" (tenantDefaultPolicy set, no allowedCombinations) is ignored by the backend;
+        a custom strength has tenantDefaultPolicy null and its objectId is what CA policies put in AuthStrengthIds.
+        Omitted from --minimal dumps to exercise the unresolved fallback.
+        """
+        self.add(db.Policy, {
+            'objectType': 'Policy',
+            'objectId': self.guid(),
+            'displayName': 'Default Policy',
+            'policyType': 44,
+            'policyIdentifier': None,
+            'tenantDefaultPolicy': 44,
+            'policyDetail': [json.dumps({'LastUpdatedTimestamp': self.dt().isoformat() + 'Z'})],
+        })
+        self.add(db.Policy, {
+            'objectType': 'Policy',
+            'objectId': AUTHSTRENGTH_CUSTOM,
+            'displayName': 'Password + Microsoft Authenticator (push)',
+            'policyType': 44,
+            'policyIdentifier': None,
+            'tenantDefaultPolicy': None,
+            'policyDetail': [json.dumps({
+                'created': self.dt().isoformat() + 'Z',
+                'modified': self.dt().isoformat() + 'Z',
+                'description': '',
+                'allowedCombinations': ['Password, MicrosoftAuthenticatorPush'],
+                'requirementsSatisfied': 'Mfa',
+                'metadata': {'version': '1.0'},
+                'combinationConfigurations': [],
+            })],
+        })
+
     def gen_ca_policies(self):
         g = self.groups
         roles = list(ROLE_TEMPLATES.values())
@@ -856,12 +892,19 @@ class Gen:
             extra={'SignInFrequencyType': 10, 'SignInFrequencyTimeSpan': '4:00:00',
                    'PersistentBrowserSessionMode': 'Never'})
 
-        # 5. Enabled: user-action (register security info) with auth strength + auth context.
+        # 5. Enabled: user-action (register security info) with a (resolved) custom auth strength + auth context.
         policy('Protect security info registration', 'Enabled', {
             'Users': {'Include': [{'Users': self.enabled_users[:2] or [self.ga_user]}]},
             'Applications': {'Include': [{'Acrs': ['c1']}]},
             'AuthFlows': {'Include': [{'AuthFlowType': ['deviceCodeFlow', 'authenticationTransfer']}]},
         }, controls=[{'AuthStrengthIds': [AUTHSTRENGTH_CUSTOM]}])
+
+        # 5b. Enabled: a custom strength with no type-44 row (old dump) -> unresolved, MFA approximate.
+        #     Scoped to specific users/app so it does not disturb the targetsAll* / grant filter assertions.
+        policy('Legacy custom-strength MFA', 'Enabled', {
+            'Users': {'Include': [{'Users': self.enabled_users[:2] or [self.ga_user]}]},
+            'Applications': {'Include': [{'Applications': [GRAPH_APPID]}]},
+        }, controls=[{'AuthStrengthIds': [AUTHSTRENGTH_CUSTOM_UNRESOLVED]}])
 
         # 6. Enabled: device-filter rule, service-principal policy (workload identities).
         policy('Workload identity sign-in restriction', 'Enabled', {
@@ -1222,6 +1265,7 @@ class Gen:
         self.gen_named_locations()
         self.gen_ca_policies()
         if not self.minimal:
+            self.gen_auth_strengths()  # type-44 rows: omitted from minimal (old dump) to test the fallback
             self.gen_pim()
             self.gen_ig()
             self.gen_az()

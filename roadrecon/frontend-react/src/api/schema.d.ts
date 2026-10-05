@@ -866,7 +866,7 @@ export interface components {
             builtIn: boolean;
             /**
              * Combinations
-             * @description Allowed method combinations, e.g. "Password + SMS". Empty for custom strengths (not in the dump).
+             * @description Allowed method combinations, e.g. "Password + SMS". Empty for an unresolved custom strength (no policyType-44 row in the dump).
              */
             combinations: string[];
         };
@@ -1793,12 +1793,12 @@ export interface components {
             grantOperator: "AND" | "OR";
             /**
              * Requiresmfa
-             * @description The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; custom ones are counted as MFA). False for a block.
+             * @description The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; a resolved custom one by its requirementsSatisfied; an unresolved custom one is counted as MFA). False for a block.
              */
             requiresMfa: boolean;
             /**
              * Mfaapproximate
-             * @description requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump.
+             * @description requiresMfa only holds through an unresolved custom authentication strength (no policyType-44 row in the dump), so it is assumed to be MFA.
              */
             mfaApproximate: boolean;
             /** Sessioncontrols */
@@ -1882,12 +1882,12 @@ export interface components {
             grantOperator: "AND" | "OR";
             /**
              * Requiresmfa
-             * @description The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; custom ones are counted as MFA). False for a block.
+             * @description The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; a resolved custom one by its requirementsSatisfied; an unresolved custom one is counted as MFA). False for a block.
              */
             requiresMfa: boolean;
             /**
              * Mfaapproximate
-             * @description requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump.
+             * @description requiresMfa only holds through an unresolved custom authentication strength (no policyType-44 row in the dump), so it is assumed to be MFA.
              */
             mfaApproximate: boolean;
             /** Sessioncontrols */
