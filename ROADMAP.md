@@ -7,7 +7,9 @@ Branch: `gui-next`. Vocabulary: [CONTEXT.md](CONTEXT.md). Decisions: [docs/adr](
 
 ```sh
 podman compose run --rm py python roadrecon/tests/gendb.py -o roadrecon/.dev/roadrecon.db   # synthetic DB
-podman compose --profile backend up            # api + web on http://127.0.0.1:5173
+podman compose up                              # prod: built GUI + API on http://127.0.0.1:5000 (ROADRECON_DB overrides the DB)
+podman compose up api web                      # dev: api (--reload) + Vite on http://127.0.0.1:5173
+podman compose up legacy                       # old Flask GUI on the same DB, http://127.0.0.1:5001
 VITE_MOCK=1 podman compose up web              # frontend on mock data only
 podman compose run --rm py pytest roadrecon/tests -q
 podman compose run --rm node npm run build
@@ -74,15 +76,15 @@ If `podman compose` fails with `pasta failed` / `unable to upgrade to tcp`, the 
 
 | Slice | Routes | Pages | Backend | Frontend | Tests |
 |---|---|---|---|---|---|
-| S1 users | `/api/users` (incl. MFA filters), `/api/users/{id}`, `/api/owners` | users, user page, mfa | [x] | [ ] | [x] |
-| S2 groups | `/api/groups`, `/api/groups/{id}` | groups, group page | [x] | [ ] | [x] |
-| S3 devices + AUs | `/api/devices[/{id}]`, `/api/administrative-units[/{id}]` | devices, AUs | [x] | [ ] | [x] |
-| S4 SPs + apps | `/api/service-principals[/{id}]`, `/api/applications[/{id}]` | SPs, apps | [x] | [ ] | [x] |
-| S5 policies | `/api/policies[/{id}]`, `/api/policies/{id}/users`, `/api/policies/affecting/{type}/{id}`, `/api/named-locations[/{id}]` | policies, named locations, Policies tab | [x] | [ ] | [x] |
-| S6 roles | `/api/roles[/{id}]`, `/api/role-assignments` | roles, role page, Roles tabs | [x] | [ ] | [x] |
-| S7 grants | `/api/app-role-assignments`, `/api/oauth2-grants` | app roles, OAuth2 grants, grant tabs | [x] | [ ] | [x] |
-| S8 governance | `/api/azure-role-assignments`, `/api/pim-assignments`, `/api/groups/{id}/pim`, `/api/access-package-policies` | Azure / PIM / access package tabs | [x] | [ ] | [x] |
-| S9 meta | `/api/stats`, `/api/tenant`, `/api/search` | dashboard, ⌘K, settings | [x] | [ ] | [x] |
+| S1 users | `/api/users` (incl. MFA filters), `/api/users/{id}`, `/api/owners` | users, user page, mfa | [x] | [x] | [x] |
+| S2 groups | `/api/groups`, `/api/groups/{id}` | groups, group page | [x] | [x] | [x] |
+| S3 devices + AUs | `/api/devices[/{id}]`, `/api/administrative-units[/{id}]` | devices, AUs | [x] | [x] | [x] |
+| S4 SPs + apps | `/api/service-principals[/{id}]`, `/api/applications[/{id}]` | SPs, apps | [x] | [x] | [x] |
+| S5 policies | `/api/policies[/{id}]`, `/api/policies/{id}/users`, `/api/policies/affecting/{type}/{id}`, `/api/named-locations[/{id}]` | policies, named locations, Policies tab | [x] | [x] | [x] |
+| S6 roles | `/api/roles[/{id}]`, `/api/role-assignments` | roles, role page, Roles tabs | [x] | [x] | [x] |
+| S7 grants | `/api/app-role-assignments`, `/api/oauth2-grants` | app roles, OAuth2 grants, grant tabs | [x] | [x] | [x] |
+| S8 governance | `/api/azure-role-assignments`, `/api/pim-assignments`, `/api/groups/{id}/pim`, `/api/access-package-policies` | Azure / PIM / access package tabs | [x] | [x] | [x] |
+| S9 meta | `/api/stats`, `/api/tenant`, `/api/search` | dashboard, ⌘K, settings | [x] | [x] | [x] |
 
 Batch 1: S5, S1, S2, S3, S4. Batch 2: S6, S7, S8, S9. Code review after each batch.
 
@@ -110,30 +112,30 @@ Performance and compatibility
 - [x] 50k-user synthetic DB: list, relation and in-scope endpoints < 300 ms (`.dev/perf.py`: worst is a policy's in-scope users at about 240 ms; `role-assignments?expandGroups` across all roles is about 350 ms, but the UI only uses it with `roleId`)
 - [x] DB without PIM/IG/AZ tables returns empty results, not errors (`minimal_client` tests, plus single missing PIM tables)
 - [x] `--read-only` on a read-only file works (`test_read_only_engine`)
-- [ ] Side-by-side with the Flask GUI on the same DB (optional `legacy` compose service)
+- [x] Side-by-side with the Flask GUI on the same DB (`legacy` compose service, Angular built on node 16)
 
 Parity with the old GUI — lists
-- [ ] Users (name, UPN, enabled, mail, department, last password change, job title, mobile, source, type, MFA)
-- [ ] Groups (name, description, type, source, mail, public, role assignable, dynamic)
-- [ ] Devices (name, manufacturer, enabled, model, OS, version, trust type, compliant, managed, rooted)
-- [ ] Service principals (name, type, publisher, Microsoft app, passwords, keys, roles, OAuth2 permissions, custom owner)
-- [ ] Applications (name, multitenant, homepage, public client, implicit flow, passwords, keys, roles, permissions, custom owner)
-- [ ] Administrative units (name, description, membership rule)
-- [ ] Application roles (principal, type, application, role, description)
-- [ ] OAuth2 permissions (consent type, principal, client, resource, scope, expiry)
-- [ ] MFA (name, UPN, enabled, per-user MFA, methods count, FIDO, app, phone, method icons)
-- [ ] Directory roles (per role: principal, scope, active/eligible, type, UPN, source, status, MFA)
+- [x] Users (name, UPN, enabled, mail, department, last password change, job title, mobile, source, type, MFA)
+- [x] Groups (name, description, type, source, mail, public, role assignable, dynamic)
+- [x] Devices (name, manufacturer, enabled, model, OS, version, trust type, compliant, managed, rooted)
+- [x] Service principals (name, type, publisher, Microsoft app, passwords, keys, roles, OAuth2 permissions, custom owner)
+- [x] Applications (name, multitenant, homepage, public client, implicit flow, passwords, keys, roles, permissions, custom owner)
+- [x] Administrative units (name, description, membership rule)
+- [x] Application roles (principal, type, application, role, description)
+- [x] OAuth2 permissions (consent type, principal, client, resource, scope, expiry)
+- [x] MFA (name, UPN, enabled, per-user MFA, methods count, FIDO, app, phone, method icons)
+- [x] Directory roles (per role: principal, scope, active/eligible, type, UPN, source, status, MFA)
 
 Parity — object pages
-- [ ] User: overview, groups, roles, owned devices/SPs/apps/groups, PIM (direct + via groups), access packages, Azure roles, policies, raw
-- [ ] Group: overview, parents, roles, owners (users + SPs), members (users, groups, SPs, devices), PIM roles, PIM rights, Azure roles, raw
-- [ ] Device: overview, owners, BitLocker keys, raw
-- [ ] Administrative unit: overview, members (users, groups, devices), raw
-- [ ] Service principal: overview, owners, roles, groups, app roles given / received, defined permissions, Azure roles, metadata, raw
-- [ ] Application: overview, owners, defined permissions, metadata, raw, link to service principal
+- [x] User: overview, groups, roles, owned devices/SPs/apps/groups, PIM (direct + via groups), access packages, Azure roles, policies, raw
+- [x] Group: overview, parents, roles, owners (users + SPs), members (users, groups, SPs, devices), PIM roles, PIM rights (direct only, like the old GUI), Azure roles, raw
+- [x] Device: overview, owners, BitLocker keys, raw
+- [x] Administrative unit: overview, members (users, groups, devices), raw
+- [x] Service principal: overview, owners, roles, groups, app roles given / received, defined permissions, Azure roles, metadata, raw
+- [x] Application: overview, owners, defined permissions, metadata, raw, link to service principal
 
 Parity — other
-- [ ] Dashboard: stats, directory settings, tenant information + domains, authorization policy
+- [x] Dashboard: stats, directory settings, tenant information + domains, authorization policy
 - [x] Settings page removed at the user's request (2026-10-04). Where each setting went:
   - theme: toggle in the header;
   - page size: the table footer;
@@ -143,13 +145,13 @@ Parity — other
   - paging: always server-side.
 
 New features
-- [ ] Policies list + detail with every GUID resolved to a link
-- [ ] Users in scope of a policy (paginated, include/exclude)
-- [ ] Policies tab on user, group, role, service principal, application (with "via")
-- [ ] Named locations list + detail with the policies using them
-- [ ] Owner service principals shown (old GUI only showed owner users)
-- [ ] Every object mention is a link (incl. scopes, grants, policy conditions)
-- [ ] ⌘K global search, dark mode
+- [x] Policies list + detail with every GUID resolved to a link
+- [x] Users in scope of a policy (paginated, include/exclude)
+- [x] Policies tab on user, group, role, service principal, application (with "via")
+- [x] Named locations list + detail with the policies using them
+- [x] Owner service principals shown (old GUI only showed owner users)
+- [x] Every object mention is a link (incl. scopes, grants, policy conditions)
+- [x] ⌘K global search, dark mode
 - [x] Directory roles list (`RoleRow.syncedCount`; expanded rows read `/api/role-assignments?expandGroups`, so assigned groups with no members only show on the role page):
   - privileged roles first;
   - expandable rows that show the users assigned the role;
@@ -164,13 +166,14 @@ New features
 - [ ] Service principals list: a URLs column (reply URLs, homepage, logout URL), hidden by default.
 
 ## Phase 6 — Switch
-- [ ] Default prod target: `podman compose up` builds the frontend and serves it from the FastAPI app on one port (`python -m roadtools.roadrecon.api`), no Vite
-- [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
-- [ ] `gather` calls `ensure_indexes` before policyanalysis
-- [ ] `roadrecon/setup.py`: add fastapi + uvicorn, drop flask / marshmallow deps, `sqlalchemy>=2`
-- [ ] Vite `outDir` → `roadtools/roadrecon/dist_gui` (keep `.gitkeep`)
-- [ ] `azure-pipelines.yml` builds `frontend-react`
-- [ ] Delete `server.py`, `roadrecon/frontend/`, mock fetch; rewrite `tests/test_guiserver.py`
+- [x] Default prod target: `podman compose up` builds the frontend and serves it from the FastAPI app on one port (`python -m roadtools.roadrecon.api`), no Vite
+- [x] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
+- [x] `gather` calls `ensure_indexes` before policyanalysis
+- [x] `roadrecon/setup.py`: add fastapi + uvicorn, drop flask / marshmallow deps, `sqlalchemy>=2`
+- [x] Vite `outDir` → `roadtools/roadrecon/dist_gui` (keep `.gitkeep`)
+- [x] `azure-pipelines.yml` builds `frontend-react`
+- [ ] Delete `server.py`, `roadrecon/frontend/`, mock fetch; rewrite `tests/test_guiserver.py` (after the user review; `xlsexport` no longer imports `server.py`)
+- [ ] Run `roadrecon/tests` in `azure-pipelines.yml` (needs httpx)
 - [ ] README / docs
 
 ## Known approximations (shown as such in the UI)
@@ -191,6 +194,9 @@ New features
 - Playwright smoke test
 - Collapsible JSON tree for the raw tab
 - Azure resource / subscription pages
+- Policies tab count on the role page (needs a count on `RoleDetail`).
+- Teams / chat resource-specific consent settings on the dashboard consent card.
+- `xlsexport` MFA sheet fails on gendb DBs (`KeyError: 'encryptedPinHash'`).
 
 ---
 
