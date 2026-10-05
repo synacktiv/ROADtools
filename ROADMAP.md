@@ -186,7 +186,7 @@ The original collector does not gather Intune compliance data. Collect it, then 
 - [x] API: `/api/device-compliance` (settings + policy list, `Page[T]`) and `/api/device-compliance/{id}` (settings by platform, assignments as `ObjectRef` to groups or all users / all devices, actions for non-compliance). Add to openapi.json and `schema.d.ts`, with tests on gendb data.
 - [x] gendb: settings and a few policies per platform.
 - [x] Frontend: a "Device compliance" page in the sidebar, shown only when compliance data was collected. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
-- [ ] Device page: compliance policies that target the device's owner groups or member groups (later; needs the assignments first).
+- [x] Device page: a Compliance tab with the policies that target the device through its groups or its owners' groups (`/api/device-compliance?deviceId=`, with "via" and Applies / Excluded; exclusion wins; All users counts any owned device, flagged approximate since licences are not collected).
 - Open questions:
   - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
   - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall` (done: any non-200 is logged and skipped).
