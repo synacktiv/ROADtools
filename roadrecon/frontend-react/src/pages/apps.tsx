@@ -429,6 +429,7 @@ export function ServicePrincipalPage() {
           ['Assignment required', flag(s.appRoleAssignmentRequired)],
           ['Homepage', urls([s.homepage])],
           ['Reply URLs', urls(s.replyUrls)],
+          ['Logout URL', urls([s.logoutUrl])],
           // The app ID is always one of the names; it is shown above.
           ['Service principal names', s.servicePrincipalNames.filter((n) => n !== s.appId)],
           ['Object ID', s.id, { mono: true, copy: s.id }],

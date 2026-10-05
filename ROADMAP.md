@@ -163,7 +163,7 @@ New features
   - run on a separate read-only connection (`PRAGMA query_only`), with a row cap and a timeout.
 - [x] Resizable table columns (drag the column header edge in `DataTable`).
 - [x] Named locations map: trusted countries in green (already handled; mock and gendb had no trusted country location, now they do).
-- [ ] Service principals list: a URLs column (reply URLs, homepage, logout URL), hidden by default.
+- [x] Service principals list: a URLs column (reply URLs, homepage, logout URL), hidden by default, with a `url` filter; logout URL also on the SP page.
 
 ## Phase 6 — Switch
 - [x] Default prod target: `podman compose up` builds the frontend and serves it from the FastAPI app on one port (`python -m roadtools.roadrecon.api`), no Vite
