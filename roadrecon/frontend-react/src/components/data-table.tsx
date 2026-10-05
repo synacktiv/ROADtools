@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useSearchParams } from 'react-router'
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type Header, type VisibilityState } from '@tanstack/react-table'
+import { flexRender, getCoreRowModel, useReactTable, type Column, type ColumnDef, type ColumnSizingState, type Header, type VisibilityState } from '@tanstack/react-table'
 import {
   IconArrowDown,
   IconArrowUp,
@@ -169,14 +170,42 @@ export function DataTable<R extends Route, T>({
     }
   }, [visKey, visibility])
 
+  // Column widths per list, same key pattern. Columns never resized keep the automatic table layout.
+  const sizeKey = visKey.replace('roadrecon.columns:', 'roadrecon.widths:')
+  const [sizing, setSizing] = useState<ColumnSizingState>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(sizeKey) || '{}')
+    } catch {
+      return {}
+    }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem(sizeKey, JSON.stringify(sizing))
+    } catch {
+      // storage unavailable: widths last for this page only
+    }
+  }, [sizeKey, sizing])
+  const width = (c: Column<T>) => (sizing[c.id] ? { width: c.getSize(), minWidth: c.getSize(), maxWidth: c.getSize() } : undefined)
+  const startResize = (h: Header<T, unknown>) => (e: React.MouseEvent | React.TouchEvent) => {
+    // TanStack starts the drag from column.getSize(); seed it with the rendered width so the edge does not jump.
+    const w = (e.currentTarget.parentElement as HTMLElement).offsetWidth
+    if (!sizing[h.column.id]) flushSync(() => setSizing((s) => ({ ...s, [h.column.id]: w })))
+    h.getResizeHandler()(e)
+  }
+
   const table = useReactTable({
     data: pageData?.items ?? [],
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
-    state: { columnVisibility: visibility },
+    state: { columnVisibility: visibility, columnSizing: sizing },
     onColumnVisibilityChange: setVisibility,
+    onColumnSizingChange: setSizing,
+    enableColumnResizing: true,
+    columnResizeMode: 'onChange',
+    defaultColumn: { minSize: 60 },
   })
 
   const total = pageData?.total ?? 0
@@ -240,7 +269,11 @@ export function DataTable<R extends Route, T>({
               <DropdownMenuItem onSelect={() => exportRows('json', true)}>JSON, all {fmtNumber(total)} rows</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <ColumnMenu table={table} onReset={() => setVisibility(loadVisibility('', columns as ColumnDef<unknown>[]))} />
+          <ColumnMenu table={table} onReset={() => {
+              setVisibility(loadVisibility('', columns as ColumnDef<unknown>[]))
+              setSizing({})
+            }}
+          />
         </div>
       </div>
 
@@ -251,7 +284,11 @@ export function DataTable<R extends Route, T>({
               <TableRow key={hg.id} className="hover:bg-transparent">
                 {renderExpanded && <TableHead className="w-10 px-2" aria-label="Expand" />}
                 {hg.headers.map((h) => (
-                  <TableHead key={h.id} className={cn('group/head h-10 px-3 font-medium text-ink', h.column.columnDef.meta?.className)}>
+                  <TableHead
+                    key={h.id}
+                    style={width(h.column)}
+                    className={cn('group/head relative h-10 px-3 font-medium text-ink', sizing[h.column.id] && 'overflow-hidden', h.column.columnDef.meta?.className)}
+                  >
                     <HeaderCell
                       header={h}
                       sort={sort}
@@ -262,6 +299,22 @@ export function DataTable<R extends Route, T>({
                       filters={active}
                       onFilters={setFilters}
                     />
+                    {h.column.getCanResize() && (
+                      <div
+                        role="separator"
+                        aria-orientation="vertical"
+                        aria-label="Resize column"
+                        title="Drag to resize, double-click to reset"
+                        onMouseDown={startResize(h)}
+                        onTouchStart={startResize(h)}
+                        onDoubleClick={() => h.column.resetSize()}
+                        className={cn(
+                          'absolute inset-y-0 right-0 z-10 w-2 cursor-col-resize touch-none select-none',
+                          'after:absolute after:inset-y-2 after:right-0 after:w-px after:bg-foreground/15 after:opacity-0 after:transition-opacity group-hover/head:after:opacity-100 hover:after:bg-foreground/40',
+                          h.column.getIsResizing() && 'after:bg-foreground/40 after:opacity-100',
+                        )}
+                      />
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -273,7 +326,7 @@ export function DataTable<R extends Route, T>({
                 <TableRow key={i}>
                   {renderExpanded && <TableCell className="w-10" />}
                   {table.getVisibleLeafColumns().map((c) => (
-                    <TableCell key={c.id} className="px-3">
+                    <TableCell key={c.id} style={width(c)} className="px-3">
                       <Skeleton className="h-4 w-3/4" />
                     </TableCell>
                   ))}
@@ -296,7 +349,11 @@ export function DataTable<R extends Route, T>({
                   </TableCell>
                 )}
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className={cn('group/cell h-10 max-w-96 px-3 py-1.5', cell.column.columnDef.meta?.className)}>
+                  <TableCell
+                    key={cell.id}
+                    style={width(cell.column)}
+                    className={cn('group/cell h-10 max-w-96 px-3 py-1.5', sizing[cell.column.id] && 'overflow-hidden', cell.column.columnDef.meta?.className)}
+                  >
                     {cell.column.columnDef.meta?.noCopy ? (
                       flexRender(cell.column.columnDef.cell, cell.getContext())
                     ) : (
