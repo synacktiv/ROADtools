@@ -78,6 +78,9 @@ FIELDS = register('users', {
     'lastPasswordChangeDateTime': F('Password changed', 'date', col=U.lastPasswordChangeDateTime),
     'mfaMethod': F('MFA method', 'enum', labels=MFA_LABELS, where=_multi(_method, HAS_MFA)),
     'hasMfa': F('Has MFA', 'bool', col=HAS_MFA),
+    'hasApp': F('Authenticator app', 'bool', col=MFA_KINDS['app']),
+    'hasPhone': F('Phone', 'bool', col=MFA_KINDS['phone']),
+    'hasFido': F('FIDO2 key', 'bool', col=MFA_KINDS['fido']),
     'perUserMfa': F('Per-user MFA', 'enum', where=_multi(_per_user, true()),
                     options=lambda db: ['Enabled', 'Enforced', 'Disabled']),
 })

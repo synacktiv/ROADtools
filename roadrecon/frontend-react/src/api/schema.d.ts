@@ -1055,6 +1055,11 @@ export interface components {
             policies: number;
             /** Azureroles */
             azureRoles: number;
+            /**
+             * Pim
+             * @description PIM assignments held by the group itself (not through parent groups).
+             */
+            pim: number;
         };
         /** GroupDetail */
         GroupDetail: {

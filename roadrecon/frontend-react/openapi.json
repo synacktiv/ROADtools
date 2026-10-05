@@ -5777,6 +5777,11 @@
      "azureRoles": {
       "type": "integer",
       "title": "Azureroles"
+     },
+     "pim": {
+      "type": "integer",
+      "title": "Pim",
+      "description": "PIM assignments held by the group itself (not through parent groups)."
      }
     },
     "type": "object",
@@ -5792,7 +5797,8 @@
      "administrativeUnits",
      "appRoleAssignments",
      "policies",
-     "azureRoles"
+     "azureRoles",
+     "pim"
     ],
     "title": "GroupCounts"
    },

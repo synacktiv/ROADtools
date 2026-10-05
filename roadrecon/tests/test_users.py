@@ -131,6 +131,8 @@ def test_advanced_filters(client, users):
     no_mfa_enabled = where(users, lambda u, m: not kinds(m) and u.accountEnabled)
     assert ids(client, filter=['hasMfa:eq:false', 'accountEnabled:eq:true']) == no_mfa_enabled
     assert ids(client, filter='hasMfa:eq:true') == where(users, lambda u, m: kinds(m))
+    for key, kind in (('hasApp', 'app'), ('hasPhone', 'phone'), ('hasFido', 'fido')):
+        assert ids(client, filter=f'{key}:eq:true') == where(users, lambda u, m: MFA_KINDS[kind](m))
     assert ids(client, filter='userType:in:Guest') == where(users, lambda u, m: u.userType == 'Guest')
     assert ids(client, filter='department:in:IT,HR') == where(users, lambda u, m: u.department in ('IT', 'HR'))
     assert ids(client, filter=['department:in:IT', 'userType:in:Guest'], match='any') == \

@@ -131,6 +131,9 @@ const COL = {
   userType: { id: 'userType', header: 'Type', meta: { filter: 'userType' }, cell: ({ row }) => row.original.userType },
   enabled: { id: 'accountEnabled', header: 'Enabled', meta: { filter: 'accountEnabled' }, cell: ({ row }) => <Flag value={row.original.accountEnabled} risky={false} /> },
   hasMfa: { id: 'hasMfa', header: 'Has MFA', meta: { filter: 'hasMfa' }, cell: ({ row }) => <Flag value={mfaCount(row.original.mfa) > 0} risky={false} /> },
+  hasApp: { id: 'hasApp', header: 'App', meta: { filter: 'hasApp', noCopy: true }, cell: ({ row }) => <Flag value={row.original.mfa.methods.some((m) => m.startsWith('PhoneApp'))} /> },
+  hasPhone: { id: 'hasPhone', header: 'Phone', meta: { filter: 'hasPhone', noCopy: true }, cell: ({ row }) => <Flag value={row.original.mfa.methods.some((m) => m === 'OneWaySms' || m.startsWith('TwoWayVoice'))} /> },
+  hasFido: { id: 'hasFido', header: 'FIDO', meta: { filter: 'hasFido', noCopy: true }, cell: ({ row }) => <Flag value={row.original.mfa.fido > 0} /> },
   id: { accessorKey: 'id', header: 'Object ID', meta: { className: 'font-mono text-sm' } },
 } satisfies Record<string, Col>
 
@@ -155,6 +158,9 @@ const MFA_COLUMNS = ([
       return <span className={n ? undefined : 'text-muted-foreground'}>{n}</span>
     },
   },
+  COL.hasApp,
+  COL.hasPhone,
+  COL.hasFido,
   { ...COL.mfa, header: 'Registered' },
   ...[COL.enabled, COL.userType, COL.source, COL.mail, COL.department, COL.jobTitle, COL.password, COL.id].map(hidden),
   // ponytail: DataTable remembers column visibility per route, and /users shares /api/users; prefixed ids keep the two lists apart.

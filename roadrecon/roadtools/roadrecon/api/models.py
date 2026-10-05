@@ -179,6 +179,7 @@ class GroupCounts(BaseModel):
     appRoleAssignments: int
     policies: int
     azureRoles: int
+    pim: int = Field(description='PIM assignments held by the group itself (not through parent groups).')
 
 
 class GroupDetail(GroupRow):

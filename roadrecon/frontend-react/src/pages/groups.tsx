@@ -15,7 +15,7 @@ import { DevicesTable, AdministrativeUnitsTable } from '@/pages/devices'
 import { OwnersTable, ServicePrincipalsTable } from '@/pages/apps'
 import { RoleAssignmentsTable } from '@/pages/roles'
 import { AppRoleAssignmentsTable } from '@/pages/grants'
-import { AzureRolesTable, GroupPimView } from '@/pages/governance'
+import { AzureRolesTable, GroupPimView, PimAssignmentsTable } from '@/pages/governance'
 import { useApi } from '@/api/client'
 import type { GroupDetail, GroupQuery, GroupRow } from '@/api/types'
 import { fmtDate, fmtNumber } from '@/lib/format'
@@ -186,6 +186,7 @@ export function GroupPage() {
         { key: 'appRoles', label: 'App roles', count: c?.appRoleAssignments, render: () => <AppRoleAssignmentsTable query={{ principalId: id }} hidePrincipal /> },
         { key: 'units', label: 'Administrative units', count: c?.administrativeUnits, hidden: c?.administrativeUnits === 0, render: () => <AdministrativeUnitsTable query={{ memberId: id }} /> },
         { key: 'pim', label: 'PIM', hidden: g && !g.pimEnabled, render: () => <GroupPimView groupId={id} /> },
+        { key: 'pimRights', label: 'PIM rights', count: c?.pim, hidden: c?.pim === 0, render: () => <PimAssignmentsTable principalId={id} transitive={false} /> },
         { key: 'azure', label: 'Azure roles', count: c?.azureRoles, hidden: c?.azureRoles === 0, render: () => <AzureRolesTable principalId={id} /> },
       ]}
     />
