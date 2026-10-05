@@ -35,5 +35,5 @@ def test_minimal_has_no_governance_tables(tmp_path):
     engine = database.init(dburl=database.parse_db_argument(path))
     from sqlalchemy import inspect
     tables = set(inspect(engine).get_table_names())
-    assert not any(t.startswith(('PIM', 'IG', 'AZ')) for t in tables)
+    assert not any(t.startswith(('PIM', 'IG', 'AZ', 'DeviceManagement', 'DeviceCompliance')) for t in tables)
     assert 'Users' in tables and 'Policys' in tables

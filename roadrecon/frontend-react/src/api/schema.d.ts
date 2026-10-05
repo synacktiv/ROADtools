@@ -569,6 +569,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/device-compliance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Compliance Policies */
+        get: operations["list_compliance_policies_api_device_compliance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/device-compliance/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Compliance Settings */
+        get: operations["get_compliance_settings_api_device_compliance_settings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/device-compliance/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Compliance Policy */
+        get: operations["get_compliance_policy_api_device_compliance__id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sql": {
         parameters: {
             query?: never;
@@ -880,6 +931,96 @@ export interface components {
             /** Creationtime */
             creationTime: string | null;
         };
+        /** ComplianceAction */
+        ComplianceAction: {
+            /**
+             * Actiontype
+             * @description block, notification, retire, wipe, remoteLock, pushNotification...
+             */
+            actionType: string;
+            /** Graceperiodhours */
+            gracePeriodHours: number;
+            /** Notificationtemplateid */
+            notificationTemplateId: string | null;
+        };
+        /** CompliancePolicyDetail */
+        CompliancePolicyDetail: {
+            /** Id */
+            id: string;
+            /** Displayname */
+            displayName: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Platform
+             * @description Display label, e.g. Windows 10/11, iOS/iPadOS; the raw value when unknown.
+             */
+            platform: string;
+            /**
+             * Assignments
+             * @description Included groups, or All users / All devices keywords.
+             */
+            assignments: components["schemas"]["ObjectRef"][];
+            /** Exclusions */
+            exclusions: components["schemas"]["ObjectRef"][];
+            /**
+             * Graceperiodhours
+             * @description Before the device is marked non-compliant; null = no block action.
+             */
+            gracePeriodHours: number | null;
+            /** Lastmodifieddatetime */
+            lastModifiedDateTime: string | null;
+            /** Createddatetime */
+            createdDateTime: string | null;
+            /** Version */
+            version: number | null;
+            /**
+             * Settings
+             * @description Non-null settings of the raw policy, metadata left out.
+             */
+            settings: components["schemas"]["ComplianceSetting"][];
+            /** Actions */
+            actions: components["schemas"]["ComplianceAction"][];
+            /** Raw */
+            raw: {
+                [key: string]: unknown;
+            };
+        };
+        /** CompliancePolicyRow */
+        CompliancePolicyRow: {
+            /** Id */
+            id: string;
+            /** Displayname */
+            displayName: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Platform
+             * @description Display label, e.g. Windows 10/11, iOS/iPadOS; the raw value when unknown.
+             */
+            platform: string;
+            /**
+             * Assignments
+             * @description Included groups, or All users / All devices keywords.
+             */
+            assignments: components["schemas"]["ObjectRef"][];
+            /** Exclusions */
+            exclusions: components["schemas"]["ObjectRef"][];
+            /**
+             * Graceperiodhours
+             * @description Before the device is marked non-compliant; null = no block action.
+             */
+            gracePeriodHours: number | null;
+            /** Lastmodifieddatetime */
+            lastModifiedDateTime: string | null;
+        };
+        /** ComplianceSetting */
+        ComplianceSetting: {
+            /** Name */
+            name: string;
+            /** Value */
+            value: unknown;
+        };
         /** Condition */
         Condition: {
             /**
@@ -909,6 +1050,20 @@ export interface components {
             startDate: string | null;
             /** Enddate */
             endDate: string | null;
+        };
+        /** DeviceComplianceSettings */
+        DeviceComplianceSettings: {
+            /**
+             * Nopolicydevicescompliant
+             * @description Devices with no compliance policy are marked compliant (not secureByDefault).
+             */
+            noPolicyDevicesCompliant: boolean | null;
+            /** Checkinthresholddays */
+            checkinThresholdDays: number | null;
+            /** Enhancedjailbreak */
+            enhancedJailBreak: boolean | null;
+            /** Isscheduledactionenabled */
+            isScheduledActionEnabled: boolean | null;
         };
         /** DeviceCounts */
         DeviceCounts: {
@@ -1357,6 +1512,17 @@ export interface components {
         Page_AzureRoleAssignmentRow_: {
             /** Items */
             items: components["schemas"]["AzureRoleAssignmentRow"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /** Page[CompliancePolicyRow] */
+        Page_CompliancePolicyRow_: {
+            /** Items */
+            items: components["schemas"]["CompliancePolicyRow"][];
             /** Total */
             total: number;
             /** Page */
@@ -2007,6 +2173,11 @@ export interface components {
             policies: number;
             /** Namedlocations */
             namedLocations: number;
+            /**
+             * Compliancepolicies
+             * @description null = device compliance was not collected.
+             */
+            compliancePolicies?: number | null;
         };
         /** Tenant */
         Tenant: {
@@ -2153,7 +2324,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resource: "users" | "groups" | "devices" | "administrative-units" | "service-principals" | "applications" | "roles" | "role-assignments" | "app-role-assignments" | "oauth2-grants" | "policies" | "named-locations" | "azure-role-assignments" | "pim-assignments" | "access-package-policies";
+                resource: "users" | "groups" | "devices" | "administrative-units" | "service-principals" | "applications" | "roles" | "role-assignments" | "app-role-assignments" | "oauth2-grants" | "policies" | "named-locations" | "azure-role-assignments" | "pim-assignments" | "access-package-policies" | "device-compliance";
             };
             cookie?: never;
         };
@@ -3339,6 +3510,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NamedLocationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_compliance_policies_api_device_compliance_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                q?: string | null;
+                sort?: string | null;
+                order?: "asc" | "desc";
+                /** @description Advanced filters, repeatable: `field:op:value`. For `in`/`notIn` the value is a comma list of URI-encoded items. */
+                filter?: string[];
+                /** @description How filters combine. */
+                match?: "all" | "any";
+                /** @description Platform label or raw value (windows10, ios...). */
+                platform?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_CompliancePolicyRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_compliance_settings_api_device_compliance_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceComplianceSettings"] | null;
+                };
+            };
+        };
+    };
+    get_compliance_policy_api_device_compliance__id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompliancePolicyDetail"];
                 };
             };
             /** @description Validation Error */

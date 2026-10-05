@@ -1130,6 +1130,70 @@ class Gen:
         self.link(db.lnk_az_roleassignment_eligible_group,
                   AZroleEligibilityScheduleInstance=eid, Group=self.rows[db.AZroleEligibilityScheduleInstance][-1]['principal_id'])
 
+    # -- Intune device compliance (compliancegather) -----------------------
+    def gen_compliance(self):
+        # secureByDefault False: devices without a compliance policy count as compliant (the risky case).
+        settings = {'deviceComplianceCheckinThresholdDays': 30, 'isScheduledActionEnabled': True,
+                    'secureByDefault': False, 'enhancedJailBreak': False, 'deviceInactivityBeforeRetirementInDay': 0,
+                    'derivedCredentialProvider': 'notConfigured', 'derivedCredentialUrl': None}
+        self.add(db.DeviceManagementSetting, {
+            'id': self.tenant_id, 'secureByDefault': False, 'deviceComplianceCheckinThresholdDays': 30,
+            'enhancedJailBreak': False, 'isScheduledActionEnabled': True, 'settings': settings})
+
+        g = self.groups
+        deleted_group = self.guid()  # unresolved reference
+        policies = [
+            # (name, platform, settings, [(targetType, groupId)], [(actionType, gracePeriodHours)])
+            ('Windows 10/11 baseline', 'windows10', {
+                'passwordRequired': True, 'passwordMinimumLength': 12, 'osMinimumVersion': '10.0.19045',
+                'osMaximumVersion': None, 'bitLockerEnabled': True, 'secureBootEnabled': True,
+                'codeIntegrityEnabled': True, 'storageRequireEncryption': True, 'defenderEnabled': True,
+                'deviceThreatProtectionEnabled': False, 'deviceThreatProtectionRequiredSecurityLevel': 'unavailable',
+            }, [('group', g[0]), ('exclusionGroup', g[7])], [('block', 72), ('notification', 0)]),
+            ('iOS corporate devices', 'ios', {
+                'passcodeRequired': True, 'passcodeMinimumLength': 6, 'securityBlockJailbrokenDevices': True,
+                'osMinimumVersion': '17.0', 'managedEmailProfileRequired': False,
+            }, [('allLicensedUsers', None)], [('block', 0)]),
+            ('Android work profile', 'androidWorkProfile', {
+                'passwordRequired': True, 'passwordMinimumLength': 6, 'securityBlockJailbrokenDevices': True,
+                'securityRequireSafetyNetAttestationBasicIntegrity': True, 'storageRequireEncryption': True,
+                'osMinimumVersion': '12.0',
+            }, [('group', g[3]), ('group', g[4])], [('block', 24), ('notification', 0), ('retire', 720)]),
+            ('macOS FileVault', 'macOS', {
+                'passwordRequired': False, 'storageRequireEncryption': True, 'firewallEnabled': True,
+                'systemIntegrityProtectionEnabled': True, 'gatekeeperAllowedAppSource': 'macAppStoreAndIdentifiedDevelopers',
+            }, [('allDevices', None), ('exclusionGroup', deleted_group)], [('block', 0)]),
+            ('Windows 10/11 legacy (unassigned)', 'windows10', {
+                'passwordRequired': False, 'bitLockerEnabled': False,
+            }, [], [('notification', 0)]),
+        ]
+        targets = {'group': 'groupAssignmentTarget', 'exclusionGroup': 'exclusionGroupAssignmentTarget',
+                   'allLicensedUsers': 'allLicensedUsersAssignmentTarget', 'allDevices': 'allDevicesAssignmentTarget'}
+        for name, platform, settings, assignments, actions in policies:
+            pid = self.guid()
+            created = self.dt()
+            odata = '#microsoft.graph.%sCompliancePolicy' % platform
+            self.add(db.DeviceCompliancePolicy, {
+                'id': pid, 'odataType': odata, 'platform': platform, 'displayName': name,
+                'description': f'{name} compliance policy', 'createdDateTime': created,
+                'lastModifiedDateTime': created + datetime.timedelta(days=self.rng.randint(0, 300)), 'version': 2,
+                'settings': {'@odata.type': odata, 'id': pid, 'displayName': name, 'roleScopeTagIds': ['0'],
+                             'version': 2, **settings},
+                'scheduledActionsForRule': [{'ruleName': 'PasswordRequired', 'scheduledActionConfigurations': [
+                    {'actionType': a, 'gracePeriodHours': h,
+                     'notificationTemplateId': self.guid() if a == 'notification' else ZERO_GUID,
+                     'notificationMessageCCList': []} for a, h in actions]}],
+            })
+            for ttype, gid in assignments:
+                target = {'@odata.type': '#microsoft.graph.' + targets[ttype],
+                          'deviceAndAppManagementAssignmentFilterId': None,
+                          'deviceAndAppManagementAssignmentFilterType': 'none'}
+                if gid:
+                    target['groupId'] = gid
+                self.add(db.DeviceCompliancePolicyAssignment, {
+                    'id': self.guid(), 'policyId': pid, 'targetType': ttype, 'groupId': gid,
+                    'filterId': None, 'filterType': 'none', 'target': target})
+
     # -- build / write -----------------------------------------------------
     def build(self):
         self.gen_users()
@@ -1150,13 +1214,14 @@ class Gen:
             self.gen_pim()
             self.gen_ig()
             self.gen_az()
+            self.gen_compliance()
 
 
-MINIMAL_PREFIXES = ('PIM', 'IG', 'AZ')
+MINIMAL_PREFIXES = ('PIM', 'IG', 'AZ', 'DeviceManagement', 'DeviceCompliance')
 
 
 def _drop_minimal_tables(engine):
-    """Remove PIM*/IG*/AZ* tables and their link tables to emulate old dumps."""
+    """Remove PIM*/IG*/AZ* and Intune compliance tables, plus their link tables, to emulate old dumps."""
     from sqlalchemy import text
     names = [t for t in database.Base.metadata.tables
              if t.startswith(MINIMAL_PREFIXES)
@@ -1209,7 +1274,7 @@ def main():
     parser.add_argument('--users', type=int, default=300, help='Number of users (default 300)')
     parser.add_argument('--seed', type=int, default=1, help='Random seed (default 1)')
     parser.add_argument('--minimal', action='store_true',
-                        help='Leave out PIM*/IG*/AZ* tables (emulate old dumps)')
+                        help='Leave out PIM*/IG*/AZ* and compliance tables (emulate old dumps)')
     args = parser.parse_args()
     import time
     t0 = time.perf_counter()

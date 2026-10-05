@@ -52,7 +52,7 @@ FilterOp = Literal['contains', 'notContains', 'eq', 'ne', 'startsWith', 'endsWit
 FilterResource = Literal[
     'users', 'groups', 'devices', 'administrative-units', 'service-principals', 'applications',
     'roles', 'role-assignments', 'app-role-assignments', 'oauth2-grants', 'policies', 'named-locations',
-    'azure-role-assignments', 'pim-assignments', 'access-package-policies',
+    'azure-role-assignments', 'pim-assignments', 'access-package-policies', 'device-compliance',
 ]
 
 
@@ -674,6 +674,50 @@ class NamedLocationDetail(NamedLocationRow):
     raw: Raw
 
 
+# --- Device compliance (Intune) ---------------------------------------------
+
+class DeviceComplianceSettings(BaseModel):
+    noPolicyDevicesCompliant: bool | None = Field(description='Devices with no compliance policy are marked compliant '
+                                                  '(not secureByDefault).')
+    checkinThresholdDays: int | None
+    enhancedJailBreak: bool | None
+    isScheduledActionEnabled: bool | None
+
+
+class CompliancePolicyRow(BaseModel):
+    id: str
+    displayName: str
+    description: str | None
+    platform: str = Field(description='Display label, e.g. Windows 10/11, iOS/iPadOS; the raw value when unknown.')
+    assignments: list[ObjectRef] = Field(description='Included groups, or All users / All devices keywords.')
+    exclusions: list[ObjectRef]
+    gracePeriodHours: int | None = Field(description='Before the device is marked non-compliant; null = no block action.')
+    lastModifiedDateTime: str | None
+
+
+class ComplianceQuery(PageQuery):
+    platform: str | None = Field(None, description='Platform label or raw value (windows10, ios...).')
+
+
+class ComplianceSetting(BaseModel):
+    name: str
+    value: Any
+
+
+class ComplianceAction(BaseModel):
+    actionType: str = Field(description='block, notification, retire, wipe, remoteLock, pushNotification...')
+    gracePeriodHours: int
+    notificationTemplateId: str | None
+
+
+class CompliancePolicyDetail(CompliancePolicyRow):
+    createdDateTime: str | None
+    version: int | None
+    settings: list[ComplianceSetting] = Field(description='Non-null settings of the raw policy, metadata left out.')
+    actions: list[ComplianceAction]
+    raw: Raw
+
+
 # --- Meta --------------------------------------------------------------------
 
 class Stats(BaseModel):
@@ -687,6 +731,7 @@ class Stats(BaseModel):
     roles: int
     policies: int
     namedLocations: int
+    compliancePolicies: int | None = Field(None, description='null = device compliance was not collected.')
 
 
 class Domain(BaseModel):

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from roadtools.roadlib.metadef import database as d
 
 from ..common import Db, like_escape, catalog, has_table, resolve_refs
-from . import roles
+from . import compliance, roles
 from ..models import (AuthorizationPolicySummary, DirectorySettingSummary, Domain, FilterField, FilterResource,
                       ObjectRef, SearchGroup, SearchResult, Stats, Tenant)
 
@@ -44,7 +44,7 @@ def get_stats(db: Db) -> Stats:
         count(d.Policy, d.Policy.policyType == CA_POLICY).label('policies'),
         count(d.Policy, d.Policy.policyType == NAMED_LOCATION).label('namedLocations'),
     )).one()
-    return Stats(**row._mapping)
+    return Stats(**row._mapping, compliancePolicies=compliance.count_policies(db))
 
 
 # --- Tenant ------------------------------------------------------------------
