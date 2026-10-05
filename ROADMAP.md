@@ -191,6 +191,14 @@ The original collector does not gather Intune compliance data. Collect it, then 
   - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
   - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall`.
 
+## Phase 8 — Authentication strengths
+Today the policies show authentication strength ids as unresolved references (only the three built-in ids are known, in the old `policies` plugin).
+- [ ] Collector: custom authentication strength definitions (`GET /policies/authenticationStrengthPolicies` on MS Graph, built-in and custom, with `allowedCombinations`), in the collector if AAD Graph does not already give them. New table added, never altered; a DB without it gives empty results.
+- [ ] API: every authentication strength id in a policy resolves to an `ObjectRef` (name + allowed combinations); built-in ones resolve even without collected data.
+- [ ] MFA requirement: a grant control with an authentication strength counts as requiring MFA when every allowed combination is multifactor. For example, "Password + Microsoft Authenticator (Push Notification)" requires MFA, so a user covered by it must not show as "does not require MFA".
+- [ ] Frontend: authentication strength shown as a link with its combinations (policy detail, policy flow, users-in-scope); a page or popover for the definition, following the "show only when collected" rule for custom ones.
+- Reference: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-strengths
+
 ## UI bugs
 - [ ] Long badge content overlaps the row: on the Conditional access page, an unfolded policy whose Users, Resources or platform ("Any platform") group/badge holds very long content runs over the whole line. Wrap it onto new lines. Fix the other places with the same badge/group pattern too.
 
