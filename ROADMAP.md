@@ -154,6 +154,7 @@ New features
   - privileged roles first;
   - expandable rows that show the users assigned the role;
   - a column with how many holders are not cloud only (synced from on-premises).
+- [ ] Animations on the dashboard and on page loading (relaxes design principle 5, "motion only answers an action"; honour `prefers-reduced-motion`)
 
 ## Phase 6 — Switch
 - [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
