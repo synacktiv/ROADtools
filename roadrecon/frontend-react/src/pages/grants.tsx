@@ -3,7 +3,7 @@ import { IconBolt, IconClockX, IconUsersGroup } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DataTable } from '@/components/data-table'
-import { ObjectLink } from '@/components/object-link'
+import { ObjectLink, TYPE_LABEL } from '@/components/object-link'
 import { ListPage, orDash } from '@/components/page-parts'
 import type { AppRoleAssignmentQuery, AppRoleAssignmentRow, OAuth2GrantQuery, OAuth2GrantRow } from '@/api/types'
 import { fmtDate } from '@/lib/format'
@@ -36,6 +36,7 @@ export function AppRoleAssignmentsTable({ query, hidePrincipal, hideResource }: 
   const columns: ColumnDef<AppRoleAssignmentRow>[] = [
     // The principal type is the glyph in front of the name.
     ...(hidePrincipal ? [] : [{ id: 'principal', header: 'Principal', meta: { sort: 'principal', filter: 'principalType' }, cell: ({ row }) => <ObjectLink value={row.original.principal} /> } as ColumnDef<AppRoleAssignmentRow>]),
+    ...(hidePrincipal ? [] : [{ id: 'principalType', header: 'Principal type', meta: { defaultHidden: true }, cell: ({ row }) => TYPE_LABEL[row.original.principal.type] } as ColumnDef<AppRoleAssignmentRow>]),
     ...(hideResource ? [] : [{ id: 'resource', header: 'Application', meta: { sort: 'resource', filter: 'resource' }, cell: ({ row }) => <ObjectLink value={row.original.resource} /> } as ColumnDef<AppRoleAssignmentRow>]),
     { id: 'value', header: 'Role', meta: { filter: 'value' }, cell: ({ row }) => <RoleValue row={row.original} /> },
     // The copy wrapper truncates, so the text opts back into wrapping.
@@ -116,6 +117,12 @@ export function OAuth2GrantsTable({ query }: { query?: Partial<OAuth2GrantQuery>
             <TooltipContent>Admin consent. Applies to every user who signs in to the app.</TooltipContent>
           </Tooltip>
         ),
+    },
+    {
+      id: 'consentType',
+      header: 'Consent type',
+      meta: { defaultHidden: true },
+      cell: ({ row }) => (row.original.consentType === 'AllPrincipals' ? 'All users (admin consent)' : 'One user'),
     },
     {
       id: 'client',

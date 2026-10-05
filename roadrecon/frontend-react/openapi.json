@@ -4998,6 +4998,28 @@
       ],
       "title": "Userscanreadotherusers"
      },
+     "usersCanCreateTenants": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userscancreatetenants"
+     },
+     "usersCanReadOwnBitlockerKeys": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Userscanreadownbitlockerkeys"
+     },
      "userConsent": {
       "type": "string",
       "title": "Userconsent"
@@ -5047,6 +5069,8 @@
      "usersCanRegisterApps",
      "usersCanCreateSecurityGroups",
      "usersCanReadOtherUsers",
+     "usersCanCreateTenants",
+     "usersCanReadOwnBitlockerKeys",
      "userConsent",
      "guestAccess",
      "guestInvites",
@@ -8313,6 +8337,17 @@
      "value": {
       "type": "string",
       "title": "Value"
+     },
+     "ref": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "The object the value names, when it is an object id (e.g. GroupCreationAllowedGroupId)."
      }
     },
     "type": "object",

@@ -41,11 +41,14 @@ def test_tenant(client, db):
     assert t.domains[0].capabilities == ['Email', 'OfficeCommunicationsOnline']
     ap = t.authorizationPolicy
     assert ap.selfServicePasswordReset is True and ap.blockMsolPowerShell is False and ap.usersCanRegisterApps is True
+    assert (ap.usersCanCreateTenants, ap.usersCanReadOwnBitlockerKeys) == (True, False)
     assert (ap.userConsentPolicy, ap.guestRole, ap.guestInvitesFrom) == ('all', 'limited', 'adminsAndGuestInviters')
     assert 'limited access' in ap.guestAccess
     ds = db.scalars(select(d.DirectorySetting)).all()
     assert [s.name for s in t.directorySettings] == [s.displayName for s in ds]
-    assert {v.name: v.value for v in t.directorySettings[0].values}['EnableGroupCreation'] == 'true'
+    values = {v.name: v for v in t.directorySettings[0].values}
+    assert values['EnableGroupCreation'].value == 'true' and values['EnableGroupCreation'].ref is None
+    assert values['GroupCreationAllowedGroupId'].ref.type == 'group'
 
 
 def test_consent_decoding():
