@@ -423,6 +423,8 @@ class RoleRow(BaseModel):
     isPrivileged: bool = Field(description='Tier-0 / privileged role (fixed list of template IDs on the server).')
     activeCount: int
     eligibleCount: int
+    syncedCount: int = Field(description='Distinct users holding the role (directly or through a group, active or '
+                             'eligible) that are synced from on-premises.')
 
 
 class RoleQuery(PageQuery):
