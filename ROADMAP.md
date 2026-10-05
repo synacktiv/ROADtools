@@ -176,6 +176,20 @@ New features
 - [x] Run `roadrecon/tests` in `azure-pipelines.yml` (httpx added; one pytest call over `tests/` and `roadrecon/tests/`)
 - [x] README: the new GUI (`roadrecon gui` options, what it shows, `/docs`) and the `frontend-react` dev setup
 
+## Phase 7 — Device compliance settings (new collection)
+The original collector does not gather Intune compliance data. Collect it, then show it on a new page.
+- [ ] Collector: `roadrecon compliancegather` (alias `compliancedump`), in its own module like `pimgather.py` / `iggather.py`, also called by `gatherall`. It uses MS Graph, because AAD Graph has no Intune endpoints.
+  - tenant compliance settings: `GET /deviceManagement?$select=settings`. Covers "mark devices with no compliance policy as", the check-in threshold in days, and enhanced jailbreak detection;
+  - compliance policies with their assignments: `GET /deviceManagement/deviceCompliancePolicies?$expand=assignments,scheduledActionsForRule($expand=scheduledActionConfigurations)`. Store the platform from `@odata.type` and the raw settings as JSON.
+- [ ] Tables in `roadlib/metadef/database.py`, added, never altered. A DB without them gives empty results, not errors (same as the PIM/IG tables).
+- [ ] API: `/api/device-compliance` (settings + policy list, `Page[T]`) and `/api/device-compliance/{id}` (settings by platform, assignments as `ObjectRef` to groups or all users / all devices, actions for non-compliance). Add to openapi.json and `schema.d.ts`, with tests on gendb data.
+- [ ] gendb: settings and a few policies per platform.
+- [ ] Frontend: a "Device compliance" page in the sidebar. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
+- [ ] Device page: compliance policies that target the device's owner groups or member groups (later; needs the assignments first).
+- Open questions:
+  - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
+  - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall`.
+
 ## Done from "Later" (2026-10-05)
 - Shared router helpers in `api/common.py` (`flag`, `count_rows`, `count_of`, `gm_user` / `gm_group`); openapi.json unchanged.
 - `mfa_` column-id prefix dropped (saved MFA column choices reset once).
