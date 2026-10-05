@@ -188,7 +188,7 @@ The original collector does not gather Intune compliance data. Collect it, then 
 
 ## Phase 8 — Authentication strengths
 Today the policies show authentication strength ids as unresolved references (only the three built-in ids are known, in the old `policies` plugin).
-- ~~Collector~~ — out of scope: AAD Graph has no strength definitions (not in the metadef), and MS Graph is out of scope (CLAUDE.md). To confirm on the test tenant dump.
+- ~~Collector~~ — out of scope: AAD Graph has no strength definitions (not in the metadef; the test tenant dump of 2026-10-05 only has policyTypes 2, 5, 8, 10, 18, 19, 24), and MS Graph is out of scope (CLAUDE.md).
 - [x] API: built-in strength ids (`…0002/3/4`) resolve from a constant with their allowed combinations (`PolicyDetail.authenticationStrengths`); custom ids stay unresolved ("Custom authentication strength").
 - [x] MFA requirement: `PolicyRow.requiresMfa` / `mfaApproximate` + a `requiresMfa` filter. A grant entry met only by MFA and/or strengths requires MFA; built-in strengths count; a custom strength counts but is flagged approximate (combinations not collected); "MFA or compliant device" does not.
 - [x] Frontend: policy flow lists a built-in strength's combinations, or notes a custom one; the user page's risk signals card says whether an enabled policy in scope requires MFA.
