@@ -179,22 +179,16 @@ New features
 
 ## Phase 7 — Device compliance settings (new collection)
 The original collector does not gather Intune compliance data. Collect it, then show it on a new page.
-- [x] Collector: `roadrecon compliancegather` (alias `compliancedump`), in its own module like `pimgather.py` / `iggather.py`, also called by `gatherall`. It uses MS Graph, because AAD Graph has no Intune endpoints.
-  - tenant compliance settings: `GET /deviceManagement?$select=settings`. Covers "mark devices with no compliance policy as", the check-in threshold in days, and enhanced jailbreak detection;
-  - compliance policies with their assignments: `GET /deviceManagement/deviceCompliancePolicies?$expand=assignments,scheduledActionsForRule($expand=scheduledActionConfigurations)`. Store the platform from `@odata.type` and the raw settings as JSON.
+- ~~Collector~~ — **out of scope** (2026-10-05): Intune is only on MS Graph, and collectors use only the APIs of the original roadrecon (rule in CLAUDE.md). `compliancegather` was written then removed. Without a collector, the tables below stay empty on real DBs (only gendb fills them), so the page and the device tab never show.
 - [x] Tables in `roadlib/metadef/database.py` (`DeviceManagementSettings`, `DeviceCompliancePolicys`, `DeviceCompliancePolicyAssignments`), added, never altered. A DB without them gives empty results, not errors, and the API reports that compliance data is absent (see the conventions).
 - [x] API: `/api/device-compliance` (settings + policy list, `Page[T]`) and `/api/device-compliance/{id}` (settings by platform, assignments as `ObjectRef` to groups or all users / all devices, actions for non-compliance). Add to openapi.json and `schema.d.ts`, with tests on gendb data.
 - [x] gendb: settings and a few policies per platform.
 - [x] Frontend: a "Device compliance" page in the sidebar, shown only when compliance data was collected. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
 - [x] Device page: a Compliance tab with the policies that target the device through its groups or its owners' groups (`/api/device-compliance?deviceId=`, with "via" and Applies / Excluded; exclusion wins; All users counts any owned device, flagged approximate since licences are not collected).
-- Open questions:
-  - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
-  - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall` (done: any non-200 is logged and skipped).
-  - `gatherall` uses an Azure CLI token, which lacks the scope: in practice compliance data needs a separate `compliancegather` run with an Intune-capable token.
 
 ## Phase 8 — Authentication strengths
 Today the policies show authentication strength ids as unresolved references (only the three built-in ids are known, in the old `policies` plugin).
-- [ ] Collector: custom authentication strength definitions (`GET /policies/authenticationStrengthPolicies` on MS Graph, built-in and custom, with `allowedCombinations`), in the collector if AAD Graph does not already give them. New table added, never altered; a DB without it gives empty results.
+- [ ] Collector: custom authentication strength definitions, only if AAD Graph gives them (MS Graph `/policies/authenticationStrengthPolicies` is out of scope, see CLAUDE.md). Otherwise built-in strengths resolve from a constant and custom ones stay unresolved.
 - [ ] API: every authentication strength id in a policy resolves to an `ObjectRef` (name + allowed combinations); built-in ones resolve even without collected data.
 - [ ] MFA requirement: a grant control with an authentication strength counts as requiring MFA when every allowed combination is multifactor. For example, "Password + Microsoft Authenticator (Push Notification)" requires MFA, so a user covered by it must not show as "does not require MFA".
 - [ ] Frontend: authentication strength shown as a link with its combinations (policy detail, policy flow, users-in-scope); a page or popover for the definition, following the "show only when collected" rule for custom ones.

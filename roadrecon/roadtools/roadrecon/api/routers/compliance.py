@@ -1,4 +1,4 @@
-"""Device compliance (Intune): tenant settings and compliance policies, from `roadrecon compliancegather`.
+"""Device compliance (Intune): tenant settings and compliance policies.
 
 Not collected by the original roadrecon: without the tables (or with them empty) the list is empty,
 the settings are null and `Stats.compliancePolicies` is null, so the frontend hides the page.

@@ -1130,7 +1130,7 @@ class Gen:
         self.link(db.lnk_az_roleassignment_eligible_group,
                   AZroleEligibilityScheduleInstance=eid, Group=self.rows[db.AZroleEligibilityScheduleInstance][-1]['principal_id'])
 
-    # -- Intune device compliance (compliancegather) -----------------------
+    # -- Intune device compliance -----------------------
     def gen_compliance(self):
         # secureByDefault False: devices without a compliance policy count as compliant (the risky case).
         settings = {'deviceComplianceCheckinThresholdDays': 30, 'isScheduledActionEnabled': True,

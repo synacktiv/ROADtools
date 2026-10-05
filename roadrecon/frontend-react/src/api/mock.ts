@@ -943,7 +943,7 @@ const tenant: Tenant = {
   raw: { objectId: TENANT_ID, displayName: 'Halvorsen Maritime' },
 }
 
-// --- Device compliance (Intune, compliancegather) ----------------------------
+// --- Device compliance (Intune) ----------------------------------------
 
 // Devices with no policy count as compliant: the risky tenant default to show.
 const complianceSettings: DeviceComplianceSettings = { noPolicyDevicesCompliant: true, checkinThresholdDays: 30, enhancedJailBreak: false, isScheduledActionEnabled: true }

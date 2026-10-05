@@ -134,7 +134,7 @@ def test_tables_missing(minimal_client):
 
 
 def test_tables_empty(dbpath, tmp_path):
-    """Tables present but empty (no compliancegather run on a roadlib that has them): same as missing."""
+    """Tables present but empty (a roadlib that has them, no data): same as missing."""
     path = tmp_path / 'empty.db'
     shutil.copy(dbpath, path)
     with sqlite3.connect(path) as conn:
