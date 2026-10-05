@@ -323,11 +323,13 @@ class ExportToFilePlugin():
         all_mfa = self.session.query(User).all()
         mfa = []
         for user in all_mfa:
-            mfa_methods = len(user.strongAuthenticationDetail['methods'])
-            methods = [method['methodType'] for method in user.strongAuthenticationDetail['methods']]
+            # Real dumps and gendb may lack any of these keys (or the whole column): treat as absent
+            detail = user.strongAuthenticationDetail or {}
+            methods = [method.get('methodType') for method in detail.get('methods') or []]
+            mfa_methods = len(methods)
             has_app = 'PhoneAppOTP' in methods or 'PhoneAppNotification' in methods
             has_phonenr = 'OneWaySms' in methods or 'TwoWayVoiceMobile' in methods
-            has_fido = 'FIDO' in [key['usage'] for key in user.searchableDeviceKey]
+            has_fido = 'FIDO' in [key.get('usage') for key in user.searchableDeviceKey or []]
             mfa.append({
                 'objectId': user.objectId,
                 'displayName': user.displayName,
@@ -336,15 +338,15 @@ class ExportToFilePlugin():
                 'has_app': has_app,
                 'has_phonenr': has_phonenr,
                 'has_fido': has_fido,
-                'encryptedPinHash': user.strongAuthenticationDetail['encryptedPinHash'],
-                'encryptedPinHashHistory': user.strongAuthenticationDetail['encryptedPinHashHistory'],
+                'encryptedPinHash': detail.get('encryptedPinHash'),
+                'encryptedPinHashHistory': detail.get('encryptedPinHashHistory'),
                 'methods': methods,
-                'oathTokenMetadata': user.strongAuthenticationDetail['oathTokenMetadata'],
-                'requirements': user.strongAuthenticationDetail['requirements'],
-                'phoneAppDetails': user.strongAuthenticationDetail['phoneAppDetails'],
-                'proofupTime': user.strongAuthenticationDetail['proofupTime'],
-                'verificationDetail': user.strongAuthenticationDetail['verificationDetail'],
-                'requirements': user.strongAuthenticationDetail['requirements']
+                'oathTokenMetadata': detail.get('oathTokenMetadata'),
+                'requirements': detail.get('requirements'),
+                'phoneAppDetails': detail.get('phoneAppDetails'),
+                'proofupTime': detail.get('proofupTime'),
+                'verificationDetail': detail.get('verificationDetail'),
+                'requirements': detail.get('requirements')
             })
 
         self._fill_sheet(sheet, mfa, fields)
