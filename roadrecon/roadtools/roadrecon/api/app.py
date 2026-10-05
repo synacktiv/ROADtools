@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .db import ensure_indexes, make_engine, make_sessionmaker
-from .routers import apps, devices, governance, grants, groups, meta, policies, roles, sql, users
+from .routers import apps, compliance, devices, governance, grants, groups, meta, policies, roles, sql, users
 
 DIST = Path(__file__).resolve().parent.parent / 'dist_gui'
 
@@ -30,7 +30,7 @@ def create_app(dburl: str | None = None, read_only: bool | None = None) -> FastA
     app = FastAPI(title='ROADrecon', version='2.0.0', lifespan=lifespan, separate_input_output_schemas=False)
     app.state.engine = engine
     app.state.sessionmaker = make_sessionmaker(engine)
-    for module in (meta, users, groups, devices, apps, roles, grants, governance, policies, sql):
+    for module in (meta, users, groups, devices, apps, roles, grants, governance, policies, compliance, sql):
         app.include_router(module.router)
 
     @app.exception_handler(NotImplementedError)
