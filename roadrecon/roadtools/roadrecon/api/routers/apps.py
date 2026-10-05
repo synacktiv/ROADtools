@@ -63,6 +63,7 @@ SP_FIELDS = register('service-principals', {
     'passwordCount': F('Secrets', 'number', col=sp_pw),
     'keyCount': F('Certificates', 'number', col=sp_key),
     'appRoleCount': F('App roles', 'number', col=sp_roles),
+    'oauth2PermissionCount': F('Delegated scopes', 'number', col=sp_scopes),
     'hasCustomOwner': F('Has owner', 'bool', col=sp_owned),
 })
 SP_SORTS = {'displayName': ci(SP.displayName), 'publisherName': SP.publisherName, 'appId': SP.appId,
@@ -74,12 +75,14 @@ SP_SORTS = {'displayName': ci(SP.displayName), 'publisherName': SP.publisherName
 APP_FIELDS = register('applications', {
     'displayName': F('Name', 'text', col=App.displayName),
     'appId': F('App ID', 'text', col=App.appId),
+    'homepage': F('Homepage', 'text', col=App.homepage),
     'availableToOtherTenants': F('Multitenant', 'bool', col=App.availableToOtherTenants),
     'publicClient': F('Public client', 'bool', col=App.publicClient),
     'oauth2AllowImplicitFlow': F('Implicit flow', 'bool', col=App.oauth2AllowImplicitFlow),
     'passwordCount': F('Secrets', 'number', col=app_pw),
     'keyCount': F('Certificates', 'number', col=app_key),
     'appRoleCount': F('App roles', 'number', col=app_roles),
+    'oauth2PermissionCount': F('Delegated scopes', 'number', col=app_scopes),
     'hasCustomOwner': F('Has owner', 'bool', col=app_owned),
 })
 APP_SORTS = {'displayName': ci(App.displayName), 'appId': App.appId, 'homepage': App.homepage,
