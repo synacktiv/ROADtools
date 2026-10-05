@@ -29,6 +29,7 @@ import { Dash, ListPage, SubViews, orDash, toRef } from '@/components/page-parts
 import { UsersTable } from '@/pages/users'
 import { GroupsTable } from '@/pages/groups'
 import { RoleAssignmentsTable } from '@/pages/roles'
+import { DeviceCompliancePolicies } from '@/pages/compliance'
 import { useApi } from '@/api/client'
 import type { AdministrativeUnitQuery, AdministrativeUnitRow, BitLockerKey, DeviceQuery, DeviceRow, ObjectRef } from '@/api/types'
 import { copy } from '@/lib/copy'
@@ -198,6 +199,7 @@ function Owners({ owners, total }: { owners: ObjectRef[]; total: number }) {
 export function DevicePage() {
   const { id = '' } = useParams()
   const { data: d, isLoading, error } = useApi('/api/devices/{id}', { path: { id } })
+  const { data: stats } = useApi('/api/stats')
   useSetCrumb(d?.displayName)
   return (
     <ObjectPage
@@ -249,6 +251,7 @@ export function DevicePage() {
         { key: 'owners', label: 'Owners', count: d?.counts.owners, render: () => <UsersTable query={{ ownerOf: id }} filters={[]} noun="owner" /> },
         { key: 'memberOf', label: 'Member of', count: d?.counts.memberOf, render: () => <GroupsTable query={{ memberId: id }} noun="group" /> },
         { key: 'units', label: 'Administrative units', count: d?.counts.administrativeUnits, hidden: d?.counts.administrativeUnits === 0, render: () => <AdministrativeUnitsTable query={{ memberId: id }} /> },
+        { key: 'compliance', label: 'Compliance', hidden: stats?.compliancePolicies == null, render: () => <DeviceCompliancePolicies deviceId={id} /> },
         { key: 'bitlocker', label: 'BitLocker keys', count: d?.bitLockerKeys.length, render: () => d && <BitLockerKeys items={d.bitLockerKeys} /> },
       ]}
     />

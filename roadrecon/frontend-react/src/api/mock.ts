@@ -8,6 +8,7 @@ import type {
   ApplicationDetail,
   AzureRoleAssignmentRow,
   CompliancePolicyDetail,
+  CompliancePolicyRow,
   Condition,
   FilterField,
   FilterResource,
@@ -981,6 +982,27 @@ const compliancePolicies: CompliancePolicyDetail[] = [
 for (const p of compliancePolicies) p.raw = { id: p.id, displayName: p.displayName, description: p.description, version: p.version, ...Object.fromEntries(p.settings.map((x) => [x.name, x.value])) }
 const toComplianceRow = ({ createdDateTime: _c, version: _v, settings: _s, actions: _a, raw: _r, ...row }: CompliancePolicyDetail) => row // eslint-disable-line @typescript-eslint/no-unused-vars
 
+/** Policies reaching a device, directly or through its owner (a user group assignment covers its members' devices). */
+function deviceCompliance(deviceId: string): CompliancePolicyRow[] {
+  const owner = userById.get(deviceOwner.get(deviceId) ?? '')
+  if (!owner) return []
+  const paths = [['Device', [], ancestors(deviceId)], ['Owner', [ref('user', owner)], ancestors(owner.id)]] as const
+  const m = (condition: string, via: ObjectRef[], approximate = false): MatchReason => ({ condition, via, approximate, eligibleOnly: false })
+  const reasons = (targets: ObjectRef[]) =>
+    targets.flatMap((r) =>
+      r.displayName === 'All devices'
+        ? [m('Device', [r])]
+        : r.displayName === 'All users'
+          ? [m('Owner', [ref('user', owner), r], true)]
+          : paths.filter(([, , anc]) => anc.has(r.id ?? '')).map(([c, pre, anc]) => m(c, [...pre, ...anc.get(r.id!)!.map((g) => ref('group', groupById.get(g)!))])),
+    )
+  return compliancePolicies.flatMap((p) => {
+    const included = reasons(p.assignments)
+    const excluded = reasons(p.exclusions)
+    return included.length || excluded.length ? [{ ...toComplianceRow(p), effect: excluded.length ? ('excluded' as const) : ('included' as const), included, excluded }] : []
+  })
+}
+
 // --- Advanced filtering ------------------------------------------------------
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -1587,7 +1609,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
   ['/api/named-locations/{id}', ({ id }) => locations.find((l) => l.id === id)],
   [
     '/api/device-compliance',
-    (_, q) => paginate(compliancePolicies.map(toComplianceRow), q, (p) => `${p.displayName} ${p.description ?? ''}`, { ...byName, platform: (p) => p.platform, gracePeriodHours: (p) => p.gracePeriodHours ?? -1, lastModifiedDateTime: (p) => p.lastModifiedDateTime ?? '' }, 'device-compliance'),
+    (_, q) => paginate(q.get('deviceId') ? deviceCompliance(q.get('deviceId')!) : compliancePolicies.map(toComplianceRow), q, (p) => `${p.displayName} ${p.description ?? ''}`, { ...byName, platform: (p) => p.platform, gracePeriodHours: (p) => p.gracePeriodHours ?? -1, lastModifiedDateTime: (p) => p.lastModifiedDateTime ?? '' }, 'device-compliance'),
   ],
   // Before {id}, which would match "settings".
   ['/api/device-compliance/settings', () => complianceSettings],

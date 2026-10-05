@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { IconClipboardCheck } from '@tabler/icons-react'
+import { IconChevronRight, IconCircleCheckFilled, IconCircleMinus, IconClipboardCheck, IconMinus, IconPlus } from '@tabler/icons-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DataTable } from '@/components/data-table'
@@ -10,10 +10,12 @@ import { PropertyList, type Property } from '@/components/property-list'
 import { JsonView } from '@/components/json-view'
 import { Flag, Setting, flag } from '@/components/badges'
 import { ListPage, orDash } from '@/components/page-parts'
+import { PolicyRef } from '@/components/policy-match-list'
 import { useApi } from '@/api/client'
 import type { CompliancePolicyDetail, CompliancePolicyRow, ObjectRef } from '@/api/types'
 import { camelBreaks, fmtDate, fmtNumber, plural } from '@/lib/format'
 import { useSetCrumb } from '@/lib/crumb'
+import { cn } from '@/lib/utils'
 
 const KIND = { label: 'Compliance policy', icon: IconClipboardCheck }
 
@@ -59,6 +61,68 @@ const columns: ColumnDef<CompliancePolicyRow>[] = [
   { id: 'modified', header: 'Modified', meta: { sort: 'lastModifiedDateTime', filter: 'lastModifiedDateTime', className: 'tabular-nums' }, cell: ({ row }) => orDash(fmtDate(row.original.lastModifiedDateTime)) },
   { id: 'id', header: 'Policy ID', meta: { defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.id },
 ]
+
+/** Why the policy reaches the device: from the device, or its owner, to the assigned group or keyword. Exclusions first. */
+function Reasons({ p }: { p: CompliancePolicyRow }) {
+  const reasons = [...(p.excluded ?? []).map((r) => ({ r, excluded: true })), ...(p.included ?? []).map((r) => ({ r, excluded: false }))]
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {reasons.map(({ r, excluded }, i) => {
+        const Side = excluded ? IconMinus : IconPlus
+        return (
+          <li key={i} className="flex items-start gap-1.5">
+            <Side className={cn('mt-1 size-4 shrink-0', excluded ? 'text-regulatory' : 'text-muted-foreground')} stroke={2.25} aria-label={excluded ? 'Excluded' : 'Included'} />
+            <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+              {r.via.map((v, j) => (
+                <span key={j} className="inline-flex min-w-0 items-center gap-1.5">
+                  {j > 0 && <IconChevronRight className="size-3.5 shrink-0 text-muted-foreground" aria-label="then" />}
+                  <PolicyRef value={v} wrap />
+                </span>
+              ))}
+              {r.approximate && <span className="text-sm text-muted-foreground">(if licensed)</span>}
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+const deviceColumns: ColumnDef<CompliancePolicyRow>[] = [
+  {
+    id: 'effect',
+    header: 'Effect',
+    meta: { noCopy: true },
+    cell: ({ row }) =>
+      row.original.effect === 'excluded' ? (
+        <span className="inline-flex items-center gap-1.5 font-medium text-regulatory">
+          <IconCircleMinus className="size-4.5" stroke={2} aria-hidden /> Excluded
+        </span>
+      ) : (
+        <span className="inline-flex items-center gap-1.5 font-medium text-guide">
+          <IconCircleCheckFilled className="size-4.5" aria-hidden /> Applies
+        </span>
+      ),
+  },
+  ...columns.slice(0, 2),
+  { id: 'why', header: 'Why', meta: { noCopy: true, className: 'max-w-120 whitespace-normal' }, cell: ({ row }) => <Reasons p={row.original} /> },
+  ...columns.slice(4),
+]
+
+/** Device page tab: policies assigned to the device or its owners, excluded ones included. */
+export function DeviceCompliancePolicies({ deviceId }: { deviceId: string }) {
+  return (
+    <DataTable
+      route="/api/device-compliance"
+      query={{ deviceId }}
+      columns={deviceColumns}
+      resource="device-compliance"
+      searchPlaceholder="Search policy name"
+      noun="compliance policy"
+      defaultSort={{ sort: 'displayName', order: 'asc' }}
+    />
+  )
+}
 
 function TenantSettings() {
   const { data: s } = useApi('/api/device-compliance/settings')

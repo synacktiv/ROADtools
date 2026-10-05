@@ -1194,6 +1194,15 @@ class Gen:
                     'id': self.guid(), 'policyId': pid, 'targetType': ttype, 'groupId': gid,
                     'filterId': None, 'filterType': 'none', 'target': target})
 
+        # Device page: one device in targeted groups (Engineering, nested under All Staff; Contractors excludes it
+        # from the Windows baseline), and one reached through an owner in Engineering.
+        in_group = {r['Device'] for r in self.rows[db.lnk_group_member_device]}
+        dev, owned = [x for x in self.devices if x not in in_group][:2]
+        self.link(db.lnk_group_member_device, Group=g[4], Device=dev)
+        self.link(db.lnk_group_member_device, Group=g[7], Device=dev)
+        user = next(r['User'] for r in self.rows[db.lnk_group_member_user] if r['Group'] == g[4])
+        self.link(db.lnk_device_owner, Device=owned, User=user)
+
     # -- build / write -----------------------------------------------------
     def build(self):
         self.gen_users()

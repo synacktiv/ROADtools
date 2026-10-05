@@ -4316,6 +4316,24 @@
        "title": "Platform"
       },
       "description": "Platform label or raw value (windows10, ios...)."
+     },
+     {
+      "name": "deviceId",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Policies assigned or excluded for this device (object id), directly or through its owners.",
+       "title": "Deviceid"
+      },
+      "description": "Policies assigned or excluded for this device (object id), directly or through its owners."
      }
     ],
     "responses": {
@@ -5521,6 +5539,51 @@
       ],
       "title": "Lastmodifieddatetime"
      },
+     "effect": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "included",
+         "excluded"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Effect",
+      "description": "With deviceId: exclusion wins."
+     },
+     "included": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/MatchReason"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Included",
+      "description": "With deviceId: how an assignment reaches the device (condition Device, or Owner with the owner first in `via`)."
+     },
+     "excluded": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/MatchReason"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Excluded"
+     },
      "createdDateTime": {
       "anyOf": [
        {
@@ -5645,6 +5708,51 @@
        }
       ],
       "title": "Lastmodifieddatetime"
+     },
+     "effect": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "included",
+         "excluded"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Effect",
+      "description": "With deviceId: exclusion wins."
+     },
+     "included": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/MatchReason"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Included",
+      "description": "With deviceId: how an assignment reaches the device (condition Device, or Owner with the owner first in `via`)."
+     },
+     "excluded": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/MatchReason"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Excluded"
      }
     },
     "type": "object",
