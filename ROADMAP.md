@@ -150,6 +150,10 @@ New features
 - [ ] Owner service principals shown (old GUI only showed owner users)
 - [ ] Every object mention is a link (incl. scopes, grants, policy conditions)
 - [ ] ⌘K global search, dark mode
+- [ ] Directory roles list:
+  - privileged roles first;
+  - expandable rows that show the users assigned the role;
+  - a column with how many holders are not cloud only (synced from on-premises).
 
 ## Phase 6 — Switch
 - [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
