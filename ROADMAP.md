@@ -191,6 +191,9 @@ The original collector does not gather Intune compliance data. Collect it, then 
   - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
   - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall`.
 
+## UI bugs
+- [ ] Long badge content overlaps the row: on the Conditional access page, an unfolded policy whose Users, Resources or platform ("Any platform") group/badge holds very long content runs over the whole line. Wrap it onto new lines. Fix the other places with the same badge/group pattern too.
+
 ## Done from "Later" (2026-10-05)
 - Shared router helpers in `api/common.py` (`flag`, `count_rows`, `count_of`, `gm_user` / `gm_group`); openapi.json unchanged.
 - `mfa_` column-id prefix dropped (saved MFA column choices reset once).
