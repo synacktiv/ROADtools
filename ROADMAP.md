@@ -201,7 +201,8 @@ Today the policies show authentication strength ids as unresolved references (on
 - Reference: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-strengths
 
 ## UI bugs
-- [ ] Long badge content overlaps the row: on the Conditional access page, an unfolded policy whose Users, Resources or platform ("Any platform") group/badge holds very long content runs over the whole line. Wrap it onto new lines. Fix the other places with the same badge/group pattern too.
+- [x] Long badge content overlaps the row: on the Conditional access page, an unfolded policy whose Users, Resources or platform ("Any platform") group/badge holds very long content runs over the whole line. Wrap it onto new lines. Fix the other places with the same badge/group pattern too. Fixed in the shared `KeywordChip`, `IconText`, `PolicyRef` and wrapping `ObjectLink` (`min-w-0` + `break-words`); the shadcn `Badge` itself stays one-line for short status chips.
+- [ ] Narrow viewport (about 820 px): the header search button and theme toggle overflow, so the whole page scrolls sideways; an unfolded table row wraps at the table width, not the visible width.
 
 ## Done from "Later" (2026-10-05)
 - Shared router helpers in `api/common.py` (`flag`, `count_rows`, `count_of`, `gm_user` / `gm_group`); openapi.json unchanged.
