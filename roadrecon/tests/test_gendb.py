@@ -20,7 +20,7 @@ def test_generate(tmp_path):
     assert session.query(func.count(User.objectId)).scalar() == 50
     # Seven Conditional Access policies (policyType 18) plus named locations (type 6).
     assert session.query(func.count(Policy.objectId)).where(Policy.policyType == 18).scalar() == 7
-    assert session.query(func.count(Policy.objectId)).where(Policy.policyType == 6).scalar() == 2
+    assert session.query(func.count(Policy.objectId)).where(Policy.policyType == 6).scalar() == 3
     # Directory role assignments and link rows got populated.
     assert session.query(func.count(RoleAssignment.id)).scalar() >= 3
     assert session.query(func.count()).select_from(lnk_group_member_user).scalar() > 0

@@ -760,6 +760,22 @@ class Gen:
             })],
         })
         self.named_locations.append((lid2, 'Blocked countries'))
+        # Trusted country location (legacy portal; Graph's countryNamedLocation has no isTrusted).
+        lid3 = self.guid()
+        self.add(db.Policy, {
+            'objectType': 'Policy',
+            'objectId': self.guid(),
+            'displayName': 'Nordic countries',
+            'policyType': 6,
+            'policyIdentifier': lid3,
+            'tenantDefaultPolicy': 0,
+            'policyDetail': [json.dumps({
+                'Categories': ['trusted'],
+                'CountryIsoCodes': ['NO', 'SE', 'DK', 'FI', 'IS'],
+                'ApplyToUnknownCountry': False,
+            })],
+        })
+        self.named_locations.append((lid3, 'Nordic countries'))
 
     def gen_ca_policies(self):
         g = self.groups

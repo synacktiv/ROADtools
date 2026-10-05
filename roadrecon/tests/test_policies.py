@@ -338,23 +338,24 @@ def test_affecting_unknown(client):
 
 def test_named_locations_list(client, db, ref):
     page = Page[NamedLocationRow](**client.get('/api/named-locations').json())
-    assert page.total == db.query(d.Policy).filter(d.Policy.policyType == 6).count() == 2
+    assert page.total == db.query(d.Policy).filter(d.Policy.policyType == 6).count() == 3
     rows = {r.displayName: r for r in page.items}
-    corp, blocked = rows['Corporate network'], rows['Blocked countries']
+    corp, blocked, nordic = rows['Corporate network'], rows['Blocked countries'], rows['Nordic countries']
     assert (corp.kind, corp.trusted, corp.ipRanges, corp.countries) == ('ip', True, ['203.0.113.0/24', '198.51.100.0/24'], [])
     assert (blocked.kind, blocked.countries, blocked.includeUnknownCountries) == ('country', ['KP', 'IR', 'RU'], True)
     assert [p.displayName for p in corp.policies] == ['Admins need phishing-resistant MFA'] and corp.policyCount == 1
     assert blocked.policies[0].id == ref['Risky guest sign-ins']['id'] and blocked.policies[0].type == 'policy'
-    assert [r.displayName for r in page.items] == ['Blocked countries', 'Corporate network']
-    assert client.get('/api/named-locations', params={'order': 'desc'}).json()['items'][0]['displayName'] == 'Corporate network'
+    assert (nordic.kind, nordic.trusted, nordic.countries) == ('country', True, ['NO', 'SE', 'DK', 'FI', 'IS'])
+    assert [r.displayName for r in page.items] == ['Blocked countries', 'Corporate network', 'Nordic countries']
+    assert client.get('/api/named-locations', params={'order': 'desc'}).json()['items'][0]['displayName'] == 'Nordic countries'
     assert client.get('/api/named-locations', params={'sort': 'nope'}).status_code == 422
 
 
 @pytest.mark.parametrize('params, expected', [
-    ({'filter': 'kind:eq:country'}, {'Blocked countries'}),
-    ({'filter': 'trusted:eq:true'}, {'Corporate network'}),
+    ({'filter': 'kind:eq:country'}, {'Blocked countries', 'Nordic countries'}),
+    ({'filter': 'trusted:eq:true'}, {'Corporate network', 'Nordic countries'}),
     ({'filter': 'policyCount:gt:0'}, {'Blocked countries', 'Corporate network'}),
-    ({'filter': 'policyCount:eq:0'}, set()),
+    ({'filter': 'policyCount:eq:0'}, {'Nordic countries'}),
     ({'q': 'corp'}, {'Corporate network'}),
 ])
 def test_named_location_filters(client, params, expected):
@@ -390,7 +391,7 @@ def test_minimal_db(minimal_client):
     assert page['total'] == 7
     pid = page['items'][0]['id']
     assert minimal_client.get(f'/api/policies/{pid}').status_code == 200
-    assert minimal_client.get('/api/named-locations').json()['total'] == 2
+    assert minimal_client.get('/api/named-locations').json()['total'] == 3
     assert minimal_client.get('/api/policies/affecting/role/' + GA).status_code == 200
 
 

@@ -532,6 +532,8 @@ const locations: NamedLocationDetail[] = [
   { id: guid(), displayName: 'Head office Bergen', kind: 'ip', trusted: true, ipRanges: ['193.69.120.0/24', '2a02:fe0:c410::/48'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
   { id: guid(), displayName: 'Vessel satellite uplinks', kind: 'ip', trusted: true, ipRanges: ['85.19.208.0/22', '212.62.231.64/27'], countries: [], includeUnknownCountries: false, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
   { id: guid(), displayName: 'Blocked countries', kind: 'country', trusted: false, ipRanges: [], countries: ['KP', 'IR', 'RU', 'BY'], includeUnknownCountries: true, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
+  // Legacy-portal country location marked trusted (Graph's countryNamedLocation has no isTrusted, the dump keeps the category).
+  { id: guid(), displayName: 'Nordic countries', kind: 'country', trusted: true, ipRanges: [], countries: ['NO', 'SE', 'DK', 'FI', 'IS'], includeUnknownCountries: false, policyCount: 0, policies: [], excludedBy: [], policyMatches: [], raw: {} },
 ]
 const locRef = (l: NamedLocationDetail): ObjectRef => ({ id: l.id, type: 'namedLocation', displayName: l.displayName })
 const kw = (displayName: string): ObjectRef => ({ id: null, type: 'keyword', displayName })
