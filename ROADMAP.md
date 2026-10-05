@@ -26,6 +26,7 @@ If `podman compose` fails with `pasta failed` / `unable to upgrade to tcp`, the 
 - Every reference to an object is an `ObjectRef {id, type, displayName, sub?}` and renders as an `ObjectLink`.
 - Indexes are additive (`CREATE INDEX IF NOT EXISTS`), never schema changes. `--read-only` touches nothing.
 - Routes are plain `def`; no `create=True` on `database.init` (it drops all tables).
+- Features beyond the original ROADrecon show only when their data was collected: with a DB from the original roadrecon, no sidebar entry, page, tab or card, and no errors ([CLAUDE.md](CLAUDE.md)).
 
 ---
 
@@ -181,10 +182,10 @@ The original collector does not gather Intune compliance data. Collect it, then 
 - [ ] Collector: `roadrecon compliancegather` (alias `compliancedump`), in its own module like `pimgather.py` / `iggather.py`, also called by `gatherall`. It uses MS Graph, because AAD Graph has no Intune endpoints.
   - tenant compliance settings: `GET /deviceManagement?$select=settings`. Covers "mark devices with no compliance policy as", the check-in threshold in days, and enhanced jailbreak detection;
   - compliance policies with their assignments: `GET /deviceManagement/deviceCompliancePolicies?$expand=assignments,scheduledActionsForRule($expand=scheduledActionConfigurations)`. Store the platform from `@odata.type` and the raw settings as JSON.
-- [ ] Tables in `roadlib/metadef/database.py`, added, never altered. A DB without them gives empty results, not errors (same as the PIM/IG tables).
+- [ ] Tables in `roadlib/metadef/database.py`, added, never altered. A DB without them gives empty results, not errors, and the API reports that compliance data is absent (see the conventions).
 - [ ] API: `/api/device-compliance` (settings + policy list, `Page[T]`) and `/api/device-compliance/{id}` (settings by platform, assignments as `ObjectRef` to groups or all users / all devices, actions for non-compliance). Add to openapi.json and `schema.d.ts`, with tests on gendb data.
 - [ ] gendb: settings and a few policies per platform.
-- [ ] Frontend: a "Device compliance" page in the sidebar. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
+- [ ] Frontend: a "Device compliance" page in the sidebar, shown only when compliance data was collected. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
 - [ ] Device page: compliance policies that target the device's owner groups or member groups (later; needs the assignments first).
 - Open questions:
   - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
