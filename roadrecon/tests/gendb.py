@@ -354,7 +354,10 @@ class Gen:
         # Applications (with their SP, the way gather links app<->SP via appId).
         for n in ['Fleet Portal', 'HR Sync Job', 'Deployment Runner', 'Crew Scheduler']:
             appid = self.guid()
+            host = f'https://{n.lower().replace(" ", "")}.example'
             sp = self._add_sp(n, appid, publisher='Synthetic Corp',
+                              urls={'homepage': host, 'logoutUrl': f'{host}/logout',
+                                    'replyUrls': [f'{host}/auth', 'http://localhost:5000/auth']},
                               approles=[self._approle('Crew.Read', 'Read crew rosters', 'User'),
                                         self._approle('Crew.Admin', 'Manage crew rosters', 'User')],
                               scopes=[self._scope('access_as_user', 'Access as user', 'User')])
@@ -447,7 +450,7 @@ class Gen:
         }]
 
     def _add_sp(self, name, appid, microsoft=False, approles=None, scopes=None,
-                sptype='Application', publisher=None, owner_tenant=None, mi_resource=None):
+                sptype='Application', publisher=None, owner_tenant=None, mi_resource=None, urls=None):
         oid = self.guid()
         self.add(db.ServicePrincipal, {
             'objectType': 'ServicePrincipal',
@@ -470,6 +473,7 @@ class Gen:
             'tags': ['WindowsAzureActiveDirectoryIntegratedApp'] if sptype == 'Application' else [],
             'managedIdentityResourceId': mi_resource,
             'appMetadata': {'version': 1, 'data': []} if not microsoft else {},
+            **(urls or {}),
         })
         self.sps.append(oid)
         self.sp_by_appid[appid] = oid

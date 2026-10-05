@@ -274,6 +274,7 @@ function addSp(displayName: string, appId: string, o: Partial<ServicePrincipalDe
     hasCustomOwner: false,
     appOwnerTenantId: 'f8cdef31-a31e-4b4a-93e4-5f571e91255a',
     homepage: null,
+    logoutUrl: null,
     replyUrls: [],
     servicePrincipalNames: [appId],
     application: null,
@@ -379,7 +380,7 @@ const [portalApp, portalSp] = addApp('Crew Portal', {
   oauth2Permissions: [scope('access_as_user', false)],
   requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.oauth2Permissions[0].id, value: 'User.Read', type: 'Scope', isPrivileged: isPriv('User.Read') }, { id: graph.oauth2Permissions[4].id, value: 'offline_access', type: 'Scope', isPrivileged: isPriv('offline_access') }] }],
   metadata: [{ key: 'ms.portal.branding', value: { logo: 'crew.png', theme: 'navy' } }],
-}, { appRoleAssignmentRequired: true })
+}, { appRoleAssignmentRequired: true, logoutUrl: 'https://crew.halvorsen-maritime.com/signout-oidc' })
 const [, deploySp] = addApp('GitHub Actions - infra', {
   credentials: [cred('certificate', 'federated', 90)],
   requiredResourceAccess: [{ resource: graphRef, permissions: [{ id: graph.appRoles[3].id, value: 'RoleManagement.ReadWrite.Directory', type: 'Role', isPrivileged: isPriv('RoleManagement.ReadWrite.Directory') }, { id: graph.appRoles[4].id, value: 'Application.ReadWrite.All', type: 'Role', isPrivileged: isPriv('Application.ReadWrite.All') }] }],
@@ -1018,6 +1019,7 @@ const FIELDS: Record<FilterResource, Record<string, FieldSpec>> = {
     appRoleCount: num('App roles', 'appRoleCount'),
     oauth2PermissionCount: num('Delegated scopes', 'oauth2PermissionCount'),
     hasCustomOwner: bool_('Has owner', (s) => s.hasCustomOwner),
+    url: { label: 'URL', type: 'text', get: (s) => [...s.replyUrls, s.homepage, s.logoutUrl] },
   },
   applications: {
     displayName: text('Name', 'displayName'),
@@ -1360,7 +1362,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
       const hc = bool(q, 'hasCredentials')
       if (hc !== undefined) r = r.filter((s) => s.passwordCount + s.keyCount > 0 === hc)
       return paginate(
-        r.map((s) => ({ id: s.id, displayName: s.displayName, appId: s.appId, servicePrincipalType: s.servicePrincipalType, publisherName: s.publisherName, microsoftFirstParty: s.microsoftFirstParty, accountEnabled: s.accountEnabled, appRoleAssignmentRequired: s.appRoleAssignmentRequired, passwordCount: s.passwordCount, keyCount: s.keyCount, appRoleCount: s.appRoleCount, oauth2PermissionCount: s.oauth2PermissionCount, hasCustomOwner: s.hasCustomOwner })),
+        r.map((s) => ({ id: s.id, displayName: s.displayName, appId: s.appId, servicePrincipalType: s.servicePrincipalType, publisherName: s.publisherName, microsoftFirstParty: s.microsoftFirstParty, accountEnabled: s.accountEnabled, appRoleAssignmentRequired: s.appRoleAssignmentRequired, passwordCount: s.passwordCount, keyCount: s.keyCount, appRoleCount: s.appRoleCount, oauth2PermissionCount: s.oauth2PermissionCount, hasCustomOwner: s.hasCustomOwner, homepage: s.homepage, logoutUrl: s.logoutUrl, replyUrls: s.replyUrls })),
         q,
         (s) => `${s.displayName} ${s.appId} ${s.id}`,
         { ...byName, publisherName: (s) => s.publisherName ?? '' },

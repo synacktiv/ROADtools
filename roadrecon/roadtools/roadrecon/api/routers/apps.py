@@ -4,17 +4,19 @@ import json
 from typing import Annotated
 
 from fastapi import APIRouter, Query
-from sqlalchemy import exists, func, or_, select, union
+from sqlalchemy import exists, func, not_, or_, select, type_coerce, union
 from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import ci, Db, F, iso, is_privileged_permission, not_found, paginate, register, resolve_appids
+from ..common import (ci, Db, F, iso, is_privileged_permission, json_text, not_found, paginate, register,
+                      resolve_appids, sql_clause)
 from ..models import (AppRoleDefinition, ApplicationCounts, ApplicationDetail, ApplicationQuery, ApplicationRow,
                       Credential, MetadataEntry, ObjectRef, Page, PermissionScopeDefinition, RequiredPermission,
                       RequiredResourceAccess, ServicePrincipalCounts, ServicePrincipalDetail, ServicePrincipalQuery,
                       ServicePrincipalRow)
 from . import governance, policies, roles
+from .grants import NEGATED
 
 router = APIRouter(prefix='/api', tags=['apps'])
 
@@ -32,6 +34,17 @@ def _flag(col, want: bool):
     return col.is_(True) if want else or_(col.is_(False), col.is_(None))
 
 
+def _url_where(op: str, arg: str):
+    """Any of reply URLs, homepage, logout URL matches; negative operators: none does."""
+    pos = NEGATED.get(op, op)
+    # coalesce: a NULL homepage would make the whole OR NULL, and NOT NULL drops the row.
+    match = lambda col: sql_clause(F('URL', 'text', col=func.coalesce(col, '')), pos, arg)  # noqa: E731
+    # ponytail: json_each is SQLite json1; Postgres needs jsonb_array_elements.
+    reply = func.json_each(json_text(SP.replyUrls)).table_valued('value')
+    hit = or_(select(reply.c.value).where(match(reply.c.value)).exists(), match(SP.homepage), match(SP.logoutUrl))
+    return not_(hit) if op in NEGATED else hit
+
+
 # Computed row fields, as SQL so they filter and sort.
 sp_pw, sp_key, sp_roles, sp_scopes = (_len(c) for c in (SP.passwordCredentials, SP.keyCredentials, SP.appRoles,
                                                         SP.oauth2Permissions))
@@ -46,7 +59,8 @@ SP_ROW = select(SP.objectId.label('id'), func.coalesce(SP.displayName, SP.object
                 SP.servicePrincipalType, SP.publisherName, SP.microsoftFirstParty, SP.accountEnabled,
                 SP.appRoleAssignmentRequired, sp_pw.label('passwordCount'), sp_key.label('keyCount'),
                 sp_roles.label('appRoleCount'), sp_scopes.label('oauth2PermissionCount'),
-                sp_owned.label('hasCustomOwner'))
+                sp_owned.label('hasCustomOwner'), SP.homepage, SP.logoutUrl,
+                type_coerce(func.coalesce(json_text(SP.replyUrls), '[]'), SP.replyUrls.type).label('replyUrls'))
 APP_ROW = select(App.objectId.label('id'), func.coalesce(App.displayName, App.objectId).label('displayName'), App.appId,
                  App.availableToOtherTenants, App.homepage, App.publicClient, App.oauth2AllowImplicitFlow,
                  app_pw.label('passwordCount'), app_key.label('keyCount'), app_roles.label('appRoleCount'),
@@ -65,6 +79,7 @@ SP_FIELDS = register('service-principals', {
     'appRoleCount': F('App roles', 'number', col=sp_roles),
     'oauth2PermissionCount': F('Delegated scopes', 'number', col=sp_scopes),
     'hasCustomOwner': F('Has owner', 'bool', col=sp_owned),
+    'url': F('URL', 'text', where=_url_where),
 })
 SP_SORTS = {'displayName': ci(SP.displayName), 'publisherName': SP.publisherName, 'appId': SP.appId,
             'servicePrincipalType': SP.servicePrincipalType, 'microsoftFirstParty': SP.microsoftFirstParty,
@@ -200,8 +215,6 @@ def get_service_principal(id: str, db: Db) -> ServicePrincipalDetail:
     return ServicePrincipalDetail(
         **row._mapping,
         appOwnerTenantId=sp.appOwnerTenantId,
-        homepage=sp.homepage,
-        replyUrls=sp.replyUrls or [],
         servicePrincipalNames=sp.servicePrincipalNames or [],
         application=app and ObjectRef(id=app[0], type='application', displayName=app[1] or sp.appId, sub=sp.appId),
         credentials=_credentials(sp),

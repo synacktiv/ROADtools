@@ -187,6 +187,31 @@ function urls(items: (string | null)[]) {
   )
 }
 
+/** First URL and a +N count with the rest in a tooltip; the hidden data-copy span makes the cell copy give them all. */
+function UrlsCell({ items }: { items: (string | null)[] }) {
+  const list = [...new Set(items.filter((u): u is string => !!u))]
+  if (list.length === 0) return null
+  const [first, ...rest] = list
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <span data-copy hidden>
+        {list.join('\n')}
+      </span>
+      <span className={cn('min-w-0 truncate', isRiskyUrl(first) && 'text-regulatory')}>{first}</span>
+      {rest.length > 0 && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span tabIndex={0} className={cn('shrink-0 rounded-sm', rest.some(isRiskyUrl) ? 'text-regulatory' : 'text-muted-foreground')}>
+              +{rest.length}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-md font-mono break-all whitespace-pre-line">{rest.join('\n')}</TooltipContent>
+        </Tooltip>
+      )}
+    </span>
+  )
+}
+
 // --- Credentials and application permissions card -------------------------
 
 // Order: the one worth acting on first, expired (harmless) last.
@@ -336,6 +361,7 @@ const spColumns: ColumnDef<ServicePrincipalRow>[] = [
   { id: 'appRoles', header: 'App roles', meta: { sort: 'appRoleCount', filter: 'appRoleCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.appRoleCount },
   { id: 'scopes', header: 'Delegated scopes', meta: { sort: 'oauth2PermissionCount', filter: 'oauth2PermissionCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.oauth2PermissionCount },
   { id: 'owner', header: 'Has owner', meta: { sort: 'hasCustomOwner', filter: 'hasCustomOwner', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.hasCustomOwner} /> },
+  { id: 'urls', header: 'URLs', meta: { filter: 'url', defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => <UrlsCell items={[...row.original.replyUrls, row.original.homepage, row.original.logoutUrl]} /> },
 ]
 
 export function ServicePrincipalsTable({ query, filters = [] }: { query?: Partial<ServicePrincipalQuery>; filters?: FilterDef[] }) {
