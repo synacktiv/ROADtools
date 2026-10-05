@@ -445,6 +445,7 @@ class RoleHolderCount(BaseModel):
 class RoleDetail(RoleRow):
     allowedResourceActions: list[str]
     holders: list[RoleHolderCount]
+    policyCount: int = Field(description='Conditional Access policies that target the role.')
     raw: Raw
 
 

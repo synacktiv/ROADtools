@@ -398,7 +398,7 @@ export function RolePage() {
               </ul>
             ),
         },
-        { key: 'policies', label: 'Policies', render: () => <ObjectPolicies type="role" id={id} /> },
+        { key: 'policies', label: 'Policies', count: r?.policyCount, render: () => <ObjectPolicies type="role" id={id} /> },
       ]}
     />
   )

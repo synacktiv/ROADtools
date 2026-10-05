@@ -7800,6 +7800,11 @@
       "type": "array",
       "title": "Holders"
      },
+     "policyCount": {
+      "type": "integer",
+      "title": "Policycount",
+      "description": "Conditional Access policies that target the role."
+     },
      "raw": {
       "additionalProperties": true,
       "type": "object",
@@ -7819,6 +7824,7 @@
      "syncedCount",
      "allowedResourceActions",
      "holders",
+     "policyCount",
      "raw"
     ],
     "title": "RoleDetail"

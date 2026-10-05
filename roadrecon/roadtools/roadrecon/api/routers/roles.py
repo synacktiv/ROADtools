@@ -15,6 +15,7 @@ from roadtools.roadlib.metadef import database as d
 from ..common import (DIRECTORY, PRIVILEGED_ROLES, Db, F, json_text, mfa_summary, not_found, paginate, register,
                       resolve_refs)
 from ..models import Page, RoleAssignmentQuery, RoleAssignmentRow, RoleDetail, RoleHolderCount, RoleQuery, RoleRow
+from . import policies
 
 router = APIRouter(prefix='/api', tags=['roles'])
 
@@ -179,7 +180,8 @@ def get_role(id: str, db: Db) -> RoleDetail:
                    _assignments_select().where(ra.c.role_id == id, ra.c.via.is_(None))
                    .with_only_columns(ra.c.kind, PRINCIPAL_TYPE, SCOPE_TYPE, func.count())
                    .group_by(ra.c.kind, PRINCIPAL_TYPE, SCOPE_TYPE))]
-    return RoleDetail(**_role_row(row), allowedResourceActions=actions, holders=holders, raw=obj.as_dict())
+    return RoleDetail(**_role_row(row), allowedResourceActions=actions, holders=holders,
+                      policyCount=policies.count_affecting(db, 'role', id), raw=obj.as_dict())
 
 
 def _assignments_select():

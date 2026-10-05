@@ -1742,6 +1742,11 @@ export interface components {
             allowedResourceActions: string[];
             /** Holders */
             holders: components["schemas"]["RoleHolderCount"][];
+            /**
+             * Policycount
+             * @description Conditional Access policies that target the role.
+             */
+            policyCount: number;
             /** Raw */
             raw: {
                 [key: string]: unknown;
