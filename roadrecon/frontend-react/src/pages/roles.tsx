@@ -229,6 +229,7 @@ export function RoleAssignmentsTable({ query, hidePrincipal, hideRole }: RoleAss
     ...(hidePrincipal
       ? []
       : ([
+          { id: 'principalType', header: 'Principal type', meta: { defaultHidden: true }, cell: ({ row }) => TYPE_LABEL[row.original.principal.type] },
           { id: 'source', header: 'Source', meta: { noCopy: true }, cell: ({ row }) => (row.original.principal.type === 'user' ? <SourceIcon dirSync={row.original.principalDirSync} withLabel={false} /> : null) },
           ...(mfaColumns ? [{ id: 'mfa', header: 'MFA', meta: { noCopy: true }, cell: ({ row }) => <MfaMethods mfa={row.original.principalMfa} /> } as ColumnDef<RoleAssignmentRow>] : []),
           {

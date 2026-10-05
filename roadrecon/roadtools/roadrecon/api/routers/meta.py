@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import Db, like_escape, catalog, has_table
+from ..common import Db, like_escape, catalog, has_table, resolve_refs
 from . import roles
 from ..models import (AuthorizationPolicySummary, DirectorySettingSummary, Domain, FilterField, FilterResource,
                       ObjectRef, SearchGroup, SearchResult, Stats, Tenant)
@@ -95,6 +95,8 @@ def _auth_policy(ap: d.AuthorizationPolicy) -> AuthorizationPolicySummary:
         usersCanRegisterApps=perms.get('allowedToCreateApps'),
         usersCanCreateSecurityGroups=perms.get('allowedToCreateSecurityGroups'),
         usersCanReadOtherUsers=perms.get('allowedToReadOtherUsers'),
+        usersCanCreateTenants=perms.get('allowedToCreateTenants'),
+        usersCanReadOwnBitlockerKeys=perms.get('allowedToReadBitlockerKeysForOwnedDevice'),
         userConsent=consent, guestAccess=guest_access, guestInvites=invites,
         userConsentPolicy=consent_policy, guestRole=guest_role, guestInvitesFrom=invites_from,
     )
@@ -114,6 +116,9 @@ def get_tenant(db: Db) -> Tenant:
     ap = db.scalars(select(d.AuthorizationPolicy).limit(1)).first() if has_table(db, 'AuthorizationPolicys') else None
     settings = db.scalars(select(d.DirectorySetting)).all() if has_table(db, 'DirectorySettings') else []
     domains = [_domain(v) for v in (td.verifiedDomains if td else None) or [] if isinstance(v, dict)]
+    values = {s.id: [v for v in s.values or [] if isinstance(v, dict)] for s in settings}
+    refs = {k: r for k, r in resolve_refs(db, [str(v.get('value')) for vs in values.values() for v in vs]).items()
+            if r.type != 'unknown'}
     return Tenant(
         displayName=(td and td.displayName) or '',
         tenantId=(td and td.objectId) or '',
@@ -122,8 +127,8 @@ def get_tenant(db: Db) -> Tenant:
         authorizationPolicy=_auth_policy(ap) if ap else None,
         directorySettings=[DirectorySettingSummary(
             name=s.displayName or s.templateId or s.id,
-            values=[{'name': v.get('name') or '', 'value': '' if v.get('value') is None else str(v['value'])}
-                    for v in s.values or [] if isinstance(v, dict)],
+            values=[{'name': v.get('name') or '', 'value': '' if v.get('value') is None else str(v['value']),
+                     'ref': refs.get(str(v.get('value')))} for v in values[s.id]],
         ) for s in settings],
         raw=td.as_dict() if td else {},
     )

@@ -3,17 +3,19 @@ import { Link } from 'react-router'
 import { IconAlertTriangle, IconFingerprintOff, IconKey, IconUserOff, IconUserShield, IconWorld } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ObjectLink, TypeGlyph } from '@/components/object-link'
 import { copy } from '@/components/object-page'
-import { PropertyList } from '@/components/property-list'
+import { JsonView } from '@/components/json-view'
+import { PropertyList, type Property } from '@/components/property-list'
 import { toRef } from '@/components/page-parts'
 import { flag, SourceIcon } from '@/components/badges'
 import { useApi } from '@/api/client'
-import type { ObjectType, Route, Tenant } from '@/api/types'
+import type { ObjectType, Route, Stats, Tenant } from '@/api/types'
 import { fmtNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useSetCrumb } from '@/lib/crumb'
@@ -149,6 +151,39 @@ function AppsCard({ sps, apps, i }: { sps?: number; apps?: number; i: number }) 
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function DirectoryCard({ stats, i }: { stats?: Stats; i: number }) {
+  return (
+    <Card {...rise(i)}>
+      <CardContent className="flex flex-wrap gap-x-10 gap-y-4">
+        <BigCount to="/groups" type="group" label="Groups" value={stats?.groups} />
+        <BigCount to="/devices" type="device" label="Devices" value={stats?.devices} />
+        <BigCount to="/administrative-units" type="administrativeUnit" label="Administrative units" value={stats?.administrativeUnits} />
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The tenant details object as dumped, in a side sheet. */
+function RawTenant({ raw }: { raw: Tenant['raw'] }) {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="xs" className="font-normal text-muted-foreground">
+          Raw
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
+        <SheetHeader>
+          <SheetTitle>Tenant details</SheetTitle>
+        </SheetHeader>
+        <div className="px-4 pb-4">
+          <JsonView value={raw} />
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -291,6 +326,8 @@ function AuthorizationPolicyCard({ ap, i }: { ap: Tenant['authorizationPolicy'];
               ['MSOnline PowerShell blocked', flag(ap.blockMsolPowerShell, false)],
               ['Users can create security groups', flag(ap.usersCanCreateSecurityGroups)],
               ['Users can read other users', flag(ap.usersCanReadOtherUsers)],
+              ['Users can create tenants', flag(ap.usersCanCreateTenants)],
+              ['Users can read the BitLocker keys of their devices', flag(ap.usersCanReadOwnBitlockerKeys)],
               ['Guest access', <Setting text={ap.guestAccess} risky={guestRisky} />],
               ['Who can invite guests', <Setting text={ap.guestInvites} risky={inviteRisky} />],
               ['Self-service password reset', flag(ap.selfServicePasswordReset)],
@@ -348,6 +385,9 @@ const camelBreaks = (s: string) => s.replace(/(?<=[a-z])(?=[A-Z])/g, '\u200b')
 
 type DirectorySetting = Tenant['directorySettings'][number]
 
+/** Values that are object ids (GroupCreationAllowedGroupId) come resolved from the API. */
+const settingValue = (v: DirectorySetting['values'][number]) => (v.ref ? <ObjectLink value={v.ref} /> : v.value)
+
 function SettingCard({ s, i }: { s: DirectorySetting; i: number }) {
   return (
     <Card {...rise(i)}>
@@ -355,7 +395,7 @@ function SettingCard({ s, i }: { s: DirectorySetting; i: number }) {
         <CardTitle>{s.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        <PropertyList plain items={s.values.map((v) => [camelBreaks(v.name), v.value] as [string, string])} />
+        <PropertyList plain items={s.values.map((v) => [camelBreaks(v.name), settingValue(v)] as Property)} />
       </CardContent>
     </Card>
   )
@@ -414,7 +454,7 @@ function PasswordRulesCard({ s, i }: { s: DirectorySetting; i: number }) {
             ],
             ['On-premises AD protection', flag(onPrem)],
             ['On-premises mode', onPrem && mode ? <Badge variant={mode === 'Enforce' ? 'guide' : 'warning'}>{mode === 'Enforce' ? 'Enforced' : mode}</Badge> : null],
-            ...s.values.filter((x) => !PASSWORD_RULES.includes(x.name)).map((x) => [camelBreaks(x.name), x.value] as [string, string]),
+            ...s.values.filter((x) => !PASSWORD_RULES.includes(x.name)).map((x) => [camelBreaks(x.name), settingValue(x)] as Property),
           ]}
         />
       </CardContent>
@@ -436,6 +476,7 @@ export function DashboardPage() {
               {t.tenantId}
             </Button>
             <SourceIcon dirSync={t.dirSyncEnabled} />
+            <RawTenant raw={t.raw} />
           </div>
         )}
       </header>
@@ -451,10 +492,11 @@ export function DashboardPage() {
           <DomainsCard i={3} domains={t?.domains} />
         </div>
         <div className="flex flex-col gap-4 xl:col-span-5">
-          <ConditionalAccessCard i={2} />
-          <RolesCard i={3} />
+          <DirectoryCard i={2} stats={stats} />
+          <ConditionalAccessCard i={3} />
+          <RolesCard i={4} />
           {t?.directorySettings.map((s, j) =>
-            s.values.some((v) => v.name === 'LockoutThreshold') ? <PasswordRulesCard key={s.name} s={s} i={4 + j} /> : <SettingCard key={s.name} s={s} i={4 + j} />,
+            s.values.some((v) => v.name === 'LockoutThreshold') ? <PasswordRulesCard key={s.name} s={s} i={5 + j} /> : <SettingCard key={s.name} s={s} i={5 + j} />,
           )}
         </div>
       </div>

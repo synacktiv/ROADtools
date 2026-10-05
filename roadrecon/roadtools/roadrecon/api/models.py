@@ -701,6 +701,8 @@ class AuthorizationPolicySummary(BaseModel):
     usersCanRegisterApps: bool | None
     usersCanCreateSecurityGroups: bool | None
     usersCanReadOtherUsers: bool | None
+    usersCanCreateTenants: bool | None
+    usersCanReadOwnBitlockerKeys: bool | None
     userConsent: str
     guestAccess: str
     guestInvites: str
@@ -712,6 +714,7 @@ class AuthorizationPolicySummary(BaseModel):
 class SettingValue(BaseModel):
     name: str
     value: str
+    ref: ObjectRef | None = Field(None, description='The object the value names, when it is an object id (e.g. GroupCreationAllowedGroupId).')
 
 
 class DirectorySettingSummary(BaseModel):

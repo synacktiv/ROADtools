@@ -913,6 +913,8 @@ const tenant: Tenant = {
     usersCanRegisterApps: true,
     usersCanCreateSecurityGroups: false,
     usersCanReadOtherUsers: true,
+    usersCanCreateTenants: true,
+    usersCanReadOwnBitlockerKeys: true,
     userConsent: 'Allow consent for apps from verified publishers, for selected permissions',
     userConsentPolicy: 'verifiedPublishers',
     guestRole: 'limited',

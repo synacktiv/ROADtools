@@ -705,6 +705,8 @@ class Gen:
                 'allowedToCreateApps': True,
                 'allowedToCreateSecurityGroups': True,
                 'allowedToReadOtherUsers': True,
+                'allowedToCreateTenants': True,
+                'allowedToReadBitlockerKeysForOwnedDevice': False,
                 'permissionGrantPoliciesAssigned': ['ManagePermissionGrantsForSelf.microsoft-user-default-legacy'],
             },
             'permissionGrantPolicyIdsAssignedToDefaultUserRole':
@@ -719,7 +721,7 @@ class Gen:
                 {'name': 'EnableGroupCreation', 'value': 'true'},
                 {'name': 'AllowGuestsToAccessGroups', 'value': 'true'},
                 {'name': 'AllowToAddGuests', 'value': 'true'},
-                {'name': 'GroupCreationAllowedGroupId', 'value': ''},
+                {'name': 'GroupCreationAllowedGroupId', 'value': self.groups[0]},
             ],
         })
 

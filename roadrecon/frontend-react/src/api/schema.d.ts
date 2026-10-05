@@ -817,6 +817,10 @@ export interface components {
             usersCanCreateSecurityGroups: boolean | null;
             /** Userscanreadotherusers */
             usersCanReadOtherUsers: boolean | null;
+            /** Userscancreatetenants */
+            usersCanCreateTenants: boolean | null;
+            /** Userscanreadownbitlockerkeys */
+            usersCanReadOwnBitlockerKeys: boolean | null;
             /** Userconsent */
             userConsent: string;
             /** Guestaccess */
@@ -1920,6 +1924,8 @@ export interface components {
             name: string;
             /** Value */
             value: string;
+            /** @description The object the value names, when it is an object id (e.g. GroupCreationAllowedGroupId). */
+            ref?: components["schemas"]["ObjectRef"] | null;
         };
         /** SqlExample */
         SqlExample: {
