@@ -5164,6 +5164,38 @@
     ],
     "title": "ApplicationRow"
    },
+   "AuthenticationStrength": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "title": "Id"
+     },
+     "displayName": {
+      "type": "string",
+      "title": "Displayname"
+     },
+     "builtIn": {
+      "type": "boolean",
+      "title": "Builtin"
+     },
+     "combinations": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Combinations",
+      "description": "Allowed method combinations, e.g. \"Password + SMS\". Empty for custom strengths (not in the dump)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "displayName",
+     "builtIn",
+     "combinations"
+    ],
+    "title": "AuthenticationStrength"
+   },
    "AuthorizationPolicySummary": {
     "properties": {
      "selfServicePasswordReset": {
@@ -7936,6 +7968,16 @@
       ],
       "title": "Grantoperator"
      },
+     "requiresMfa": {
+      "type": "boolean",
+      "title": "Requiresmfa",
+      "description": "The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; custom ones are counted as MFA). False for a block."
+     },
+     "mfaApproximate": {
+      "type": "boolean",
+      "title": "Mfaapproximate",
+      "description": "requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump."
+     },
      "sessionControls": {
       "items": {
        "type": "string"
@@ -7997,6 +8039,14 @@
       "title": "Grantcontrols",
       "description": "Grant controls and authentication strengths, as value refs."
      },
+     "authenticationStrengths": {
+      "items": {
+       "$ref": "#/components/schemas/AuthenticationStrength"
+      },
+      "type": "array",
+      "title": "Authenticationstrengths",
+      "description": "The authentication strengths in grantControls (same id), in order."
+     },
      "session": {
       "items": {
        "$ref": "#/components/schemas/ObjectRef"
@@ -8023,6 +8073,8 @@
      "block",
      "grant",
      "grantOperator",
+     "requiresMfa",
+     "mfaApproximate",
      "sessionControls",
      "modifiedDateTime",
      "parseError",
@@ -8030,6 +8082,7 @@
      "targets",
      "conditions",
      "grantControls",
+     "authenticationStrengths",
      "session",
      "counts",
      "raw"
@@ -8120,6 +8173,16 @@
       ],
       "title": "Grantoperator"
      },
+     "requiresMfa": {
+      "type": "boolean",
+      "title": "Requiresmfa",
+      "description": "The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; custom ones are counted as MFA). False for a block."
+     },
+     "mfaApproximate": {
+      "type": "boolean",
+      "title": "Mfaapproximate",
+      "description": "requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump."
+     },
      "sessionControls": {
       "items": {
        "type": "string"
@@ -8160,6 +8223,8 @@
      "block",
      "grant",
      "grantOperator",
+     "requiresMfa",
+     "mfaApproximate",
      "sessionControls",
      "modifiedDateTime",
      "parseError"

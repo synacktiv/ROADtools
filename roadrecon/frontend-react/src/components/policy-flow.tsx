@@ -77,6 +77,9 @@ export function PolicyFlow({ policy, compact }: { policy: PolicyDetail; compact?
         ) : (
           <Block title={policy.grantControls.length > 1 ? (policy.grantOperator === 'AND' ? 'Require all of' : 'Require one of') : 'Require'}>
             <Refs items={policy.grantControls} icon={grantIcon} empty="No grant control" />
+            {policy.authenticationStrengths.map((s) => (
+              <Strength key={s.id} strength={s} />
+            ))}
           </Block>
         )}
         {policy.session.length > 0 && (
@@ -144,6 +147,24 @@ function Block({ title, icon: I, children }: { title: string; icon?: Icon; child
       </span>
       {children}
     </div>
+  )
+}
+
+/** What an authentication strength accepts. A custom one is only an id in the dump: counted as MFA, approximately. */
+function Strength({ strength: s }: { strength: PolicyDetail['authenticationStrengths'][number] }) {
+  if (!s.builtIn)
+    return <p className="text-sm text-pretty text-warning">Custom authentication strength: combinations not collected, counted as MFA.</p>
+  return (
+    <details className="text-sm text-muted-foreground">
+      <summary className="cursor-pointer hover:text-foreground">
+        {s.displayName}: {s.combinations.length} allowed combinations
+      </summary>
+      <ul className="mt-1 flex flex-col gap-0.5 pl-4">
+        {s.combinations.map((c) => (
+          <li key={c}>{c}</li>
+        ))}
+      </ul>
+    </details>
   )
 }
 

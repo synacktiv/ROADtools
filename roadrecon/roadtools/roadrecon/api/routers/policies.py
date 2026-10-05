@@ -17,8 +17,8 @@ from roadtools.roadlib.metadef import database as d
 
 from ..common import (Db, F, count_rows, gm_group, gm_user, iso, keyword, member_groups_select, not_found, paginate_list,
                       register, resolve_appids, resolve_ref, resolve_refs, unresolved, value)
-from ..models import (Condition, MatchReason, NamedLocationDetail, NamedLocationRow, ObjectRef, Page, PageQuery,
-                      PolicyCounts, PolicyDetail, PolicyMatch, PolicyQuery, PolicyRow, PolicyTargetType,
+from ..models import (AuthenticationStrength, Condition, MatchReason, NamedLocationDetail, NamedLocationRow, ObjectRef,
+                      Page, PageQuery, PolicyCounts, PolicyDetail, PolicyMatch, PolicyQuery, PolicyRow, PolicyTargetType,
                       PolicyUserQuery, UserRow)
 from . import users
 
@@ -36,6 +36,7 @@ POLICY_FIELDS = register('policies', {
     'state': F('State', 'enum', get=lambda r: r.state,
                labels={'enabled': 'Enabled', 'reporting': 'Report-only', 'disabled': 'Disabled'}),
     'block': F('Blocks access', 'bool', get=lambda r: r.block),
+    'requiresMfa': F('Requires MFA', 'bool', get=lambda r: r.requiresMfa),
     'targetsAllUsers': F('All users', 'bool', get=lambda r: r.targetsAllUsers),
     'targetsAllApps': F('All resources', 'bool', get=lambda r: r.targetsAllApps),
     'grant': F('Grant control', 'enum', get=lambda r: r.grant, options=_options('grant')),
@@ -61,11 +62,32 @@ CONTROLS = {  # Control -> (short label for rows, long label for the detail)
     'CompliantApplication': ('App protection policy', 'Require app protection policy'),
     'PasswordChange': ('Password change', 'Require password change'),
 }
-AUTH_STRENGTHS = {
-    '00000000-0000-0000-0000-000000000002': 'Multifactor authentication',
-    '00000000-0000-0000-0000-000000000003': 'Passwordless MFA',
-    '00000000-0000-0000-0000-000000000004': 'Phishing-resistant MFA',
+_PHISHING_RESISTANT = ['windowsHelloForBusiness', 'fido2', 'x509CertificateMultiFactor']
+AUTH_STRENGTHS = {  # Built-in strengths (Graph v1.0 authenticationStrengthPolicies): id -> (name, allowed combinations)
+    '00000000-0000-0000-0000-000000000002': ('Multifactor authentication', [
+        *_PHISHING_RESISTANT, 'deviceBasedPush', 'temporaryAccessPassOneTime', 'temporaryAccessPassMultiUse',
+        'password,microsoftAuthenticatorPush', 'password,softwareOath', 'password,hardwareOath',
+        'password,x509CertificateSingleFactor', 'password,x509CertificateMultiFactor', 'password,sms', 'password,voice',
+        'federatedMultiFactor', 'microsoftAuthenticatorPush,federatedSingleFactor', 'softwareOath,federatedSingleFactor',
+        'hardwareOath,federatedSingleFactor', 'sms,federatedSingleFactor', 'voice,federatedSingleFactor']),
+    '00000000-0000-0000-0000-000000000003': ('Passwordless MFA', [*_PHISHING_RESISTANT, 'deviceBasedPush']),
+    '00000000-0000-0000-0000-000000000004': ('Phishing-resistant MFA', _PHISHING_RESISTANT),
 }
+METHODS = {  # authenticationMethodModes -> label in the Entra admin center
+    'password': 'Password', 'voice': 'Voice call', 'sms': 'SMS',
+    'hardwareOath': 'Hardware OATH token', 'softwareOath': 'Software OATH token', 'fido2': 'FIDO2 security key',
+    'windowsHelloForBusiness': 'Windows Hello for Business', 'deviceBasedPush': 'Microsoft Authenticator (phone sign-in)',
+    'microsoftAuthenticatorPush': 'Microsoft Authenticator (push notification)',
+    'temporaryAccessPassOneTime': 'Temporary Access Pass (one-time use)',
+    'temporaryAccessPassMultiUse': 'Temporary Access Pass (multi-use)',
+    'x509CertificateSingleFactor': 'Certificate-based authentication (single-factor)',
+    'x509CertificateMultiFactor': 'Certificate-based authentication (multifactor)',
+    'federatedSingleFactor': 'Federated single-factor', 'federatedMultiFactor': 'Federated multifactor',
+}
+# All three are multifactor. The dump (AAD Graph) has only the ids of custom strengths, not their combinations.
+CUSTOM_STRENGTH = 'Custom authentication strength'
+BUILTIN_STRENGTHS = {k: AuthenticationStrength(id=k, displayName=name, builtIn=True, combinations=[
+    ' + '.join(METHODS.get(m, m) for m in c.split(',')) for c in combos]) for k, (name, combos) in AUTH_STRENGTHS.items()}
 SESSIONS = {'SignInFrequency': 'Sign-in frequency', 'PersistentBrowserSessionMode': 'Persistent browser session',
             'AppEnforcedRestrictions': 'App enforced restrictions', 'CloudAppSecurity': 'Conditional Access App Control'}
 LABELS = {'Users': 'Users', 'ServicePrincipals': 'Workload identities', 'Applications': 'Resources',
@@ -113,13 +135,29 @@ def _grants(det: dict) -> list[tuple[str, ObjectRef]]:
                 if k == 'Control' and x != 'Block':
                     short, long = CONTROLS.get(x, (x, x))
                     out.append((short, value(long)))
-                elif k == 'AuthStrengthIds':
-                    name = AUTH_STRENGTHS.get(x)  # custom strengths are not in the dump
-                    out.append(('Authentication strength', value(f'Authentication strength: {name}') if name else
-                                ObjectRef(id=x, type='unknown', displayName=f'Authentication strength: {x}')))
+                elif k == 'AuthStrengthIds' and x in BUILTIN_STRENGTHS:
+                    name = BUILTIN_STRENGTHS[x].displayName
+                    out.append((name, ObjectRef(id=x, type='value', displayName=f'Authentication strength: {name}')))
+                elif k == 'AuthStrengthIds':  # custom strength: only its id is in the dump
+                    out.append((CUSTOM_STRENGTH, ObjectRef(id=x, type='unknown', displayName=f'Authentication strength: {x}')))
                 elif k != 'Control':
                     out.append((k, value(f'{k}: {x}')))
     return out
+
+
+def _mfa(controls: list[dict]) -> tuple[bool, bool]:
+    """(requiresMfa, mfaApproximate). Entries are ANDed and each is met by any of its controls, so one entry whose
+    every control is MFA or an authentication strength is enough. A custom strength counts as MFA without its
+    combinations: approximate, unless an entry without a custom strength settles it."""
+    entries = [[(k, x) for k, v in c.items() if isinstance(v, list) for x in v] for c in controls]
+    mfa = [e for e in entries if e and all(k == 'AuthStrengthIds' or (k, x) == ('Control', 'Mfa') for k, x in e)]
+    return bool(mfa), bool(mfa) and all(any(k == 'AuthStrengthIds' and x not in BUILTIN_STRENGTHS for k, x in e) for e in mfa)
+
+
+def _strength_defs(det: dict) -> list[AuthenticationStrength]:
+    ids = [x for c in det.get('Controls') or [] if isinstance(c, dict) for x in _vals(c.get('AuthStrengthIds') or [])]
+    return [BUILTIN_STRENGTHS.get(x) or AuthenticationStrength(id=x, displayName=CUSTOM_STRENGTH, builtIn=False, combinations=[])
+            for x in dict.fromkeys(ids)]
 
 
 def _sessions(det: dict) -> list[tuple[str, str]]:
@@ -138,15 +176,18 @@ def _sessions(det: dict) -> list[tuple[str, str]]:
 def _row(p: d.Policy, det: dict, error: str | None) -> PolicyRow:
     cond = det.get('Conditions') or {}
     controls = [c for c in det.get('Controls') or [] if isinstance(c, dict)]
+    block = any('Block' in _vals(c.get('Control') or []) for c in controls)
+    mfa, approximate = (False, False) if block else _mfa(controls)
     return PolicyRow(
         id=p.objectId, displayName=p.displayName or p.objectId,
         state=STATES.get(det.get('State'), 'disabled'),
         targetsAllUsers=any('All' in _vals(v) for c in _crits(cond, 'Users', 'Include') for v in c.values()),
         targetsAllApps=any('All' in _vals(c.get('Applications') or []) for c in _crits(cond, 'Applications', 'Include')),
-        block=any('Block' in _vals(c.get('Control') or []) for c in controls),
+        block=block,
         grant=list(dict.fromkeys(s for s, _ in _grants(det))),
         # One controls entry = any of its controls; several entries must all be met (old policies plugin).
         grantOperator='AND' if len(controls) > 1 else 'OR',
+        requiresMfa=mfa, mfaApproximate=approximate,
         sessionControls=list(dict.fromkeys(s for s, _ in _sessions(det))),
         modifiedDateTime=iso(det.get('ModificationDateTime')),
         parseError=error,
@@ -492,12 +533,13 @@ def get_policy(id: str, db: Db) -> PolicyDetail:
     try:
         who, targets, conditions = _conditions(db, det)
         grants, sessions = [r for _s, r in _grants(det)], [value(long) for _s, long in _sessions(det)]
+        strengths = _strength_defs(det)
     except Exception as e:  # noqa: BLE001 - unexpected shapes: show what the row has, flag the rest
         row.parseError = row.parseError or f'{type(e).__name__}: {e}'
-        who, targets, conditions, grants, sessions = [], [], [], [], []
+        who, targets, conditions, grants, sessions, strengths = [], [], [], [], [], []
     counts = PolicyCounts(inScope=count_rows(db, _scope(det)), excluded=count_rows(db, _scope(det, 'excluded')))
     return PolicyDetail(**row.model_dump(), who=who, targets=targets, conditions=conditions, grantControls=grants,
-                        session=sessions, counts=counts, raw=p.as_dict())
+                        authenticationStrengths=strengths, session=sessions, counts=counts, raw=p.as_dict())
 
 
 @router.get('/policies/{id}/users')

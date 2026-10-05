@@ -856,6 +856,20 @@ export interface components {
             /** Hascustomowner */
             hasCustomOwner: boolean;
         };
+        /** AuthenticationStrength */
+        AuthenticationStrength: {
+            /** Id */
+            id: string;
+            /** Displayname */
+            displayName: string;
+            /** Builtin */
+            builtIn: boolean;
+            /**
+             * Combinations
+             * @description Allowed method combinations, e.g. "Password + SMS". Empty for custom strengths (not in the dump).
+             */
+            combinations: string[];
+        };
         /** AuthorizationPolicySummary */
         AuthorizationPolicySummary: {
             /** Selfservicepasswordreset */
@@ -1753,6 +1767,16 @@ export interface components {
              * @enum {string}
              */
             grantOperator: "AND" | "OR";
+            /**
+             * Requiresmfa
+             * @description The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; custom ones are counted as MFA). False for a block.
+             */
+            requiresMfa: boolean;
+            /**
+             * Mfaapproximate
+             * @description requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump.
+             */
+            mfaApproximate: boolean;
             /** Sessioncontrols */
             sessionControls: string[];
             /** Modifieddatetime */
@@ -1779,6 +1803,11 @@ export interface components {
              * @description Grant controls and authentication strengths, as value refs.
              */
             grantControls: components["schemas"]["ObjectRef"][];
+            /**
+             * Authenticationstrengths
+             * @description The authentication strengths in grantControls (same id), in order.
+             */
+            authenticationStrengths: components["schemas"]["AuthenticationStrength"][];
             /** Session */
             session: components["schemas"]["ObjectRef"][];
             counts: components["schemas"]["PolicyCounts"];
@@ -1827,6 +1856,16 @@ export interface components {
              * @enum {string}
              */
             grantOperator: "AND" | "OR";
+            /**
+             * Requiresmfa
+             * @description The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; custom ones are counted as MFA). False for a block.
+             */
+            requiresMfa: boolean;
+            /**
+             * Mfaapproximate
+             * @description requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump.
+             */
+            mfaApproximate: boolean;
             /** Sessioncontrols */
             sessionControls: string[];
             /** Modifieddatetime */
