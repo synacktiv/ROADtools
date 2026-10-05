@@ -21,7 +21,7 @@ ROADrecon is a tool for exploring information in Azure AD from both a Red Team a
 * Uses an automatically generated metadata model to create an SQLAlchemy backed database on disk.
 * Use asynchronous HTTP calls in Python to dump all available information in the Azure AD graph to this database.
 * Provide plugins to query this database and output it to a useful format.
-* Provide an extensive interface built in Angular that queries the offline database directly for its analysis.
+* Provide a web interface (FastAPI backend, React frontend) that queries the offline database directly for its analysis.
 
 ROADrecon uses `async` Python features and is only compatible with Python 3.10 and newer (development is done with Python 3.11, tests are run with versions up to Python 3.14). 
 
@@ -42,18 +42,39 @@ pip install roadrecon/
 You can also install them in development mode with `pip install -e roadlib/`.
 
 **Developing the front-end**  
-If you want to make changes to the Angular front-end, you will need to have `node` and `npm` installed. Then install the components from git:
+If you want to make changes to the front-end (React, in `roadrecon/frontend-react/`), you will need to have `node` (22) and `npm` installed. Then install the components from git:
 ```
 git clone https://github.com/dirkjanm/roadtools.git
 pip install -e roadlib/
 pip install -e roadrecon/
-cd roadrecon/frontend/
-npm install
+cd roadrecon/frontend-react/
+npm ci
 ```
 
-You can run the Angular frontend with `npm start` or `ng serve` using the Angular CLI from the `roadrecon/frontend/` directory. To build the JavaScript files into ROADrecon's `dist_gui` directory, run `npm run build`.
+Run the API with `uvicorn roadtools.roadrecon.api.app:create_app --factory --reload --port 8000` (it reads the database from `$ROADRECON_DB`, default `roadrecon.db`), then `npm run dev` from `roadrecon/frontend-react/`. Vite serves the front-end on http://127.0.0.1:5173 and forwards `/api` to port 8000. To build the JavaScript files into ROADrecon's `roadtools/roadrecon/dist_gui` directory, run `npm run build`.
+
+Alternatively, `roadrecon/compose.yaml` runs everything in containers (podman or docker), from the `roadrecon/` directory:
+```
+podman compose run --rm py python roadrecon/tests/gendb.py -o roadrecon/.dev/roadrecon.db   # synthetic database
+podman compose up                  # built GUI + API on http://127.0.0.1:5000 (ROADRECON_DB overrides the database)
+podman compose up api web          # development: API with --reload + Vite on http://127.0.0.1:5173
+podman compose run --rm py pytest roadrecon/tests -q
+podman compose run --rm node npm run build
+```
 
 ### Using ROADrecon
+After gathering data with `roadrecon auth` and `roadrecon gather`, start the GUI with `roadrecon gui` (or `roadrecon-gui`) and open http://127.0.0.1:5000. Options: `-d` for the database file (default `roadrecon.db`), `--host` and `--port` (default `127.0.0.1:5000`), and `--read-only` to never write to the database (by default, indexes are added on start-up).
+
+The GUI shows:
+* A dashboard with tenant statistics, tenant information and directory settings.
+* Lists of users, groups, devices, administrative units, service principals, applications, directory roles, application role assignments, OAuth2 permission grants and MFA status, with server-side search, filters, sorting and CSV/JSON export.
+* A page per object, with its properties, its relations (members, owners, roles, PIM, Azure roles, access packages, Conditional Access policies) and the raw object.
+* Conditional Access policies with every reference resolved to a link, the users in scope of a policy, and the named locations with the policies that use them.
+* A SQL page to run read-only queries directly against the database, with built-in queries.
+* A global search across all objects (⌘K / Ctrl+K).
+
+The API documentation is served on `/docs`.
+
 See [this Wiki page](https://github.com/dirkjanm/ROADtools/wiki/Getting-started-with-ROADrecon) on how to get started.
 
 ## ROADtools Token eXchange (roadtx)
