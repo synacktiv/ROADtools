@@ -160,6 +160,7 @@ New features
   - results in a `DataTable`, with one-click CSV export;
   - run on a separate read-only connection (`PRAGMA query_only`), with a row cap and a timeout.
 - [ ] Resizable table columns (drag the column header edge in `DataTable`).
+- [ ] Named locations map: trusted countries in green.
 
 ## Phase 6 — Switch
 - [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
