@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { IconAlertTriangle, IconCloud, IconServer2, IconShieldBolt, IconShieldOff, IconUserOff, IconUserShare } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCloud, IconServer2, IconShieldBolt, IconShieldOff, IconUserShare } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -9,7 +9,7 @@ import { DataTable, useTableParams, type FilterDef } from '@/components/data-tab
 import { ObjectLink } from '@/components/object-link'
 import { ObjectPage } from '@/components/object-page'
 import { MfaMethods } from '@/components/mfa-methods'
-import { EnabledBadge, Flag, KindBadge, PolicyStateBadge, SourceIcon } from '@/components/badges'
+import { EnabledBadge, Flag, KindBadge, Marker, PolicyStateBadge, SourceIcon, StatusMark } from '@/components/badges'
 import { Dash, ListPage, SubViews, orDash, toRef } from '@/components/page-parts'
 import { ObjectPolicies } from '@/components/policy-match-list'
 import { GroupsTable } from '@/pages/groups'
@@ -82,30 +82,14 @@ function PerUserMfa({ state }: { state: string | null }) {
   return <Badge variant={state === 'Enforced' ? 'guide' : 'outline'}>{state}</Badge>
 }
 
-/** Icon-only status marker; the label is in aria-label (not text) so the cell copy button copies only the name. */
-function Marker({ icon: Icon, label, className }: { icon: React.ComponentType<{ className?: string; stroke?: number }>; label: string; className?: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span tabIndex={0} aria-label={label} className={cn('inline-flex shrink-0', className)}>
-          <Icon className="size-4" stroke={1.75} />
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  )
-}
-
 /** Name cell: the link, then disabled / guest / no-MFA markers. */
 function UserName({ u }: { u: UserRow }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5">
       <ObjectLink value={toRef('user', u)} />
-      {!u.accountEnabled && <Marker icon={IconUserOff} label="Disabled account" className="text-regulatory" />}
+      {!u.accountEnabled && <StatusMark status="disabled" />}
       {u.userType === 'Guest' && <Marker icon={IconUserShare} label="Guest" className="text-muted-foreground" />}
-      {mfaCount(u.mfa) === 0 && (
-        <Marker icon={IconShieldOff} label={u.accountEnabled ? 'No MFA registered' : 'No MFA registered (account disabled)'} className={u.accountEnabled ? 'text-regulatory' : 'text-muted-foreground'} />
-      )}
+      {mfaCount(u.mfa) === 0 && <StatusMark status="noMfa" muted={!u.accountEnabled} />}
     </span>
   )
 }
@@ -145,7 +129,7 @@ function userColumns(mfa: boolean): Col[] {
   ]
 }
 
-const MFA_COLUMNS = ([
+const MFA_COLUMNS: Col[] = [
   COL.name,
   COL.upn,
   COL.perUserMfa,
@@ -163,8 +147,7 @@ const MFA_COLUMNS = ([
   COL.hasFido,
   { ...COL.mfa, header: 'Registered' },
   ...[COL.enabled, COL.userType, COL.source, COL.mail, COL.department, COL.jobTitle, COL.password, COL.id].map(hidden),
-  // ponytail: DataTable remembers column visibility per route, and /users shares /api/users; prefixed ids keep the two lists apart.
-] as Col[]).map((c): Col => ({ ...c, id: `mfa_${(c as { id?: string; accessorKey?: string }).id ?? (c as { accessorKey?: string }).accessorKey}` }))
+]
 
 interface UsersTableProps {
   route?: Extract<Route, '/api/users' | '/api/policies/{id}/users'>
