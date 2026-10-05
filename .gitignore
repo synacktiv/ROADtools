@@ -26,3 +26,6 @@ roadlib/roadtools/roadlib/*.xml
 # New React GUI config and API spec
 !roadrecon/frontend-react/*.json
 !roadrecon/frontend-react/src/**/*.json
+# Its build output (npm run build), served by roadtools.roadrecon.api
+roadrecon/roadtools/roadrecon/dist_gui/*
+!roadrecon/roadtools/roadrecon/dist_gui/.gitkeep

@@ -29,6 +29,9 @@ ma = Marshmallow(app)
 
 mimetypes.add_type('application/javascript', '.js')
 
+# dist_gui now holds the new GUI; the compose `legacy` service builds the Angular one elsewhere
+GUI_DIR = os.environ.get('ROADRECON_LEGACY_GUI', 'dist_gui')
+
 # Allow CORS requests from Angular if it's running in develop mode
 CORS(app, origins=['http://127.0.0.1:4200', 'http://localhost:4200', 'http://localhost:5000'])
 
@@ -295,18 +298,18 @@ pimresource_schema = PIMgovernanceResourceSchema()
 
 @app.route("/")
 def get_index():
-    return send_file('dist_gui/index.html')
+    return send_file(os.path.join(GUI_DIR, 'index.html'))
 
 @app.errorhandler(404)
 def page_not_found(error):
     # Might be a valid angular page, serve that
     if not '.' in request.path and not request.path.startswith('/api/'):
-        return send_file('dist_gui/index.html')
+        return send_file(os.path.join(GUI_DIR, 'index.html'))
     return '404 - Page was not found', 404
 
 @app.route("/<path:path>", methods=["GET"])
 def get_gui(path):
-    return send_from_directory('dist_gui', path)
+    return send_from_directory(GUI_DIR, path)
 
 @app.route("/api/users", methods=["GET"])
 def get_users():

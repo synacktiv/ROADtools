@@ -30,8 +30,6 @@ import os
 import pprint
 import types
 
-from marshmallow import Schema, fields
-from marshmallow_sqlalchemy import ModelConverter, SQLAlchemyAutoSchema
 from openpyxl import Workbook
 from openpyxl.styles import Font
 from openpyxl.styles import PatternFill
@@ -40,12 +38,12 @@ from roadtools.roadlib.metadef.database import (
     User, JSON, Group, DirectoryRole, ServicePrincipal, AppRoleAssignment,
     RoleAssignment, TenantDetail, Application, Device, OAuth2PermissionGrant
 )
-from roadtools.roadrecon.server import (
-    user_schema, device_schema, group_schema, application_schema,
-    td_schema, serviceprincipal_schema, users_schema, devices_schema,
-    groups_schema, applications_schema, serviceprincipals_schema
-)
 import roadtools.roadlib.metadef.database as database
+
+# Columns of the Users, Devices and Groups sheets (were the Flask GUI list schemas)
+USER_FIELDS = ('objectId', 'objectType', 'userPrincipalName', 'displayName', 'mail', 'lastDirSyncTime', 'accountEnabled', 'department', 'lastPasswordChangeDateTime', 'jobTitle', 'mobile', 'dirSyncEnabled', 'strongAuthenticationDetail', 'userType', 'searchableDeviceKey')
+DEVICE_FIELDS = ('objectId', 'objectType', 'accountEnabled', 'displayName', 'deviceManufacturer', 'deviceModel', 'deviceOSType', 'deviceOSVersion', 'deviceTrustType', 'isCompliant', 'deviceId', 'isManaged', 'isRooted', 'dirSyncEnabled')
+GROUP_FIELDS = ('displayName', 'description', 'createdDateTime', 'dirSyncEnabled', 'objectId', 'objectType', 'groupTypes', 'mail', 'isPublic', 'isAssignableToRole', 'membershipRule')
 
 # Required property - plugin description
 DESCRIPTION = "Export data to an Excel file"
@@ -126,30 +124,30 @@ class ExportToFilePlugin():
         self._print_msg('Export %s info' % sheet_name)
 
         sheet = self._create_sheet(book, sheet_name)
-        self._create_excel_headers(sheet, users_schema.Meta().fields)
+        self._create_excel_headers(sheet, USER_FIELDS)
         self._apply_style_sheet(sheet, column_width)
         all_users = self.session.query(User).all()
-        self._fill_sheet(sheet, all_users, users_schema.Meta().fields)
+        self._fill_sheet(sheet, all_users, USER_FIELDS)
 
     def get_devices(self, book, column_width=40):
         sheet_name = "Devices"
         self._print_msg('Export %s info' % sheet_name)
 
         sheet = self._create_sheet(book, sheet_name)
-        self._create_excel_headers(sheet, devices_schema.Meta().fields)
+        self._create_excel_headers(sheet, DEVICE_FIELDS)
         self._apply_style_sheet(sheet, column_width)
         all_devices = self.session.query(Device).all()
-        self._fill_sheet(sheet, all_devices, devices_schema.Meta().fields)
+        self._fill_sheet(sheet, all_devices, DEVICE_FIELDS)
 
     def get_groups(self, book, column_width=40):
         sheet_name = "Groups"
         self._print_msg('Export %s info' % sheet_name)
 
         sheet = self._create_sheet(book, sheet_name)
-        self._create_excel_headers(sheet, groups_schema.Meta().fields)
+        self._create_excel_headers(sheet, GROUP_FIELDS)
         self._apply_style_sheet(sheet, column_width)
         all_groups = self.session.query(Group).all()
-        self._fill_sheet(sheet, all_groups, groups_schema.Meta().fields)
+        self._fill_sheet(sheet, all_groups, GROUP_FIELDS)
 
     def get_member_of(self, book, column_width=40):
         sheet_name = "MemberOf"

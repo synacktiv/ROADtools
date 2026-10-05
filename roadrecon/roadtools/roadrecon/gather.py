@@ -16,6 +16,7 @@ from sqlalchemy.orm import sessionmaker
 import roadtools.roadlib.metadef.database as database
 from roadtools.roadlib.auth import Authentication
 from roadtools.roadrecon.plugins import policyanalysis
+from roadtools.roadrecon.api.db import ensure_indexes
 from roadtools.roadlib.metadef.database import (
     AdministrativeUnit, Application, ApplicationRef, AppRoleAssignment,
     AuthorizationPolicy, Contact, Device, DirectoryRole, DirectorySetting,
@@ -782,6 +783,9 @@ async def run(args):
                 worker_task.cancel()
 
     dbsession.commit()
+
+    # Indexes the policy analysis and the GUI rely on (additive, see api/db.py)
+    ensure_indexes(engine)
 
     # Auto analyze CA policies
     print('Data gathering complete - Performing data pre-analysis: calculating CA policy scopes')

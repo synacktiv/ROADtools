@@ -10,7 +10,7 @@ const walk = (dir) => {
     else if (/\.(html|css)$/.test(e.name) && /url\(\s*['"]?https?:|<(link|script)[^>]+https?:/.test(readFileSync(p, 'utf8'))) bad.push(p)
   }
 }
-walk('dist')
+walk('../roadtools/roadrecon/dist_gui')
 if (bad.length) {
   console.error('External resources referenced in:', bad.join(', '))
   process.exit(1)
