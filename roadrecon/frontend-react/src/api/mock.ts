@@ -32,6 +32,8 @@ import type {
   RoleDetail,
   SearchResult,
   ServicePrincipalDetail,
+  SqlResult,
+  SqlSchema,
   Stats,
   Tenant,
   UserDetail,
@@ -1214,7 +1216,29 @@ function listUsers(q: Q, base = users): Page<UserRow> {
   }, 'users')
 }
 
+// The mock cannot run SQL: any query returns the users.
+const sqlSchema: SqlSchema = {
+  tables: [
+    { name: 'Users', columns: ['objectId', 'displayName', 'userPrincipalName', 'userType', 'accountEnabled', 'mail', 'department', 'strongAuthenticationDetail'] },
+    { name: 'Groups', columns: ['objectId', 'displayName', 'description', 'isAssignableToRole', 'membershipRule'] },
+    { name: 'ServicePrincipals', columns: ['objectId', 'displayName', 'appId', 'publisherName', 'passwordCredentials', 'keyCredentials'] },
+    { name: 'lnk_group_member_user', columns: ['Group', 'User'] },
+  ],
+  queries: [
+    { name: 'Guest users', description: 'External users, newest first.', sql: "SELECT displayName, userPrincipalName, accountEnabled\nFROM Users\nWHERE userType = 'Guest'" },
+    { name: 'Dynamic groups', description: 'Membership rules, which users may be able to satisfy themselves.', sql: 'SELECT displayName, membershipRule\nFROM Groups\nWHERE membershipRule IS NOT NULL' },
+  ],
+}
+const runSql = (): SqlResult => ({
+  columns: ['displayName', 'userPrincipalName', 'userType', 'accountEnabled', 'department'],
+  rows: users.map((u) => [u.displayName, u.userPrincipalName, u.userType, u.accountEnabled ? 1 : 0, u.department]),
+  truncated: false,
+  elapsedMs: 3,
+})
+
 const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
+  ['/api/sql', runSql],
+  ['/api/sql/schema', () => sqlSchema],
   ['/api/filters/{resource}', ({ resource }) => (resource in FIELDS ? fieldCatalog(resource as FilterResource) : undefined)],
   ['/api/stats', (): Stats => ({ users: users.length, guests: users.filter((u) => u.userType === 'Guest').length, groups: groups.length, devices: devices.length, servicePrincipals: sps.length, applications: apps.length, administrativeUnits: aus.length, roles: roles.length, policies: policies.length, namedLocations: locations.length })],
   ['/api/tenant', () => tenant],

@@ -14,6 +14,7 @@ import { ApplicationPage, ApplicationsPage, ServicePrincipalPage, ServicePrincip
 import { RolePage, RolesPage } from '@/pages/roles'
 import { AppRoleAssignmentsPage, OAuth2GrantsPage } from '@/pages/grants'
 import { NamedLocationPage, NamedLocationsPage, PoliciesPage, PolicyPage } from '@/pages/policies'
+import { SqlPage } from '@/pages/sql'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
       { path: '/app-role-assignments', element: <AppRoleAssignmentsPage /> },
       { path: '/oauth2-grants', element: <OAuth2GrantsPage /> },
       { path: '/mfa', element: <MfaPage /> },
+      { path: '/sql', element: <SqlPage /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

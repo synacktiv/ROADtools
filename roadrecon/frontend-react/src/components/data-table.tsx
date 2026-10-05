@@ -109,6 +109,8 @@ interface DataTableProps<R extends Route, T> {
   resource?: FilterResource
   /** Makes rows expandable; renders under the row across all columns. */
   renderExpanded?: (row: T) => React.ReactNode
+  /** Rows already loaded (e.g. SQL results): nothing is fetched, paging happens here. */
+  rows?: T[]
 }
 
 const colKey = (c: ColumnDef<unknown>) => c.id ?? (c as { accessorKey?: string }).accessorKey ?? ''
@@ -134,6 +136,7 @@ export function DataTable<R extends Route, T>({
   hideSearch,
   resource,
   renderExpanded,
+  rows,
 }: DataTableProps<R, T>) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const settings = useSettings()
@@ -150,8 +153,8 @@ export function DataTable<R extends Route, T>({
   const match = params.get('match') === 'any' ? 'any' : 'all'
   const sent = active.filter(isComplete).map(serializeFilter)
   const baseQuery = { ...query, ...toggles, q: q || undefined, sort, order, filter: sent, match: sent.length > 1 ? match : undefined }
-  const { data, isLoading, isFetching, error, refetch } = useApi(route, { path, query: { ...baseQuery, page, page_size: pageSize } } as ApiOptions<R>)
-  const pageData = data as Page<T> | undefined
+  const { data, isLoading, isFetching, error, refetch } = useApi(route, { path, query: { ...baseQuery, page, page_size: pageSize } } as ApiOptions<R>, !rows)
+  const pageData = rows ? { items: rows.slice((page - 1) * pageSize, page * pageSize), total: rows.length } : (data as Page<T> | undefined)
   const setFilters = (fs: ActiveFilter[], m = match) => set({ filter: fs.map(serializeFilter), match: fs.length > 1 && m === 'any' ? 'any' : null })
 
   // Column visibility per list, remembered in this browser.
@@ -190,18 +193,19 @@ export function DataTable<R extends Route, T>({
   }
 
   const exportRows = async (format: 'csv' | 'json', all: boolean) => {
-    let rows = (pageData?.items ?? []) as unknown[]
-    if (all) {
-      rows = []
+    let out = (pageData?.items ?? []) as unknown[]
+    if (all && rows) out = rows
+    else if (all) {
+      out = []
       // ponytail: client-side paging, capped at 50 000 rows; add a streaming export route if dumps need more
       for (let p = 1; p <= Math.min(100, Math.ceil(total / 500)); p++) {
         const res = (await get(route, { path, query: { ...baseQuery, page: p, page_size: 500 } } as ApiOptions<R>)) as Page<unknown>
-        rows.push(...res.items)
+        out.push(...res.items)
       }
     }
     const name = `${route.replace('/api/', '').replace(/[^\w-]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.${format}`
-    download(name, format === 'json' ? JSON.stringify(rows, null, 2) : toCsv(rows), format === 'json' ? 'application/json' : 'text/csv')
-    toast(`Exported ${fmtNumber(rows.length)} rows to ${name}`)
+    download(name, format === 'json' ? JSON.stringify(out, null, 2) : toCsv(out), format === 'json' ? 'application/json' : 'text/csv')
+    toast(`Exported ${fmtNumber(out.length)} rows to ${name}`)
   }
 
   return (

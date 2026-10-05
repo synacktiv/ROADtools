@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { useTheme } from 'next-themes'
-import { type Icon, IconFingerprint, IconKey, IconLayoutDashboard, IconMoon, IconSearch, IconSun, IconTicket } from '@tabler/icons-react'
+import { type Icon, IconFingerprint, IconKey, IconLayoutDashboard, IconMoon, IconSearch, IconSun, IconTerminal2, IconTicket } from '@tabler/icons-react'
 import {
   Sidebar,
   SidebarContent,
@@ -65,6 +65,7 @@ export const NAV: { label?: string; items: NavItem[] }[] = [
       { to: '/mfa', label: 'MFA', icon: IconFingerprint },
     ],
   },
+  { label: 'Tools', items: [{ to: '/sql', label: 'SQL query', icon: IconTerminal2 }] },
 ]
 
 const SECTIONS = Object.fromEntries(NAV.flatMap((g) => g.items).map((i) => [i.to, i.label]))

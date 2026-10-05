@@ -32,6 +32,22 @@ export async function get<R extends Route>(route: R, opts: ApiOptions<R> = {}): 
   return res.json()
 }
 
+/** POST a JSON body. Errors carry FastAPI's `detail` as the message. */
+export async function post<T>(route: string, body: unknown): Promise<T> {
+  const res = await fetchImpl(route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  if (!res.ok) {
+    const text = await res.text()
+    let detail = text
+    try {
+      detail = JSON.parse(text).detail ?? text
+    } catch {
+      // plain text error
+    }
+    throw new ApiError(res.status, typeof detail === 'string' ? detail : text || res.statusText)
+  }
+  return res.json()
+}
+
 export function useApi<R extends Route>(route: R, opts: ApiOptions<R> = {}, enabled = true) {
   return useQuery({
     queryKey: [route, opts.path, opts.query],
