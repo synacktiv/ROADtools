@@ -547,10 +547,14 @@ const roleRef = (n: string) => ref('role', roleByName(n))
 const cond = (key: string, label: string, include: ObjectRef[], exclude: ObjectRef[] = []): Condition => ({ key, label, include, exclude })
 
 const policies: PolicyDetail[] = []
-function addPolicy(p: Omit<PolicyDetail, 'id' | 'targetsAllUsers' | 'targetsAllApps' | 'grantOperator' | 'sessionControls' | 'modifiedDateTime' | 'parseError' | 'counts' | 'raw'> & Partial<PolicyDetail>) {
+const isMfa = (g: string) => /MFA|strength/.test(g)
+function addPolicy(p: Omit<PolicyDetail, 'id' | 'targetsAllUsers' | 'targetsAllApps' | 'grantOperator' | 'requiresMfa' | 'mfaApproximate' | 'authenticationStrengths' | 'sessionControls' | 'modifiedDateTime' | 'parseError' | 'counts' | 'raw'> & Partial<PolicyDetail>) {
   const full: PolicyDetail = {
     id: guid(),
     grantOperator: 'OR',
+    requiresMfa: !p.block && (p.grantOperator === 'AND' ? p.grant.some(isMfa) : p.grant.length > 0 && p.grant.every(isMfa)),
+    mfaApproximate: false,
+    authenticationStrengths: [],
     sessionControls: p.session.map((s) => s.displayName.split(':')[0]),
     modifiedDateTime: daysAgo(Math.floor(rand() * 200)),
     parseError: null,
@@ -565,6 +569,7 @@ function addPolicy(p: Omit<PolicyDetail, 'id' | 'targetsAllUsers' | 'targetsAllA
   return full
 }
 const exceptBg = [ref('group', bgGroup)]
+const customStrength = guid()
 addPolicy({
   displayName: 'CA001 - Require MFA for all users',
   state: 'enabled',
@@ -580,11 +585,12 @@ addPolicy({
   displayName: 'CA002 - Phishing-resistant MFA for admins',
   state: 'enabled',
   block: false,
-  grant: ['Authentication strength'],
+  grant: ['Phishing-resistant MFA'],
   who: [cond('Users', 'Directory roles', [roleRef('Global Administrator'), roleRef('Privileged Role Administrator'), roleRef('Application Administrator'), roleRef('Conditional Access Administrator'), roleRef('Exchange Administrator')], exceptBg)],
   targets: [cond('Applications', 'Resources', [kw('All resources')])],
   conditions: [],
-  grantControls: [val('Authentication strength: Phishing-resistant MFA')],
+  grantControls: [{ id: '00000000-0000-0000-0000-000000000004', type: 'value', displayName: 'Authentication strength: Phishing-resistant MFA' }],
+  authenticationStrengths: [{ id: '00000000-0000-0000-0000-000000000004', displayName: 'Phishing-resistant MFA', builtIn: true, combinations: ['Windows Hello for Business', 'FIDO2 security key', 'Certificate-based authentication (multifactor)'] }],
   session: [val('Sign-in frequency: every 4 hours'), val('Persistent browser session: never')],
 })
 addPolicy({
@@ -672,11 +678,13 @@ addPolicy({
   displayName: 'Legacy - Intune enrollment MFA',
   state: 'enabled',
   block: false,
-  grant: ['MFA'],
+  grant: ['Custom authentication strength'],
+  mfaApproximate: true,
   who: [cond('Users', 'Users', [kw('All users')]), cond('Users', 'Directory roles', [], [roleRef('Directory Synchronization Accounts')])],
   targets: [cond('Applications', 'Resources', [ref('servicePrincipal', intune)]), cond('UserActions', 'User actions', [val('Register or join devices')])],
   conditions: [],
-  grantControls: [val('Multifactor authentication')],
+  grantControls: [{ id: customStrength, type: 'unknown', displayName: `Authentication strength: ${customStrength}` }],
+  authenticationStrengths: [{ id: customStrength, displayName: 'Custom authentication strength', builtIn: false, combinations: [] }],
   session: [],
   parseError: 'Unknown condition key "AgentIdRisks" was ignored',
 })
@@ -794,6 +802,8 @@ const toPolicyRow = (p: PolicyDetail): PolicyRow => ({
   block: p.block,
   grant: p.grant,
   grantOperator: p.grantOperator,
+  requiresMfa: p.requiresMfa,
+  mfaApproximate: p.mfaApproximate,
   sessionControls: p.sessionControls,
   modifiedDateTime: p.modifiedDateTime,
   parseError: p.parseError,
@@ -1131,6 +1141,7 @@ const FIELDS: Record<FilterResource, Record<string, FieldSpec>> = {
     displayName: text('Name', 'displayName'),
     state: enum_('State', (p) => p.state, { enabled: 'Enabled', reporting: 'Report-only', disabled: 'Disabled' }),
     block: bool_('Blocks access', (p) => p.block),
+    requiresMfa: bool_('Requires MFA', (p) => p.requiresMfa),
     targetsAllUsers: bool_('All users', (p) => p.targetsAllUsers),
     targetsAllApps: bool_('All resources', (p) => p.targetsAllApps),
     grant: enum_('Grant control', (p) => p.grant),

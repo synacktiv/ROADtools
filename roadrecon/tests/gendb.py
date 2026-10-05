@@ -48,6 +48,8 @@ ZERO_GUID = '00000000-0000-0000-0000-000000000000'
 # Built-in Conditional Access authentication strengths (see policies plugin).
 AUTHSTRENGTH_MFA = '00000000-0000-0000-0000-000000000002'
 AUTHSTRENGTH_PHISHRESISTANT = '00000000-0000-0000-0000-000000000004'
+# A custom strength ("Password + Microsoft Authenticator (Push Notification)"): the dump has only its id.
+AUTHSTRENGTH_CUSTOM = '5d3c6a1e-7b2f-4c8e-9a41-2f6b8d0c1e01'
 
 EPOCH = datetime.datetime(2020, 1, 1)
 
@@ -859,7 +861,7 @@ class Gen:
             'Users': {'Include': [{'Users': self.enabled_users[:2] or [self.ga_user]}]},
             'Applications': {'Include': [{'Acrs': ['c1']}]},
             'AuthFlows': {'Include': [{'AuthFlowType': ['deviceCodeFlow', 'authenticationTransfer']}]},
-        }, controls=[{'AuthStrengthIds': [AUTHSTRENGTH_MFA]}])
+        }, controls=[{'AuthStrengthIds': [AUTHSTRENGTH_CUSTOM]}])
 
         # 6. Enabled: device-filter rule, service-principal policy (workload identities).
         policy('Workload identity sign-in restriction', 'Enabled', {

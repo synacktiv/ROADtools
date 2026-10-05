@@ -600,6 +600,11 @@ class PolicyRow(BaseModel):
     block: bool
     grant: list[str]
     grantOperator: Literal['AND', 'OR']
+    requiresMfa: bool = Field(description=(
+        'The grant controls require MFA: the MFA control or an authentication strength (built-in ones are all MFA; '
+        'custom ones are counted as MFA). False for a block.'))
+    mfaApproximate: bool = Field(description=(
+        'requiresMfa only holds through a custom authentication strength, whose combinations are not in the dump.'))
     sessionControls: list[str]
     modifiedDateTime: str | None
     parseError: str | None
@@ -622,11 +627,20 @@ class PolicyCounts(BaseModel):
     excluded: int
 
 
+class AuthenticationStrength(BaseModel):
+    id: str
+    displayName: str
+    builtIn: bool
+    combinations: list[str] = Field(description='Allowed method combinations, e.g. "Password + SMS". Empty for custom strengths (not in the dump).')
+
+
 class PolicyDetail(PolicyRow):
     who: list[Condition] = Field(description='Users, workload identities.')
     targets: list[Condition] = Field(description='Applications, user actions, authentication contexts.')
     conditions: list[Condition] = Field(description='Platforms, locations, client apps, device filters, risks.')
     grantControls: list[ObjectRef] = Field(description='Grant controls and authentication strengths, as value refs.')
+    authenticationStrengths: list[AuthenticationStrength] = Field(
+        description='The authentication strengths in grantControls (same id), in order.')
     session: list[ObjectRef]
     counts: PolicyCounts
     raw: Raw

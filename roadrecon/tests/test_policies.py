@@ -113,7 +113,7 @@ def test_list_row_values(client):
     risky = by_name(client, 'Risky guest sign-ins')
     assert risky['grant'] == ['MFA', 'Compliant device'] and risky['grantOperator'] == 'OR'
     assert risky['sessionControls'] == ['Sign-in frequency', 'Persistent browser session']
-    assert by_name(client, 'Admins need phishing-resistant MFA')['grant'] == ['Authentication strength']
+    assert by_name(client, 'Admins need phishing-resistant MFA')['grant'] == ['Phishing-resistant MFA']
 
 
 @pytest.mark.parametrize('params, expected', [
@@ -134,7 +134,8 @@ def test_list_filters(client, params, expected):
 
 def test_policy_filter_catalogue(client):
     cat = {f['key']: f for f in client.get('/api/filters/policies').json()}
-    assert {o['value'] for o in cat['grant']['options']} == {'MFA', 'Compliant device', 'Authentication strength'}
+    assert {o['value'] for o in cat['grant']['options']} == {
+        'MFA', 'Compliant device', 'Phishing-resistant MFA', 'Custom authentication strength'}
     assert {o['value'] for o in cat['state']['options']} == {'enabled', 'reporting', 'disabled'}
 
 
@@ -398,7 +399,8 @@ def test_minimal_db(minimal_client):
 def test_eligible_only_exclusion_does_not_win():
     from roadtools.roadrecon.api.models import MatchReason, PolicyRow
     row = PolicyRow(id='p', displayName='p', state='enabled', targetsAllUsers=False, targetsAllApps=False, block=False,
-                    grant=[], grantOperator='OR', sessionControls=[], modifiedDateTime=None, parseError=None)
+                    grant=[], grantOperator='OR', requiresMfa=False, mfaApproximate=False, sessionControls=[],
+                    modifiedDateTime=None, parseError=None)
     from roadtools.roadrecon.api.routers.policies import _match
     inc = [MatchReason(condition='Users', via=[], approximate=False, eligibleOnly=False)]
     elig = [MatchReason(condition='Directory roles', via=[], approximate=False, eligibleOnly=True)]

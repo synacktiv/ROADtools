@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { IconAlertTriangle, IconCloud, IconServer2, IconShieldBolt, IconShieldOff, IconUserShare } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCloud, IconServer2, IconShieldBolt, IconShieldCheck, IconShieldOff, IconUserShare } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -255,6 +255,9 @@ function RiskSignals({ id }: { id: string }) {
   const held = new Map<string, RoleAssignmentRow>()
   for (const a of ra?.items ?? []) if (a.role.id && privileged.has(a.role.id) && (!held.has(a.role.id) || a.kind === 'active')) held.set(a.role.id, a)
   const excluded = (matches ?? []).filter((m) => m.effect === 'excluded')
+  // Enabled policies in scope whose grant requires MFA (the MFA control or an authentication strength).
+  const mfa = (matches ?? []).filter((m) => m.effect === 'included' && m.policy.state === 'enabled' && m.policy.requiresMfa)
+  const mfaApprox = mfa.length > 0 && mfa.every((m) => m.policy.mfaApproximate)
   return (
     <Card className="gap-3 py-3">
       <CardHeader className="px-4">
@@ -285,6 +288,11 @@ function RiskSignals({ id }: { id: string }) {
             </span>
           ))}
         </div>
+        <span className={cn('inline-flex items-center gap-1.5 text-sm', !matches ? 'text-muted-foreground' : !mfa.length ? 'text-regulatory' : mfaApprox ? 'text-warning' : 'text-muted-foreground')}>
+          {mfa.length ? <IconShieldCheck className="size-4" stroke={1.75} aria-hidden /> : <IconShieldOff className="size-4" stroke={1.75} aria-hidden />}
+          {!matches ? 'MFA requirement' : !mfa.length ? 'No enabled policy requires MFA' : `MFA required by ${mfa.length} ${mfa.length > 1 ? 'policies' : 'policy'}`}
+          {mfaApprox && ' (custom authentication strength, combinations not collected)'}
+        </span>
       </CardContent>
     </Card>
   )
