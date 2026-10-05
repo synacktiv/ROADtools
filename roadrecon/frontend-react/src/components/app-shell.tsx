@@ -130,10 +130,10 @@ export function AppShell() {
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
           <Crumbs />
-          <Button variant="outline" size="sm" className="ml-auto w-64 justify-start gap-2 bg-transparent text-muted-foreground" onClick={() => setPaletteOpen(true)}>
-            <IconSearch className="size-4" />
-            Search the dump
-            <Kbd className="ml-auto">Ctrl K</Kbd>
+          <Button variant="outline" size="sm" className="ml-auto w-64 min-w-9 shrink justify-start gap-2 bg-transparent text-muted-foreground" onClick={() => setPaletteOpen(true)}>
+            <IconSearch className="size-4 shrink-0" />
+            <span className="truncate">Search the dump</span>
+            <Kbd className="ml-auto shrink-0 max-sm:hidden">Ctrl K</Kbd>
           </Button>
           <ThemeToggle />
         </header>
@@ -157,8 +157,8 @@ function Crumbs() {
   const section = SECTIONS[base] ?? null
   const isDetail = pathname.split('/').filter(Boolean).length > 1
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
+    <Breadcrumb className="min-w-0">
+      <BreadcrumbList className="min-w-0 flex-nowrap">
         {isDetail && section ? (
           <>
             <BreadcrumbItem>
@@ -167,7 +167,7 @@ function Crumbs() {
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
-            <BreadcrumbItem>
+            <BreadcrumbItem className="min-w-0">
               <BreadcrumbPage className="max-w-96 truncate">{crumb ?? '…'}</BreadcrumbPage>
             </BreadcrumbItem>
           </>

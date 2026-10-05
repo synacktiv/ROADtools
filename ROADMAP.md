@@ -196,7 +196,7 @@ Today the policies show authentication strength ids as unresolved references (on
 
 ## UI bugs
 - [x] Long badge content overlaps the row: on the Conditional access page, an unfolded policy whose Users, Resources or platform ("Any platform") group/badge holds very long content runs over the whole line. Wrap it onto new lines. Fix the other places with the same badge/group pattern too. Fixed in the shared `KeywordChip`, `IconText`, `PolicyRef` and wrapping `ObjectLink` (`min-w-0` + `break-words`); the shadcn `Badge` itself stays one-line for short status chips.
-- [ ] Narrow viewport (about 820 px): the header search button and theme toggle overflow, so the whole page scrolls sideways; an unfolded table row wraps at the table width, not the visible width.
+- [x] Narrow viewport: the header (search button + breadcrumb) is now shrinkable (`min-w-0`, `shrink`, `Ctrl K` hidden on mobile), so the page no longer scrolls sideways at 820/768/420 px. A wide table still scrolls inside its own container, as intended.
 
 ## Done from "Later" (2026-10-05)
 - Shared router helpers in `api/common.py` (`flag`, `count_rows`, `count_of`, `gm_user` / `gm_group`); openapi.json unchanged.
