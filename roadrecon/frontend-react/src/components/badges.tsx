@@ -60,6 +60,16 @@ export function Flag({ value, risky, label }: { value: boolean | null | undefine
 /** flag() returns null for unknown values so property lists skip the row. */
 export const flag = (value: boolean | null | undefined, risky?: boolean) => (value === null || value === undefined ? null : <Flag value={value} risky={risky} />)
 
+/** Setting text with a warning mark when the value is the risky option. */
+export function Setting({ text, risky }: { text: string; risky: boolean }) {
+  return (
+    <span className={cn('inline-flex items-start gap-1.5', risky && 'text-regulatory')}>
+      {risky && <IconAlertTriangle className="mt-1 size-4 shrink-0" stroke={1.75} aria-label="Risky" />}
+      {text}
+    </span>
+  )
+}
+
 export function StatusDot({ enabled }: { enabled: boolean | null | undefined }) {
   return (
     <span className="inline-flex items-center gap-2">

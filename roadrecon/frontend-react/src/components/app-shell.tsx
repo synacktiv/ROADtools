@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { useTheme } from 'next-themes'
-import { type Icon, IconFingerprint, IconKey, IconLayoutDashboard, IconMoon, IconSearch, IconSun, IconTerminal2, IconTicket } from '@tabler/icons-react'
+import { type Icon, IconClipboardCheck, IconFingerprint, IconKey, IconLayoutDashboard, IconMoon, IconSearch, IconSun, IconTerminal2, IconTicket } from '@tabler/icons-react'
 import {
   Sidebar,
   SidebarContent,
@@ -35,6 +35,8 @@ interface NavItem {
   type?: ObjectType
   icon?: Icon
   stat?: keyof Stats
+  /** Data the original roadrecon does not collect: shown only when the stat is not null. */
+  optional?: boolean
 }
 
 export const NAV: { label?: string; items: NavItem[] }[] = [
@@ -45,6 +47,7 @@ export const NAV: { label?: string; items: NavItem[] }[] = [
       { to: '/users', label: 'Users', type: 'user', stat: 'users' },
       { to: '/groups', label: 'Groups', type: 'group', stat: 'groups' },
       { to: '/devices', label: 'Devices', type: 'device', stat: 'devices' },
+      { to: '/device-compliance', label: 'Device compliance', icon: IconClipboardCheck, stat: 'compliancePolicies', optional: true },
       { to: '/administrative-units', label: 'Administrative units', type: 'administrativeUnit', stat: 'administrativeUnits' },
     ],
   },
@@ -71,8 +74,14 @@ export const NAV: { label?: string; items: NavItem[] }[] = [
 
 const SECTIONS = Object.fromEntries(NAV.flatMap((g) => g.items).map((i) => [i.to, i.label]))
 
-export function AppShell() {
+/** NAV without the optional entries whose data is not in the dump (hidden until stats load). */
+function useNav() {
   const { data: stats } = useApi('/api/stats')
+  return { stats, nav: NAV.map((g) => ({ ...g, items: g.items.filter((i) => !i.optional || (i.stat && stats?.[i.stat] != null)) })) }
+}
+
+export function AppShell() {
+  const { stats, nav } = useNav()
   const { pathname } = useLocation()
   const [paletteOpen, setPaletteOpen] = useState(false)
   useEffect(() => {
@@ -96,7 +105,7 @@ export function AppShell() {
           </Link>
         </SidebarHeader>
         <SidebarContent>
-          {NAV.map((g, i) => (
+          {nav.map((g, i) => (
             <SidebarGroup key={i} className="py-1.5">
               {g.label && <SidebarGroupLabel className="px-3 text-[0.8rem]">{g.label}</SidebarGroupLabel>}
               <SidebarMenu>
@@ -108,7 +117,7 @@ export function AppShell() {
                         <span>{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {item.stat && stats && <SidebarMenuBadge className="top-2.5! text-[0.8rem] font-normal text-muted-foreground tabular-nums">{fmtNumber(stats[item.stat])}</SidebarMenuBadge>}
+                    {item.stat && stats?.[item.stat] != null && <SidebarMenuBadge className="top-2.5! text-[0.8rem] font-normal text-muted-foreground tabular-nums">{fmtNumber(stats[item.stat]!)}</SidebarMenuBadge>}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
@@ -184,6 +193,7 @@ function ThemeToggle() {
 
 function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const navigate = useNavigate()
+  const { nav } = useNav()
   const [text, setText] = useState('')
   const [q, setQ] = useState('')
   useEffect(() => {
@@ -203,7 +213,7 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
         <CommandList className="max-h-[28rem]">
           {q.length >= 2 && <CommandEmpty>Nothing matches “{q}”.</CommandEmpty>}
           {q.length < 2 &&
-            NAV.map((g, i) => (
+            nav.map((g, i) => (
               <CommandGroup key={i} heading={g.label ?? 'Go to'}>
                 {g.items.map((item) => (
                   <CommandItem key={item.to} value={item.to} onSelect={() => go(item.to)}>
