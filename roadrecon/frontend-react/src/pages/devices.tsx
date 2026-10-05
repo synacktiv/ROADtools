@@ -125,18 +125,18 @@ const mono = (v: string | null) => (v ? <span className="font-mono text-sm">{v}<
 const deviceColumns: ColumnDef<DeviceRow>[] = [
   { id: 'displayName', header: 'Name', meta: { sort: 'displayName', filter: 'displayName' }, enableHiding: false, cell: ({ row }) => <DeviceName d={row.original} /> },
   { id: 'os', header: 'Operating system', meta: { sort: 'deviceOSType', filter: 'deviceOSType' }, cell: ({ row }) => <OsName type={row.original.deviceOSType} version={row.original.deviceOSVersion} /> },
-  { id: 'trust', header: 'Trust type', meta: { filter: 'deviceTrustType' }, cell: ({ row }) => <TrustType value={row.original.deviceTrustType} /> },
-  { id: 'model', header: 'Model', meta: { filter: 'deviceModel' }, cell: ({ row }) => <ModelName model={row.original.deviceModel} manufacturer={row.original.deviceManufacturer} /> },
-  { id: 'isManaged', header: 'Managed', meta: { filter: 'isManaged', noCopy: true }, cell: ({ row }) => <PostureMark value={row.original.isManaged} yes="Managed by an MDM" no="Not managed" /> },
+  { id: 'trust', header: 'Trust type', meta: { sort: 'deviceTrustType', filter: 'deviceTrustType' }, cell: ({ row }) => <TrustType value={row.original.deviceTrustType} /> },
+  { id: 'model', header: 'Model', meta: { sort: 'deviceModel', filter: 'deviceModel' }, cell: ({ row }) => <ModelName model={row.original.deviceModel} manufacturer={row.original.deviceManufacturer} /> },
+  { id: 'isManaged', header: 'Managed', meta: { sort: 'isManaged', filter: 'isManaged', noCopy: true }, cell: ({ row }) => <PostureMark value={row.original.isManaged} yes="Managed by an MDM" no="Not managed" /> },
   // Extras, off by default. The three posture flags are markers on the name; these columns add header filters.
-  { id: 'deviceOSVersion', header: 'OS version', meta: { filter: 'deviceOSVersion', defaultHidden: true }, cell: ({ row }) => mono(row.original.deviceOSVersion) },
-  { id: 'deviceManufacturer', header: 'Manufacturer', meta: { filter: 'deviceManufacturer', defaultHidden: true }, cell: ({ row }) => orDash(row.original.deviceManufacturer) },
-  { id: 'accountEnabled', header: 'Enabled', meta: { filter: 'accountEnabled', noCopy: true, defaultHidden: true }, cell: ({ row }) => <PostureMark value={row.original.accountEnabled} yes="Enabled" no="Disabled" /> },
-  { id: 'isCompliant', header: 'Compliant', meta: { filter: 'isCompliant', noCopy: true, defaultHidden: true }, cell: ({ row }) => <PostureMark value={row.original.isCompliant} yes="Compliant" no="Not compliant" /> },
+  { id: 'deviceOSVersion', header: 'OS version', meta: { sort: 'deviceOSVersion', filter: 'deviceOSVersion', defaultHidden: true }, cell: ({ row }) => mono(row.original.deviceOSVersion) },
+  { id: 'deviceManufacturer', header: 'Manufacturer', meta: { sort: 'deviceManufacturer', filter: 'deviceManufacturer', defaultHidden: true }, cell: ({ row }) => orDash(row.original.deviceManufacturer) },
+  { id: 'accountEnabled', header: 'Enabled', meta: { sort: 'accountEnabled', filter: 'accountEnabled', noCopy: true, defaultHidden: true }, cell: ({ row }) => <PostureMark value={row.original.accountEnabled} yes="Enabled" no="Disabled" /> },
+  { id: 'isCompliant', header: 'Compliant', meta: { sort: 'isCompliant', filter: 'isCompliant', noCopy: true, defaultHidden: true }, cell: ({ row }) => <PostureMark value={row.original.isCompliant} yes="Compliant" no="Not compliant" /> },
   {
     id: 'isRooted',
     header: 'Rooted',
-    meta: { filter: 'isRooted', noCopy: true, defaultHidden: true },
+    meta: { sort: 'isRooted', filter: 'isRooted', noCopy: true, defaultHidden: true },
     cell: ({ row }) => <PostureMark value={row.original.isRooted === null ? null : !row.original.isRooted} yes="Not rooted" no="Rooted or jailbroken" />,
   },
   { id: 'source', header: 'Source', meta: { defaultHidden: true }, cell: ({ row }) => <SourceIcon dirSync={row.original.dirSyncEnabled} /> },
@@ -274,11 +274,11 @@ export function DevicePage() {
 
 const auColumns: ColumnDef<AdministrativeUnitRow>[] = [
   { id: 'displayName', header: 'Name', meta: { sort: 'displayName', filter: 'displayName' }, enableHiding: false, cell: ({ row }) => <ObjectLink value={toRef('administrativeUnit', row.original)} /> },
-  { id: 'description', header: 'Description', meta: { filter: 'description' }, cell: ({ row }) => orDash(row.original.description) },
+  { id: 'description', header: 'Description', meta: { sort: 'description', filter: 'description' }, cell: ({ row }) => orDash(row.original.description) },
   {
     id: 'membershipRule',
     header: 'Membership rule',
-    meta: { filter: 'dynamic' },
+    meta: { sort: 'membershipRule', filter: 'dynamic' },
     cell: ({ row }) => (row.original.membershipRule ? <span className="font-mono text-sm">{row.original.membershipRule}</span> : <span className="text-muted-foreground">Assigned</span>),
   },
   { id: 'id', header: 'Object ID', meta: { defaultHidden: true }, cell: ({ row }) => mono(row.original.id) },

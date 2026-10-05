@@ -99,12 +99,16 @@ function SpType({ type, label }: { type: string | null; label?: boolean }) {
   return <Hint label={text}>{icon}</Hint>
 }
 
-/** Name-cell marker for secrets and certificates; counts in the tooltip. Red on apps not published by Microsoft: someone in reach holds that key. */
-function CredMark({ secrets, certs, risky }: { secrets: number; certs: number; risky: boolean }) {
+/**
+ * Name-cell marker for secrets and certificates; counts in the tooltip. Red on apps not published by Microsoft
+ * (someone in reach holds that key) and on client secrets added to a Microsoft app (a known backdoor).
+ */
+function CredMark({ secrets, certs, risky, backdoor }: { secrets: number; certs: number; risky: boolean; backdoor?: boolean }) {
   if (secrets + certs === 0) return null
   const what = [secrets && plural(secrets, 'client secret'), certs && plural(certs, 'certificate')].filter(Boolean).join(', ')
+  const label = backdoor ? `Possible backdoor: ${what} on a Microsoft first-party app` : risky ? `${what} on a non-Microsoft app` : what
   return (
-    <Hint label={risky ? `${what} on a non-Microsoft app` : what} className={cn('gap-0.5', risky ? 'text-regulatory' : 'text-muted-foreground')}>
+    <Hint label={label} className={cn('gap-0.5', risky || backdoor ? 'text-regulatory' : 'text-muted-foreground')}>
       {secrets > 0 && <IconKey className="size-4" stroke={1.75} aria-hidden />}
       {certs > 0 && <IconCertificate className="size-4" stroke={1.75} aria-hidden />}
     </Hint>
@@ -314,7 +318,7 @@ const spColumns: ColumnDef<ServicePrincipalRow>[] = [
             </Hint>
           )}
           {r.servicePrincipalType !== 'Application' && <SpType type={r.servicePrincipalType} />}
-          <CredMark secrets={r.passwordCount} certs={r.keyCount} risky={r.microsoftFirstParty !== true} />
+          <CredMark secrets={r.passwordCount} certs={r.keyCount} risky={r.microsoftFirstParty !== true} backdoor={r.microsoftFirstParty === true && r.passwordCount > 0} />
           <OwnerMark owned={r.hasCustomOwner} />
         </NameCell>
       )
@@ -322,15 +326,16 @@ const spColumns: ColumnDef<ServicePrincipalRow>[] = [
   },
   { id: 'publisher', header: 'Publisher', meta: { sort: 'publisherName', filter: 'publisherName' }, cell: ({ row }) => orDash(row.original.publisherName) },
   { id: 'defines', header: 'Defines', meta: { noCopy: true }, cell: ({ row }) => <Defines roles={row.original.appRoleCount} scopes={row.original.oauth2PermissionCount} /> },
-  { id: 'appId', header: 'App ID', meta: { filter: 'appId', defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.appId },
-  { id: 'type', header: 'Type', meta: { filter: 'servicePrincipalType', defaultHidden: true, noCopy: true }, cell: ({ row }) => <SpType type={row.original.servicePrincipalType} label /> },
-  { id: 'microsoft', header: 'Microsoft app', meta: { filter: 'microsoftFirstParty', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.microsoftFirstParty} /> },
-  { id: 'enabled', header: 'Enabled', meta: { filter: 'accountEnabled', defaultHidden: true, noCopy: true }, cell: ({ row }) => <Flag value={row.original.accountEnabled} risky={false} /> },
-  { id: 'assignment', header: 'Assignment required', meta: { filter: 'appRoleAssignmentRequired', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.appRoleAssignmentRequired} /> },
-  { id: 'secrets', header: 'Secrets', meta: { filter: 'passwordCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.passwordCount },
-  { id: 'certificates', header: 'Certificates', meta: { filter: 'keyCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.keyCount },
-  { id: 'appRoles', header: 'App roles', meta: { filter: 'appRoleCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.appRoleCount },
-  { id: 'owner', header: 'Has owner', meta: { filter: 'hasCustomOwner', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.hasCustomOwner} /> },
+  { id: 'appId', header: 'App ID', meta: { sort: 'appId', filter: 'appId', defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.appId },
+  { id: 'type', header: 'Type', meta: { sort: 'servicePrincipalType', filter: 'servicePrincipalType', defaultHidden: true, noCopy: true }, cell: ({ row }) => <SpType type={row.original.servicePrincipalType} label /> },
+  { id: 'microsoft', header: 'Microsoft app', meta: { sort: 'microsoftFirstParty', filter: 'microsoftFirstParty', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.microsoftFirstParty} /> },
+  { id: 'enabled', header: 'Enabled', meta: { sort: 'accountEnabled', filter: 'accountEnabled', defaultHidden: true, noCopy: true }, cell: ({ row }) => <Flag value={row.original.accountEnabled} risky={false} /> },
+  { id: 'assignment', header: 'Assignment required', meta: { sort: 'appRoleAssignmentRequired', filter: 'appRoleAssignmentRequired', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.appRoleAssignmentRequired} /> },
+  { id: 'secrets', header: 'Secrets', meta: { sort: 'passwordCount', filter: 'passwordCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.passwordCount },
+  { id: 'certificates', header: 'Certificates', meta: { sort: 'keyCount', filter: 'keyCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.keyCount },
+  { id: 'appRoles', header: 'App roles', meta: { sort: 'appRoleCount', filter: 'appRoleCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.appRoleCount },
+  { id: 'scopes', header: 'Delegated scopes', meta: { sort: 'oauth2PermissionCount', filter: 'oauth2PermissionCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.oauth2PermissionCount },
+  { id: 'owner', header: 'Has owner', meta: { sort: 'hasCustomOwner', filter: 'hasCustomOwner', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.hasCustomOwner} /> },
 ]
 
 export function ServicePrincipalsTable({ query, filters = [] }: { query?: Partial<ServicePrincipalQuery>; filters?: FilterDef[] }) {
@@ -375,7 +380,15 @@ export function ServicePrincipalPage() {
             {!s.accountEnabled && <EnabledBadge enabled={false} />}
             {s.microsoftFirstParty && <Badge variant="outline">Microsoft</Badge>}
             {s.servicePrincipalType === 'ManagedIdentity' && <Badge variant="outline">Managed identity</Badge>}
-            {s.passwordCount + s.keyCount > 0 && <Badge variant={s.microsoftFirstParty ? 'outline' : 'regulatory'}>Has credentials</Badge>}
+            {s.microsoftFirstParty && s.passwordCount > 0 ? (
+              <Hint label="Client secret on a Microsoft first-party app: a known way to keep access to a tenant">
+                <Badge variant="regulatory">
+                  <IconAlertTriangle /> Possible backdoor
+                </Badge>
+              </Hint>
+            ) : (
+              s.passwordCount + s.keyCount > 0 && <Badge variant={s.microsoftFirstParty ? 'outline' : 'regulatory'}>Has credentials</Badge>
+            )}
           </>
         )
       }
@@ -461,23 +474,25 @@ const appColumns: ColumnDef<ApplicationRow>[] = [
       )
     },
   },
-  { id: 'multitenant', header: 'Multitenant', meta: { filter: 'availableToOtherTenants', noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.availableToOtherTenants} /> },
-  { id: 'publicClient', header: 'Public client', meta: { filter: 'publicClient', noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.publicClient} /> },
+  { id: 'multitenant', header: 'Multitenant', meta: { sort: 'availableToOtherTenants', filter: 'availableToOtherTenants', noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.availableToOtherTenants} /> },
+  { id: 'publicClient', header: 'Public client', meta: { sort: 'publicClient', filter: 'publicClient', noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.publicClient} /> },
   { id: 'defines', header: 'Defines', meta: { noCopy: true }, cell: ({ row }) => <Defines roles={row.original.appRoleCount} scopes={row.original.oauth2PermissionCount} /> },
-  { id: 'appId', header: 'App ID', meta: { filter: 'appId', defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.appId },
+  { id: 'appId', header: 'App ID', meta: { sort: 'appId', filter: 'appId', defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.appId },
   {
     id: 'homepage',
     header: 'Homepage',
-    meta: { defaultHidden: true },
+    meta: { sort: 'homepage', filter: 'homepage', defaultHidden: true },
     cell: ({ row }) => {
       const h = row.original.homepage
       return h ? <span className={cn(isRiskyUrl(h) && 'text-regulatory')}>{h}</span> : null
     },
   },
-  { id: 'implicit', header: 'Implicit flow', meta: { filter: 'oauth2AllowImplicitFlow', defaultHidden: true, noCopy: true }, cell: ({ row }) => <Flag value={row.original.oauth2AllowImplicitFlow} risky /> },
-  { id: 'secrets', header: 'Secrets', meta: { filter: 'passwordCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.passwordCount },
-  { id: 'certificates', header: 'Certificates', meta: { filter: 'keyCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.keyCount },
-  { id: 'owner', header: 'Has owner', meta: { filter: 'hasCustomOwner', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.hasCustomOwner} /> },
+  { id: 'implicit', header: 'Implicit flow', meta: { sort: 'oauth2AllowImplicitFlow', filter: 'oauth2AllowImplicitFlow', defaultHidden: true, noCopy: true }, cell: ({ row }) => <Flag value={row.original.oauth2AllowImplicitFlow} risky /> },
+  { id: 'secrets', header: 'Secrets', meta: { sort: 'passwordCount', filter: 'passwordCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.passwordCount },
+  { id: 'certificates', header: 'Certificates', meta: { sort: 'keyCount', filter: 'keyCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.keyCount },
+  { id: 'appRoles', header: 'App roles', meta: { sort: 'appRoleCount', filter: 'appRoleCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.appRoleCount },
+  { id: 'scopes', header: 'Delegated scopes', meta: { sort: 'oauth2PermissionCount', filter: 'oauth2PermissionCount', defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => row.original.oauth2PermissionCount },
+  { id: 'owner', header: 'Has owner', meta: { sort: 'hasCustomOwner', filter: 'hasCustomOwner', defaultHidden: true, noCopy: true }, cell: ({ row }) => <BoolMark value={row.original.hasCustomOwner} /> },
 ]
 
 export function ApplicationsTable({ query, filters = [] }: { query?: Partial<ApplicationQuery>; filters?: FilterDef[] }) {
@@ -620,8 +635,8 @@ function DefinedPermissions({ appRoles, scopes }: { appRoles: AppRoleDefinition[
                 <TableRow className="hover:bg-transparent">
                   <TableHead className={th}>Value and ID</TableHead>
                   <TableHead className={th}>Consent</TableHead>
-                  <TableHead className={th}>Admin consent description</TableHead>
-                  <TableHead className={th}>User consent description</TableHead>
+                  <TableHead className={th}>Admin consent</TableHead>
+                  <TableHead className={th}>User consent</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -632,8 +647,12 @@ function DefinedPermissions({ appRoles, scopes }: { appRoles: AppRoleDefinition[
                       <div className="text-xs text-muted-foreground">{p.id}</div>
                     </TableCell>
                     <TableCell className="px-3">{p.type === 'Admin' ? <Badge variant="outline">Admin only</Badge> : 'Users and admins'}</TableCell>
-                    <TableCell className="max-w-[40ch] px-3 whitespace-normal">{orDash(p.adminConsentDescription)}</TableCell>
-                    <TableCell className="max-w-[40ch] px-3 whitespace-normal">{orDash(p.userConsentDescription)}</TableCell>
+                    <TableCell className="max-w-[40ch] px-3 whitespace-normal">
+                      <Consent name={p.adminConsentDisplayName} description={p.adminConsentDescription} />
+                    </TableCell>
+                    <TableCell className="max-w-[40ch] px-3 whitespace-normal">
+                      <Consent name={p.userConsentDisplayName} description={p.userConsentDescription} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -642,6 +661,17 @@ function DefinedPermissions({ appRoles, scopes }: { appRoles: AppRoleDefinition[
         )}
       </Section>
     </div>
+  )
+}
+
+/** Consent prompt title, then its description when it says more. */
+function Consent({ name, description }: { name: string | null; description: string | null }) {
+  if (!name && !description) return orDash(null)
+  return (
+    <>
+      {name && <div className="font-medium">{name}</div>}
+      {description && description !== name && <div className="text-muted-foreground">{description}</div>}
+    </>
   )
 }
 

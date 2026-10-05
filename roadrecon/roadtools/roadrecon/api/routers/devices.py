@@ -93,7 +93,10 @@ def list_devices(q: Annotated[DeviceQuery, Query()], db: Db) -> Page[DeviceRow]:
         if v := getattr(q, key):
             stmt = stmt.where(DEVICE_FIELDS[key].col == v)
     return paginate(db, stmt, q, resource='devices', search=[Dev.displayName, Dev.deviceId, Dev.objectId],
-                    sorts={'displayName': ci(Dev.displayName), 'deviceOSType': Dev.deviceOSType},
+                    sorts={'displayName': ci(Dev.displayName), 'deviceOSType': Dev.deviceOSType,
+                           **{k: DEVICE_FIELDS[k].col for k in ('deviceOSVersion', 'deviceTrustType', 'deviceManufacturer',
+                                                                 'deviceModel', 'accountEnabled', 'isCompliant',
+                                                                 'isManaged', 'isRooted')}},
                     build=lambda rows: [DeviceRow(**_device_row(r)) for r in rows])
 
 
@@ -126,7 +129,8 @@ def list_administrative_units(q: Annotated[AdministrativeUnitQuery, Query()], db
         stmt = stmt.where(AU.objectId.in_(union(*(select(t.c.AdministrativeUnit).where(t.c[col] == q.memberId)
                                                   for t, col in AU_MEMBER_LINKS))))
     return paginate(db, stmt, q, resource='administrative-units', search=[AU.displayName],
-                    sorts={'displayName': ci(AU.displayName)},
+                    sorts={'displayName': ci(AU.displayName), 'description': ci(AU.description),
+                           'membershipRule': AU.membershipRule},
                     build=lambda rows: [AdministrativeUnitRow(**_au_row(r)) for r in rows])
 
 

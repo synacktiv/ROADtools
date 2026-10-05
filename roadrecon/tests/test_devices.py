@@ -34,6 +34,11 @@ def test_list_shape_paging_sort(client, db):
     by_os = devices(client, sort='deviceOSType', order='desc')
     assert [i.deviceOSType for i in by_os.items] == sorted((r.deviceOSType for r in rows), reverse=True)
     assert client.get('/api/devices', params={'sort': 'nope'}).status_code == 422
+    # Every old-GUI column sorts.
+    for key in ('deviceOSVersion', 'deviceTrustType', 'deviceManufacturer', 'deviceModel', 'accountEnabled',
+                'isCompliant', 'isManaged', 'isRooted'):
+        got = [getattr(i, key) for i in devices(client, sort=key).items]
+        assert got == sorted((getattr(r, key) for r in rows), key=lambda v: (v is not None, v)), key
 
 
 def test_relation_filters(client, db):
@@ -104,6 +109,8 @@ def test_au_list(client, db):
     assert ids(aus(client, filter='dynamic:ne:true')) == {a.objectId for a in rows} - dynamic
     assert [a.displayName for a in aus(client, q='exec').items] == ['Executives']
     assert [a.displayName for a in aus(client, sort='displayName', order='desc').items] == sorted((a.displayName for a in rows), reverse=True)
+    assert [a.description for a in aus(client, sort='description').items] == sorted((a.description for a in rows), key=str.lower)
+    assert aus(client, sort='membershipRule', order='desc').items[0].membershipRule
 
 
 def test_au_member_id(client, db):

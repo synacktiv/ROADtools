@@ -106,6 +106,7 @@ def test_sp_advanced_filters(client, db):
     assert owned and ids(sps(client, filter='hasCustomOwner:eq:true')) == owned
     assert ids(sps(client, filter='hasCustomOwner:eq:false')) == {o.objectId for o in objs} - owned
     assert ids(sps(client, filter='appRoleCount:gt:1')) == {o.objectId for o in objs if len(o.appRoles or []) > 1}
+    assert ids(sps(client, filter='oauth2PermissionCount:gt:0')) == {o.objectId for o in objs if o.oauth2Permissions}
     # The dashboard's "SPs with credentials" slice.
     assert ids(sps(client, filter=['passwordCount:gt:0', 'keyCount:gt:0'], match='any')) == \
         {o.objectId for o in objs if o.passwordCredentials or o.keyCredentials}
@@ -208,6 +209,8 @@ def test_app_filters(client, db):
     assert ids(applications(client, filter='oauth2AllowImplicitFlow:eq:true')) == \
         {o.objectId for o in objs if o.oauth2AllowImplicitFlow}
     assert ids(applications(client, filter='keyCount:eq:0')) == {o.objectId for o in objs if not o.keyCredentials}
+    assert ids(applications(client, filter='oauth2PermissionCount:eq:0')) == {o.objectId for o in objs if not o.oauth2Permissions}
+    assert ids(applications(client, filter=f'homepage:eq:{objs[0].homepage}')) == {o.objectId for o in objs if o.homepage == objs[0].homepage}
     assert ids(applications(client, q=objs[0].appId)) == {objs[0].objectId}
 
 
