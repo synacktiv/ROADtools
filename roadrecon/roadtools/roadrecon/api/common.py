@@ -124,6 +124,21 @@ def json_text(col):
     return type_coerce(col, Text)
 
 
+def flag(col, want: bool):
+    """Boolean filter on a nullable column: NULL counts as false."""
+    return col.is_(True) if want else or_(col.is_(False), col.is_(None))
+
+
+def count_rows(db: Session, stmt: Select) -> int:
+    return db.scalar(select(func.count()).select_from(stmt.subquery()))
+
+
+def count_of(table, *where, distinct=None):
+    """Scalar subquery: rows of `table` matching `where`, or distinct values of `distinct`."""
+    what = func.count() if distinct is None else func.count(func.distinct(distinct))
+    return select(what).select_from(table).where(*where).scalar_subquery()
+
+
 def like_escape(s: str) -> str:
     return s.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
 

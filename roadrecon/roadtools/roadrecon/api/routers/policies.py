@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import (Db, F, iso, keyword, member_groups_select, not_found, paginate_list, register, resolve_appids,
-                      resolve_ref, resolve_refs, unresolved, value)
+from ..common import (Db, F, count_rows, gm_group, gm_user, iso, keyword, member_groups_select, not_found, paginate_list,
+                      register, resolve_appids, resolve_ref, resolve_refs, unresolved, value)
 from ..models import (Condition, MatchReason, NamedLocationDetail, NamedLocationRow, ObjectRef, Page, PageQuery,
                       PolicyCounts, PolicyDetail, PolicyMatch, PolicyQuery, PolicyRow, PolicyTargetType,
                       PolicyUserQuery, UserRow)
@@ -25,7 +25,6 @@ from . import users
 router = APIRouter(prefix='/api', tags=['policies'])
 
 U = d.User
-gm_user, gm_group = d.lnk_group_member_user, d.lnk_group_member_group
 
 
 def _options(attr):
@@ -318,10 +317,6 @@ def _scope(det: dict, effect: str = 'applies') -> Select:
     return stmt.where(U.objectId.not_in(select(sq.c[0]).where(sq.c[0].isnot(None))))  # NOT IN + NULL = nothing
 
 
-def _count(db: Session, stmt: Select) -> int:
-    return db.scalar(select(func.count()).select_from(stmt.subquery()))
-
-
 # --- Matches -------------------------------------------------------------------
 
 def _reason(condition: str, via=(), approximate=False, eligible=False) -> MatchReason:
@@ -500,7 +495,7 @@ def get_policy(id: str, db: Db) -> PolicyDetail:
     except Exception as e:  # noqa: BLE001 - unexpected shapes: show what the row has, flag the rest
         row.parseError = row.parseError or f'{type(e).__name__}: {e}'
         who, targets, conditions, grants, sessions = [], [], [], [], []
-    counts = PolicyCounts(inScope=_count(db, _scope(det)), excluded=_count(db, _scope(det, 'excluded')))
+    counts = PolicyCounts(inScope=count_rows(db, _scope(det)), excluded=count_rows(db, _scope(det, 'excluded')))
     return PolicyDetail(**row.model_dump(), who=who, targets=targets, conditions=conditions, grantControls=grants,
                         session=sessions, counts=counts, raw=p.as_dict())
 

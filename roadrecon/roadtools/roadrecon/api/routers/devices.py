@@ -4,11 +4,11 @@ import binascii
 from typing import Annotated
 
 from fastapi import APIRouter, Query
-from sqlalchemy import and_, func, not_, select, union
+from sqlalchemy import and_, not_, select, union
 
 from roadtools.roadlib.metadef import database as d
 
-from ..common import ci, Db, F, iso, not_found, paginate, register, resolve_refs, sql_clause
+from ..common import ci, count_of, Db, F, iso, not_found, paginate, register, resolve_refs, sql_clause
 from ..models import (AdministrativeUnitDetail, AdministrativeUnitQuery, AdministrativeUnitRow, BitLockerKey,
                       DeviceDetail, DeviceQuery, DeviceRow, Page)
 from . import roles
@@ -65,10 +65,6 @@ def _au_row(au: d.AdministrativeUnit) -> dict:
                 membershipRule=au.membershipRule or None)
 
 
-def _count(db, table, col: str, oid: str) -> int:
-    return db.scalar(select(func.count()).select_from(table).where(table.c[col] == oid))
-
-
 
 def recovery_key(material) -> str:
     """The dump stores the recovery password base64-encoded (the old GUI ran atob on it)."""
@@ -107,14 +103,15 @@ def get_device(id: str, db: Db) -> DeviceDetail:
         raise not_found('Device')
     owner_ids = db.scalars(select(d.lnk_device_owner.c.User).where(d.lnk_device_owner.c.Device == id)).all()
     refs = resolve_refs(db, owner_ids)
+    gdev, adev = d.lnk_group_member_device, d.lnk_au_member_device
     keys = [BitLockerKey(keyIdentifier=str(k.get('keyIdentifier') or ''), keyMaterial=recovery_key(k.get('keyMaterial')),
                          volumeType=_volume_type(k.get('volumeType')),
                          creationTime=iso(k.get('creationTime')))
             for k in dev.bitLockerKey or [] if isinstance(k, dict)]
     return DeviceDetail(
         **_device_row(dev), bitLockerKeys=keys, owners=[refs[o] for o in owner_ids],
-        counts=dict(owners=len(owner_ids), memberOf=_count(db, d.lnk_group_member_device, 'Device', id),
-                    administrativeUnits=_count(db, d.lnk_au_member_device, 'Device', id)),
+        counts=dict(owners=len(owner_ids), memberOf=db.scalar(select(count_of(gdev, gdev.c.Device == id))),
+                    administrativeUnits=db.scalar(select(count_of(adev, adev.c.Device == id)))),
         raw=dev.as_dict(),
     )
 
@@ -139,7 +136,7 @@ def get_administrative_unit(id: str, db: Db) -> AdministrativeUnitDetail:
     au = db.get(AU, id)
     if au is None:
         raise not_found('Administrative unit')
-    users, groups, devices = (_count(db, t, 'AdministrativeUnit', id) for t, _ in AU_MEMBER_LINKS)
+    users, groups, devices = (db.scalar(select(count_of(t, t.c.AdministrativeUnit == id))) for t, _ in AU_MEMBER_LINKS)
     return AdministrativeUnitDetail(
         **_au_row(au), raw=au.as_dict(),
         counts=dict(memberUsers=users, memberGroups=groups, memberDevices=devices,
