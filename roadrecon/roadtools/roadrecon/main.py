@@ -61,6 +61,11 @@ def main():
     azgather_parser = subparsers.add_parser('azgather', aliases=['azdump'], help='Gather Azure RM access and resources')
     getgatherargs(azgather_parser)
 
+    from roadtools.roadrecon.compliancegather import DESCRIPTION as COMPLIANCE_DESCRIPTION
+    compliancegather_parser = subparsers.add_parser('compliancegather', aliases=['compliancedump'], help='Gather Intune device compliance settings and policies',
+                                                    description=COMPLIANCE_DESCRIPTION, formatter_class=argparse.RawDescriptionHelpFormatter)
+    getgatherargs(compliancegather_parser)
+
     gatherall_parser = subparsers.add_parser('gatherall', aliases=['dumpall'], help='Gather data via all available APIs')
     getgatherargs(gatherall_parser)
 
@@ -146,6 +151,9 @@ def main():
     elif args.command == 'pimgather' or args.command == 'pimdump':
         from roadtools.roadrecon.pimgather import main as pimgathermain
         pimgathermain(args)
+    elif args.command == 'compliancegather' or args.command == 'compliancedump':
+        from roadtools.roadrecon.compliancegather import main as compliancegathermain
+        compliancegathermain(args)
     elif args.command == 'gatherall':
         if not args.autotoken:
             print('--autotoken is required for gatherall (suggested client ID: Azure CLI)')
@@ -154,6 +162,7 @@ def main():
         from roadtools.roadrecon.iggather import main as iggathermain
         from roadtools.roadrecon.pimgather import main as pimgathermain
         from roadtools.roadrecon.azgather import main as azgathermain
+        from roadtools.roadrecon.compliancegather import main as compliancegathermain
         print('Enumerating AAD Graph')
         gathermain(args)
         print('Enumerating IG data')
@@ -162,6 +171,8 @@ def main():
         pimgathermain(args)
         print('Enumerating Azure data')
         azgathermain(args)
+        print('Enumerating Intune compliance data')
+        compliancegathermain(args)
     elif args.command == 'plugin':
         # Dynamic import
         plugin_module = importlib.import_module('roadtools.roadrecon.plugins.{}'.format(args.plugin))
