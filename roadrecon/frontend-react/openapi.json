@@ -4189,6 +4189,68 @@
      }
     }
    }
+  },
+  "/api/sql": {
+   "post": {
+    "tags": [
+     "sql"
+    ],
+    "summary": "Run Sql",
+    "operationId": "run_sql_api_sql_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SqlQuery"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SqlResult"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/sql/schema": {
+   "get": {
+    "tags": [
+     "sql"
+    ],
+    "summary": "Sql Schema",
+    "operationId": "sql_schema_api_sql_schema_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SqlSchema"
+        }
+       }
+      }
+     }
+    }
+   }
   }
  },
  "components": {
@@ -8259,6 +8321,124 @@
      "value"
     ],
     "title": "SettingValue"
+   },
+   "SqlExample": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "description": {
+      "type": "string",
+      "title": "Description"
+     },
+     "sql": {
+      "type": "string",
+      "title": "Sql"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "description",
+     "sql"
+    ],
+    "title": "SqlExample"
+   },
+   "SqlQuery": {
+    "properties": {
+     "sql": {
+      "type": "string",
+      "title": "Sql"
+     }
+    },
+    "type": "object",
+    "required": [
+     "sql"
+    ],
+    "title": "SqlQuery"
+   },
+   "SqlResult": {
+    "properties": {
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Columns"
+     },
+     "rows": {
+      "items": {
+       "items": {},
+       "type": "array"
+      },
+      "type": "array",
+      "title": "Rows"
+     },
+     "truncated": {
+      "type": "boolean",
+      "title": "Truncated",
+      "description": "The query returned more rows than the cap (1000); only the first ones are sent."
+     },
+     "elapsedMs": {
+      "type": "integer",
+      "title": "Elapsedms"
+     }
+    },
+    "type": "object",
+    "required": [
+     "columns",
+     "rows",
+     "truncated",
+     "elapsedMs"
+    ],
+    "title": "SqlResult"
+   },
+   "SqlSchema": {
+    "properties": {
+     "tables": {
+      "items": {
+       "$ref": "#/components/schemas/SqlTable"
+      },
+      "type": "array",
+      "title": "Tables"
+     },
+     "queries": {
+      "items": {
+       "$ref": "#/components/schemas/SqlExample"
+      },
+      "type": "array",
+      "title": "Queries",
+      "description": "Built-in queries to start from."
+     }
+    },
+    "type": "object",
+    "required": [
+     "tables",
+     "queries"
+    ],
+    "title": "SqlSchema"
+   },
+   "SqlTable": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Columns"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name",
+     "columns"
+    ],
+    "title": "SqlTable"
    },
    "Stats": {
     "properties": {

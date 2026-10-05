@@ -569,6 +569,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sql": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Sql */
+        post: operations["run_sql_api_sql_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sql/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sql Schema */
+        get: operations["sql_schema_api_sql_schema_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1881,6 +1915,51 @@ export interface components {
             name: string;
             /** Value */
             value: string;
+        };
+        /** SqlExample */
+        SqlExample: {
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Sql */
+            sql: string;
+        };
+        /** SqlQuery */
+        SqlQuery: {
+            /** Sql */
+            sql: string;
+        };
+        /** SqlResult */
+        SqlResult: {
+            /** Columns */
+            columns: string[];
+            /** Rows */
+            rows: unknown[][];
+            /**
+             * Truncated
+             * @description The query returned more rows than the cap (1000); only the first ones are sent.
+             */
+            truncated: boolean;
+            /** Elapsedms */
+            elapsedMs: number;
+        };
+        /** SqlSchema */
+        SqlSchema: {
+            /** Tables */
+            tables: components["schemas"]["SqlTable"][];
+            /**
+             * Queries
+             * @description Built-in queries to start from.
+             */
+            queries: components["schemas"]["SqlExample"][];
+        };
+        /** SqlTable */
+        SqlTable: {
+            /** Name */
+            name: string;
+            /** Columns */
+            columns: string[];
         };
         /** Stats */
         Stats: {
@@ -3245,6 +3324,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_sql_api_sql_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SqlQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SqlResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sql_schema_api_sql_schema_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SqlSchema"];
                 };
             };
         };

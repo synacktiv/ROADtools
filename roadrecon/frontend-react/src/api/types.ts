@@ -67,6 +67,8 @@ export type NamedLocationDetail = S['NamedLocationDetail']
 export type Stats = S['Stats']
 export type Tenant = S['Tenant']
 export type SearchResult = S['SearchResult']
+export type SqlResult = S['SqlResult']
+export type SqlSchema = S['SqlSchema']
 
 // --- Route map: path template -> query and response ------------------------
 

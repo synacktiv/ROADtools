@@ -736,3 +736,32 @@ class SearchGroup(BaseModel):
 
 class SearchResult(BaseModel):
     groups: list[SearchGroup]
+
+
+# --- SQL query page ----------------------------------------------------------
+
+class SqlQuery(BaseModel):
+    sql: str
+
+
+class SqlResult(BaseModel):
+    columns: list[str]
+    rows: list[list[Any]]
+    truncated: bool = Field(description='The query returned more rows than the cap (1000); only the first ones are sent.')
+    elapsedMs: int
+
+
+class SqlTable(BaseModel):
+    name: str
+    columns: list[str]
+
+
+class SqlExample(BaseModel):
+    name: str
+    description: str
+    sql: str
+
+
+class SqlSchema(BaseModel):
+    tables: list[SqlTable]
+    queries: list[SqlExample] = Field(description='Built-in queries to start from.')
