@@ -172,9 +172,18 @@ New features
 - [x] `roadrecon/setup.py`: add fastapi + uvicorn, drop flask / marshmallow deps, `sqlalchemy>=2`
 - [x] Vite `outDir` → `roadtools/roadrecon/dist_gui` (keep `.gitkeep`)
 - [x] `azure-pipelines.yml` builds `frontend-react`
-- [ ] Delete `server.py`, `roadrecon/frontend/`, mock fetch; rewrite `tests/test_guiserver.py` (after the user review; `xlsexport` no longer imports `server.py`)
-- [ ] Run `roadrecon/tests` in `azure-pipelines.yml` (needs httpx)
-- [ ] README / docs
+- [ ] Delete `server.py`, `roadrecon/frontend/`, mock fetch; rewrite `tests/test_guiserver.py` (after the user review; `xlsexport` no longer imports `server.py`); move the README logo off `roadrecon/frontend/src/assets/rt_transparent.svg`
+- [x] Run `roadrecon/tests` in `azure-pipelines.yml` (httpx added; one pytest call over `tests/` and `roadrecon/tests/`)
+- [x] README: the new GUI (`roadrecon gui` options, what it shows, `/docs`) and the `frontend-react` dev setup
+
+## Done from "Later" (2026-10-05)
+- Shared router helpers in `api/common.py` (`flag`, `count_rows`, `count_of`, `gm_user` / `gm_group`); openapi.json unchanged.
+- `mfa_` column-id prefix dropped (saved MFA column choices reset once).
+- One `StatusMark` in `components/badges.tsx` for disabled, no MFA, not compliant, risky; disabled is `IconBan` everywhere.
+- Code split: routes lazy-loaded, world map in its own chunk (named-location pages only). Initial JS 2.1 MB → 558 kB (655 → 180 kB gzip).
+- `RoleDetail.policyCount` and the count on the role page's Policies tab.
+- `xlsexport` MFA sheet: missing `strongAuthenticationDetail` keys are treated as absent (`tests/test_xlsexport.py`, skipped without openpyxl).
+- The raw tab's collapsible JSON tree was already done in Phase 2.
 
 ## Known approximations (shown as such in the UI)
 - Guest and external user types: inferred from `userType`.
@@ -183,20 +192,13 @@ New features
 - Scope through eligible roles is flagged as eligible-only.
 
 ## Later (deliberately skipped)
-- Shared helpers for the per-router duplicates the review found: `_flag`, `_count`, `gm_user` / `gm_group`.
-- Clean up the `mfa_` column-id prefix in `pages/users.tsx`. It worked around a column-visibility key bug that has since been fixed in `DataTable`.
-- Unify the status marker icons across pages in a single shared helper (no MFA, not compliant, disabled, risky).
-- Code-split the bundle (about 2 MB now) if the start-up time matters.
 - FTS5 trigram search if `LIKE '%q%'` gets slow on very large tenants (>500k users)
 - Column-compat shim for dumps made by very old roadlib versions
 - policyanalysis fixes (Postgres `on_conflict`, roles via groups, duplicates, `ALLUSERS` in exclude)
 - Postgres compose service + test run
 - Playwright smoke test
-- Collapsible JSON tree for the raw tab
 - Azure resource / subscription pages
-- Policies tab count on the role page (needs a count on `RoleDetail`).
 - Teams / chat resource-specific consent settings on the dashboard consent card.
-- `xlsexport` MFA sheet fails on gendb DBs (`KeyError: 'encryptedPinHash'`).
 
 ---
 
