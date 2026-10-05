@@ -76,8 +76,24 @@ def test_roles_shape_counts_and_paging(client, db):
         assert r.eligibleCount == sum(1 for k, t, _, _ in exp if t == r.id and k == 'eligible')
     ga = next(r for r in p.items if r.id == GA)
     assert ga.activeCount == 2  # RoleAssignment user + lnk SP; the lnk user duplicates the RoleAssignment
-    names = sorted(r.displayName.lower() for r in rds)
-    assert [r.displayName.lower() for r in roles(client, page_size=3, page=2).items] == names[3:6]
+    # Default order: privileged roles first, then by name.
+    names = sorted(((r.templateId or r.objectId) not in PRIVILEGED_ROLES, r.displayName.lower()) for r in rds)
+    assert [r.displayName.lower() for r in roles(client, page_size=3, page=2).items] == [n for _, n in names[3:6]]
+
+
+def test_roles_synced_count(client, db):
+    """Distinct synced users holding each role, directly or through (nested) groups."""
+    gm_user = d.lnk_group_member_user
+    holders = {}
+    for _, tpl, p, _ in expected(db):
+        users = {p} | {u for g in descendants(db, p) for u in db.scalars(select(gm_user.c.User).where(gm_user.c.Group == g))}
+        holders.setdefault(tpl, set()).update(u for u in users if (x := db.get(d.User, u)) and x.dirSyncEnabled)
+    p = roles(client, page_size=500)
+    assert {r.id: r.syncedCount for r in p.items} == {r.id: len(holders.get(r.id, ())) for r in p.items}
+    assert any(r.syncedCount for r in p.items)
+    counts = [r.syncedCount for r in roles(client, sort='syncedCount', order='desc', page_size=500).items]
+    assert counts == sorted(counts, reverse=True)
+    assert RoleDetail(**client.get(f'/api/roles/{GA}').json()).syncedCount == len(holders.get(GA, ()))
 
 
 def test_roles_toggles_filters_search_sorts(client, db):

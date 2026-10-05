@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { IconClockHour4, IconPencilCog, IconShieldBolt, IconWorld } from '@tabler/icons-react'
+import { IconArrowRight, IconClockHour4, IconPencilCog, IconServer2, IconShieldBolt, IconWorld } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { DataTable, type FilterDef } from '@/components/data-table'
 import { ObjectLink, TYPE_LABEL, TypeGlyph } from '@/components/object-link'
@@ -96,14 +97,69 @@ const roleColumns: ColumnDef<RoleRow>[] = [
       )
     },
   },
+  {
+    id: 'syncedCount',
+    header: 'Synced',
+    meta: { sort: 'syncedCount', noCopy: true },
+    cell: ({ row }) => {
+      const n = row.original.syncedCount
+      if (!n) return <Dash />
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span tabIndex={0} className="inline-flex items-center gap-1.5 tabular-nums">
+              <IconServer2 className="size-4 text-muted-foreground" stroke={1.75} aria-hidden />
+              {n}
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            {n} {n === 1 ? 'holder' : 'holders'} synced from on-premises AD, directly or through a group
+          </TooltipContent>
+        </Tooltip>
+      )
+    },
+  },
   { id: 'description', header: 'Description', meta: { className: 'max-w-[60ch] text-muted-foreground' }, cell: ({ row }) => orDash(row.original.description) },
   { id: 'eligibleCount', header: 'Eligible', meta: { sort: 'eligibleCount', filter: 'eligibleCount', defaultHidden: true }, cell: ({ row }) => row.original.eligibleCount },
   { id: 'isBuiltIn', header: 'Built-in', meta: { filter: 'isBuiltIn', defaultHidden: true, noCopy: true }, cell: ({ row }) => <Flag value={row.original.isBuiltIn} /> },
   { id: 'templateId', header: 'Template ID', meta: { defaultHidden: true, className: 'font-mono text-sm' }, cell: ({ row }) => row.original.templateId },
 ]
 
+/** Expanded row: who holds the role, with members of assigned groups listed through their group. */
+function RoleHolders({ id }: { id: string }) {
+  const { data } = useApi('/api/role-assignments', { query: { roleId: id, expandGroups: true, page_size: 50 } })
+  if (!data) return <Skeleton className="h-16 w-full" />
+  return (
+    <div className="flex flex-col gap-4">
+      {data.items.length ? (
+        <ul className="grid gap-x-8 gap-y-1.5 lg:grid-cols-2">
+          {data.items.map((a) => (
+            <li key={a.id} className="flex min-w-0 items-center gap-2">
+              <ObjectLink value={a.principal} sub />
+              {a.principal.type === 'user' && <SourceIcon dirSync={a.principalDirSync} withLabel={false} />}
+              {a.kind === 'eligible' && <KindBadge kind="eligible" />}
+              {a.scope.type !== 'keyword' && <ObjectLink value={a.scope} />}
+              {a.via && (
+                <span className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+                  via <ObjectLink value={a.via} />
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <span className="text-muted-foreground">No holders</span>
+      )}
+      <Link to={`/roles/${id}`} className="inline-flex items-center gap-1 self-start text-sm text-info hover:underline">
+        {data.total > data.items.length ? `All ${data.total} holders` : 'Open role'} <IconArrowRight className="size-4" stroke={1.75} aria-hidden />
+      </Link>
+    </div>
+  )
+}
+
+/** No default sort: the API lists privileged roles first. */
 export function RolesTable({ query }: { query?: Partial<RoleQuery> }) {
-  return <DataTable route="/api/roles" query={query} columns={roleColumns} resource="roles" noun="role" defaultSort={{ sort: 'activeCount', order: 'desc' }} />
+  return <DataTable route="/api/roles" query={query} columns={roleColumns} resource="roles" noun="role" renderExpanded={(r) => <RoleHolders id={r.id} />} />
 }
 
 export function RolesPage() {

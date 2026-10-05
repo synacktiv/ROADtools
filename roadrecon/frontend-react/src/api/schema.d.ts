@@ -1690,6 +1690,11 @@ export interface components {
             activeCount: number;
             /** Eligiblecount */
             eligibleCount: number;
+            /**
+             * Syncedcount
+             * @description Distinct users holding the role (directly or through a group, active or eligible) that are synced from on-premises.
+             */
+            syncedCount: number;
             /** Allowedresourceactions */
             allowedResourceActions: string[];
             /** Holders */
@@ -1746,6 +1751,11 @@ export interface components {
             activeCount: number;
             /** Eligiblecount */
             eligibleCount: number;
+            /**
+             * Syncedcount
+             * @description Distinct users holding the role (directly or through a group, active or eligible) that are synced from on-premises.
+             */
+            syncedCount: number;
         };
         /** SearchGroup */
         SearchGroup: {

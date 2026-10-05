@@ -7689,6 +7689,11 @@
       "type": "integer",
       "title": "Eligiblecount"
      },
+     "syncedCount": {
+      "type": "integer",
+      "title": "Syncedcount",
+      "description": "Distinct users holding the role (directly or through a group, active or eligible) that are synced from on-premises."
+     },
      "allowedResourceActions": {
       "items": {
        "type": "string"
@@ -7719,6 +7724,7 @@
      "isPrivileged",
      "activeCount",
      "eligibleCount",
+     "syncedCount",
      "allowedResourceActions",
      "holders",
      "raw"
@@ -7811,6 +7817,11 @@
      "eligibleCount": {
       "type": "integer",
       "title": "Eligiblecount"
+     },
+     "syncedCount": {
+      "type": "integer",
+      "title": "Syncedcount",
+      "description": "Distinct users holding the role (directly or through a group, active or eligible) that are synced from on-premises."
      }
     },
     "type": "object",
@@ -7822,7 +7833,8 @@
      "isBuiltIn",
      "isPrivileged",
      "activeCount",
-     "eligibleCount"
+     "eligibleCount",
+     "syncedCount"
     ],
     "title": "RoleRow"
    },

@@ -432,11 +432,12 @@ const roles: RoleDetail[] = ROLE_DEFS.map(([templateId, displayName, description
   isPrivileged: false,
   activeCount: 0,
   eligibleCount: 0,
+  syncedCount: 0,
   holders: [], 
   allowedResourceActions: ['microsoft.directory/users/basic/update', 'microsoft.directory/groups/members/update', 'microsoft.directory/applications/credentials/update', 'microsoft.directory/servicePrincipals/appRoleAssignedTo/update'].slice(0, 2 + Math.floor(rand() * 3)),
   raw: {},
 }))
-const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, holders: [], allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
+const customRole: RoleDetail = { id: guid(), templateId: guid(), displayName: 'Vessel Device Operator', description: 'Custom role: manage BitLocker keys of fleet devices', isBuiltIn: false, isPrivileged: false, activeCount: 0, eligibleCount: 0, syncedCount: 0, holders: [], allowedResourceActions: ['microsoft.directory/bitlockerKeys/key/read', 'microsoft.directory/devices/basic/update'], raw: {} }
 roles.push(customRole)
 const roleByName = (n: string) => roles.find((r) => r.displayName === n)!
 
@@ -807,6 +808,8 @@ for (const l of locations) {
 for (const r of roles) {
   r.activeCount = roleAssignments.filter((a) => a.role.id === r.id && a.kind === 'active').length
   r.eligibleCount = roleAssignments.filter((a) => a.role.id === r.id && a.kind === 'eligible').length
+  const holderIds = roleAssignments.filter((a) => a.role.id === r.id).flatMap((a) => (a.principal.type === 'group' ? [...transitiveUsers(a.principal.id!)] : [a.principal.id!]))
+  r.syncedCount = new Set(holderIds.filter((u) => userById.get(u)?.dirSyncEnabled)).size
   for (const a of roleAssignments.filter((x) => x.role.id === r.id)) {
     const principalType = a.principal.type as 'user' | 'group' | 'servicePrincipal'
     const scope = a.scope.type === 'keyword' ? 'directory' : a.scope.type === 'administrativeUnit' ? 'administrativeUnit' : 'application'
@@ -1367,7 +1370,8 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
       if (ha !== undefined) r = r.filter((x) => x.activeCount + x.eligibleCount > 0 === ha)
       const bi = bool(q, 'isBuiltIn')
       if (bi !== undefined) r = r.filter((x) => x.isBuiltIn === bi)
-      return paginate(r.map(({ allowedResourceActions: _a, raw: _r, ...x }) => x), q, (x) => x.displayName, { ...byName, activeCount: (x) => x.activeCount, eligibleCount: (x) => x.eligibleCount }, 'roles') // eslint-disable-line @typescript-eslint/no-unused-vars
+      if (!q.get('sort')) r = [...r].sort((a, b) => Number(b.isPrivileged) - Number(a.isPrivileged) || a.displayName.localeCompare(b.displayName))
+      return paginate(r.map(({ allowedResourceActions: _a, raw: _r, ...x }) => x), q, (x) => x.displayName, { ...byName, activeCount: (x) => x.activeCount, eligibleCount: (x) => x.eligibleCount, syncedCount: (x) => x.syncedCount }, 'roles') // eslint-disable-line @typescript-eslint/no-unused-vars
     },
   ],
   ['/api/roles/{id}', ({ id }) => roles.find((r) => r.id === id)],
@@ -1430,7 +1434,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
         rows.push({ id: guid(), kind: 'active', role: { displayName: 'Storage Blob Data Contributor', description: null, isBuiltIn: true }, principal: ref('servicePrincipal', mi), via: null, scope: '/subscriptions/4f1d2c3b-9a8e-4d7c-b6a5-0e1f2a3b4c5d/resourceGroups/rg-telemetry/providers/Microsoft.Storage/storageAccounts/sttelemetryprod', conditional: false })
       if (pid === deploySp.id)
         rows.push({ id: guid(), kind: 'active', role: { displayName: 'Contributor', description: null, isBuiltIn: true }, principal: ref('servicePrincipal', deploySp), via: null, scope: '/subscriptions/4f1d2c3b-9a8e-4d7c-b6a5-0e1f2a3b4c5d/resourceGroups/rg-infra', conditional: false })
-      return paginate(rows, q, (r) => r.role.displayName, {}, 'azure-role-assignments')
+      return paginate(rows, q, (r) => r.role.displayName, { role: (r) => r.role.displayName.toLowerCase(), kind: (r) => r.kind }, 'azure-role-assignments')
     },
   ],
   [
@@ -1442,7 +1446,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
         rows.push({ id: guid(), kind: 'eligible', resourceType: 'group', resource: ref('group', tier0), role: 'Member', via: null, approvalRequired: false, startDateTime: daysAgo(300), endDateTime: pid === bob.id ? daysAgo(-150) : null })
         rows.push({ id: guid(), kind: 'eligible', resourceType: 'directoryRole', resource: roleRef('Global Administrator'), role: 'Global Administrator', via: ref('group', tier0), approvalRequired: true, startDateTime: daysAgo(300), endDateTime: null })
       }
-      return paginate(rows, q, (r) => r.role, {}, 'pim-assignments')
+      return paginate(rows, q, (r) => r.role, { role: (r) => r.role.toLowerCase(), kind: (r) => r.kind, resourceType: (r) => r.resourceType }, 'pim-assignments')
     },
   ],
   [
@@ -1467,7 +1471,7 @@ const handlers: [string, (p: Record<string, string>, q: Q) => unknown][] = [
           renewable: true,
           via: u.userType === 'Guest' ? kw('All external users') : ref('group', finance),
         })
-      return paginate(rows, q, (r) => r.packageName, {}, 'access-package-policies')
+      return paginate(rows, q, (r) => r.packageName, { packageName: (r) => r.packageName.toLowerCase() }, 'access-package-policies')
     },
   ],
   [

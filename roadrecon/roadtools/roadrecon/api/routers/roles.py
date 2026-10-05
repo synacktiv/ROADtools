@@ -102,6 +102,11 @@ counts = (select(direct.c.role_id, func.sum(case((direct.c.kind == 'active', 1),
                  func.sum(case((direct.c.kind == 'eligible', 1), else_=0)).label('eligible'))
           .group_by(direct.c.role_id).subquery())
 ACTIVE, ELIGIBLE = func.coalesce(counts.c.active, 0), func.coalesce(counts.c.eligible, 0)
+# Distinct users synced from on-premises holding the role, directly or through a group, active or eligible.
+synced = (select(ra.c.role_id, func.count(ra.c.principal_id.distinct()).label('synced'))
+          .join(U, U.objectId == ra.c.principal_id).where(U.dirSyncEnabled.is_(True))
+          .group_by(ra.c.role_id).subquery())
+SYNCED = func.coalesce(synced.c.synced, 0)
 
 
 def _via_group(op: str, arg: str):
@@ -129,14 +134,15 @@ ASSIGNMENT_FIELDS = register('role-assignments', {
 
 def _roles_select():
     return (select(roles_sq.c.id, roles_sq.c.name, roles_sq.c.description, roles_sq.c.isBuiltIn,
-                   ACTIVE.label('active'), ELIGIBLE.label('eligible'))
-            .outerjoin(counts, counts.c.role_id == roles_sq.c.id))
+                   ACTIVE.label('active'), ELIGIBLE.label('eligible'), SYNCED.label('synced'))
+            .outerjoin(counts, counts.c.role_id == roles_sq.c.id)
+            .outerjoin(synced, synced.c.role_id == roles_sq.c.id))
 
 
 def _role_row(r) -> dict:
     return dict(id=r.id, templateId=r.id, displayName=r.name or r.id, description=r.description,
                 isBuiltIn=bool(r.isBuiltIn), isPrivileged=r.id in PRIVILEGED_ROLES,
-                activeCount=r.active, eligibleCount=r.eligible)
+                activeCount=r.active, eligibleCount=r.eligible, syncedCount=r.synced)
 
 
 def _flag(col, want: bool):
@@ -151,8 +157,11 @@ def list_roles(q: Annotated[RoleQuery, Query()], db: Db) -> Page[RoleRow]:
     if q.hasAssignments is not None:
         held = ACTIVE + ELIGIBLE > 0
         stmt = stmt.where(held if q.hasAssignments else not_(held))
+    if not q.sort:  # default order: privileged roles first, then by name
+        stmt = stmt.order_by(roles_sq.c.id.in_(PRIVILEGED_ROLES).desc())
     return paginate(db, stmt, q, resource='roles', search=[roles_sq.c.name],
-                    sorts={'displayName': func.lower(roles_sq.c.name), 'activeCount': ACTIVE, 'eligibleCount': ELIGIBLE},
+                    sorts={'displayName': func.lower(roles_sq.c.name), 'activeCount': ACTIVE, 'eligibleCount': ELIGIBLE,
+                           'syncedCount': SYNCED},
                     build=lambda rows: [RoleRow(**_role_row(r)) for r in rows])
 
 

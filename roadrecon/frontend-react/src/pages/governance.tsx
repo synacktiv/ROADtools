@@ -89,7 +89,7 @@ export function AzureRolesTable({ principalId }: { principalId: string }) {
     {
       id: 'role',
       header: 'Role',
-      meta: { filter: 'role' },
+      meta: { sort: 'role', filter: 'role' },
       cell: ({ row }) => {
         const r = row.original.role
         const name = <span>{r.displayName}</span>
@@ -111,7 +111,7 @@ export function AzureRolesTable({ principalId }: { principalId: string }) {
         )
       },
     },
-    { id: 'kind', header: 'Assignment', meta: { filter: 'kind', noCopy: true }, cell: ({ row }) => <KindBadge kind={row.original.kind} /> },
+    { id: 'kind', header: 'Assignment', meta: { sort: 'kind', filter: 'kind', noCopy: true }, cell: ({ row }) => <KindBadge kind={row.original.kind} /> },
     {
       id: 'scope',
       header: 'Scope',
@@ -138,7 +138,7 @@ export function PimAssignmentsTable({ principalId }: { principalId: string }) {
     {
       id: 'resource',
       header: 'Role',
-      meta: { filter: 'role' },
+      meta: { sort: 'role', filter: 'role' },
       cell: ({ row }) => (
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <ObjectLink value={row.original.resource} />
@@ -146,11 +146,11 @@ export function PimAssignmentsTable({ principalId }: { principalId: string }) {
         </span>
       ),
     },
-    { id: 'kind', header: 'Assignment', meta: { filter: 'kind', noCopy: true }, cell: ({ row }) => <KindBadge kind={row.original.kind} /> },
+    { id: 'kind', header: 'Assignment', meta: { sort: 'kind', filter: 'kind', noCopy: true }, cell: ({ row }) => <KindBadge kind={row.original.kind} /> },
     { id: 'approval', header: 'Activation', meta: { filter: 'approvalRequired', noCopy: true }, cell: ({ row }) => (row.original.kind === 'eligible' ? <ApprovalBadge required={row.original.approvalRequired} /> : null) },
     { id: 'duration', header: 'Duration', meta: { filter: 'permanent', noCopy: true }, cell: ({ row }) => <Duration start={row.original.startDateTime} end={row.original.endDateTime} /> },
     { id: 'via', header: 'Through', cell: ({ row }) => via(row.original) },
-    { id: 'resourceType', header: 'Resource type', meta: { filter: 'resourceType', defaultHidden: true }, cell: ({ row }) => RESOURCE_TYPE[row.original.resourceType] },
+    { id: 'resourceType', header: 'Resource type', meta: { sort: 'resourceType', filter: 'resourceType', defaultHidden: true }, cell: ({ row }) => RESOURCE_TYPE[row.original.resourceType] },
     { id: 'start', header: 'Start', meta: { defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => orDash(fmtDate(row.original.startDateTime)) },
     { id: 'end', header: 'End', meta: { defaultHidden: true, className: 'tabular-nums' }, cell: ({ row }) => orDash(fmtDate(row.original.endDateTime)) },
   ]
@@ -181,7 +181,7 @@ export function AccessPackagesTable({ userId }: { userId: string }) {
     {
       id: 'package',
       header: 'Access package',
-      meta: { filter: 'packageName', className: 'min-w-[18ch] max-w-[32ch] whitespace-normal' },
+      meta: { sort: 'packageName', filter: 'packageName', className: 'min-w-[18ch] max-w-[32ch] whitespace-normal' },
       cell: ({ row }) => {
         const name = <span className="font-semibold">{row.original.packageName}</span>
         return (
