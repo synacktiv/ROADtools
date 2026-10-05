@@ -1,7 +1,6 @@
 import { Link, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import {
-  IconBan,
   IconBrandAndroid,
   IconBrandApple,
   IconBrandUbuntu,
@@ -25,7 +24,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { DataTable, type FilterDef } from '@/components/data-table'
 import { ObjectLink } from '@/components/object-link'
 import { ObjectPage } from '@/components/object-page'
-import { EnabledBadge, SourceIcon, SourceText, flag } from '@/components/badges'
+import { EnabledBadge, Marker, SourceIcon, SourceText, StatusMark, flag } from '@/components/badges'
 import { Dash, ListPage, SubViews, orDash, toRef } from '@/components/page-parts'
 import { UsersTable } from '@/pages/users'
 import { GroupsTable } from '@/pages/groups'
@@ -95,27 +94,13 @@ function PostureMark({ value, yes, no }: { value: boolean | null; yes: string; n
   )
 }
 
-/** Risk markers shown after the device name in lists. */
-const MARKERS: [show: (d: DeviceRow) => boolean, icon: Icon, label: string][] = [
-  [(d) => !d.accountEnabled, IconBan, 'Disabled'],
-  [(d) => d.isCompliant === false, IconClipboardX, 'Not compliant'],
-  [(d) => !!d.isRooted, IconBug, 'Rooted or jailbroken, as reported by the MDM'],
-]
-
 function DeviceName({ d }: { d: DeviceRow }) {
   return (
     <span className="flex min-w-0 items-center gap-1.5">
       <ObjectLink value={toRef('device', d)} />
-      {MARKERS.filter(([show]) => show(d)).map(([, I, label]) => (
-        <Tooltip key={label}>
-          <TooltipTrigger asChild>
-            <span tabIndex={0} aria-label={label} className="inline-flex shrink-0 text-regulatory">
-              <I className="size-4" stroke={1.75} />
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>{label}</TooltipContent>
-        </Tooltip>
-      ))}
+      {!d.accountEnabled && <StatusMark status="disabled" />}
+      {d.isCompliant === false && <StatusMark status="notCompliant" />}
+      {d.isRooted && <Marker icon={IconBug} label="Rooted or jailbroken, as reported by the MDM" className="text-regulatory" />}
     </span>
   )
 }

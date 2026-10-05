@@ -1,4 +1,4 @@
-import { IconCheck, IconCircleCheckFilled, IconCircleX, IconCloud, IconMinus, IconServer2 } from '@tabler/icons-react'
+import { IconAlertTriangle, IconBan, IconCheck, IconCircleCheckFilled, IconCircleX, IconClipboardX, IconCloud, IconMinus, IconServer2, IconShieldOff, type Icon } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -83,4 +83,31 @@ export function SourceIcon({ dirSync, withLabel = true }: { dirSync: boolean | n
       {!withLabel && <TooltipContent>{label}</TooltipContent>}
     </Tooltip>
   )
+}
+
+/** Icon-only marker after a name; the label is in aria-label (not text) so the cell copy button copies only the name. */
+export function Marker({ icon: I, label, className }: { icon: Icon; label: string; className?: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} aria-label={label} className={cn('inline-flex shrink-0', className)}>
+          <I className="size-4" stroke={1.75} aria-hidden />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+const STATUS = {
+  disabled: [IconBan, 'Disabled'],
+  noMfa: [IconShieldOff, 'No MFA registered'],
+  notCompliant: [IconClipboardX, 'Not compliant'],
+  risky: [IconAlertTriangle, 'Risky'],
+} satisfies Record<string, [Icon, string]>
+
+/** Status marker after a name, the same icon, colour and tooltip on every page. `label` refines the tooltip, `muted` tones it down. */
+export function StatusMark({ status, label, muted }: { status: keyof typeof STATUS; label?: string; muted?: boolean }) {
+  const [icon, text] = STATUS[status]
+  return <Marker icon={icon} label={label ?? text} className={muted ? 'text-muted-foreground' : 'text-regulatory'} />
 }

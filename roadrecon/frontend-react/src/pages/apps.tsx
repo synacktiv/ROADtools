@@ -7,7 +7,6 @@ import {
   IconBrandWindows,
   IconCertificate,
   IconCircleCheck,
-  IconCircleOff,
   IconClockExclamation,
   IconClockX,
   IconHelpCircle,
@@ -30,7 +29,7 @@ import { ObjectLink, TYPE_LABEL } from '@/components/object-link'
 import { ObjectPage, Section } from '@/components/object-page'
 import { JsonView } from '@/components/json-view'
 import { CredentialList, expiryState, type ExpiryState } from '@/components/credential-list'
-import { BoolMark, EnabledBadge, Flag, flag } from '@/components/badges'
+import { BoolMark, EnabledBadge, Flag, StatusMark, flag } from '@/components/badges'
 import { ListPage, SubViews, orDash, toRef } from '@/components/page-parts'
 import { ObjectPolicies } from '@/components/policy-match-list'
 import { GroupsTable } from '@/pages/groups'
@@ -124,12 +123,6 @@ function NameCell({ value, children }: { value: ObjectRef; children: React.React
     </span>
   )
 }
-
-const DisabledMark = () => (
-  <Hint label="Disabled" className="text-regulatory">
-    <IconCircleOff className="size-4" stroke={1.75} />
-  </Hint>
-)
 
 /** App roles and delegated scopes this app defines, as compact counts. */
 function Defines({ roles, scopes }: { roles: number; scopes: number }) {
@@ -336,7 +329,7 @@ const spColumns: ColumnDef<ServicePrincipalRow>[] = [
       const r = row.original
       return (
         <NameCell value={toRef('servicePrincipal', r)}>
-          {!r.accountEnabled && <DisabledMark />}
+          {!r.accountEnabled && <StatusMark status="disabled" />}
           {r.microsoftFirstParty && (
             <Hint label="Microsoft first-party app" className="text-muted-foreground">
               <IconBrandWindows className="size-4" stroke={1.75} />
@@ -489,11 +482,7 @@ const appColumns: ColumnDef<ApplicationRow>[] = [
       const r = row.original
       return (
         <NameCell value={toRef('application', r)}>
-          {r.oauth2AllowImplicitFlow && (
-            <Hint label="Implicit flow allowed: tokens are returned in the URL" className="text-regulatory">
-              <IconAlertTriangle className="size-4" stroke={1.75} />
-            </Hint>
-          )}
+          {r.oauth2AllowImplicitFlow && <StatusMark status="risky" label="Implicit flow allowed: tokens are returned in the URL" />}
           {/* App registrations live in this tenant, so any credential on them is risky. */}
           <CredMark secrets={r.passwordCount} certs={r.keyCount} risky />
           <OwnerMark owned={r.hasCustomOwner} />

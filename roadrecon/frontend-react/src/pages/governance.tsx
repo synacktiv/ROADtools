@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@tanstack/react-table'
-import { IconAlertTriangle, IconArrowRight, IconClock, IconExternalLink, IconFilter, IconInfinity, IconRefresh } from '@tabler/icons-react'
+import { IconArrowRight, IconClock, IconExternalLink, IconFilter, IconInfinity, IconRefresh } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -8,7 +8,7 @@ import { DataTable } from '@/components/data-table'
 import { ObjectLink } from '@/components/object-link'
 import { Section } from '@/components/object-page'
 import { AzureScope, parseAzureScope } from '@/components/azure-scope'
-import { ApprovalBadge, Flag, KindBadge } from '@/components/badges'
+import { ApprovalBadge, Flag, KindBadge, StatusMark } from '@/components/badges'
 import { orDash } from '@/components/page-parts'
 import { useApi } from '@/api/client'
 import type { AccessPackagePolicyRow, AzureRoleAssignmentRow, PimAssignmentRow, PimSubject } from '@/api/types'
@@ -96,11 +96,7 @@ export function AzureRolesTable({ principalId }: { principalId: string }) {
         return (
           <span className="inline-flex items-center gap-2">
             {r.description ? <Explained tip={r.description}>{name}</Explained> : name}
-            {HIGH_IMPACT_AZURE.has(r.displayName) && (
-              <Explained tip="High impact: can change resources or grant access to them">
-                <IconAlertTriangle className="size-4 text-regulatory" stroke={1.75} aria-label="High impact" />
-              </Explained>
-            )}
+            {HIGH_IMPACT_AZURE.has(r.displayName) && <StatusMark status="risky" label="High impact: can change resources or grant access to them" />}
             {!r.isBuiltIn && <Badge variant="outline">Custom</Badge>}
             {row.original.conditional && (
               <Explained tip="Conditional: an attribute condition limits what this assignment allows">
