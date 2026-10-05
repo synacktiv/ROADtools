@@ -55,6 +55,7 @@ def test_sp_list_rows_match_db(client, db):
         assert r.appRoleCount == len(o.appRoles or [])
         assert r.oauth2PermissionCount == len(o.oauth2Permissions or [])
         assert r.hasCustomOwner == bool(o.ownerUsers or o.ownerServicePrincipals)
+        assert (r.homepage, r.logoutUrl, r.replyUrls) == (o.homepage, o.logoutUrl, o.replyUrls or [])
 
 
 def test_sp_paging_and_default_sort(client, db):
@@ -111,6 +112,18 @@ def test_sp_advanced_filters(client, db):
     assert ids(sps(client, filter=['passwordCount:gt:0', 'keyCount:gt:0'], match='any')) == \
         {o.objectId for o in objs if o.passwordCredentials or o.keyCredentials}
     assert client.get('/api/service-principals', params={'filter': 'nope:eq:x'}).status_code == 422
+
+
+def test_sp_url_filter(client, db):
+    objs = all_sps(db)
+    urls = {o.objectId: [*(o.replyUrls or []), o.homepage, o.logoutUrl] for o in objs}
+    local = {i for i, u in urls.items() if any('localhost' in (x or '') for x in u)}
+    assert local and ids(sps(client, filter='url:contains:LOCALHOST')) == local
+    assert ids(sps(client, filter='url:notContains:localhost')) == set(urls) - local
+    logout = {i for i, u in urls.items() if any((x or '').endswith('/logout') for x in u)}
+    assert logout and ids(sps(client, filter='url:endsWith:/logout')) == logout
+    has = {i for i, u in urls.items() if any(u)}
+    assert ids(sps(client, filter='url:notEmpty:')) == has and ids(sps(client, filter='url:empty:')) == set(urls) - has
 
 
 def test_sp_search(client, db):

@@ -8121,17 +8121,6 @@
       "type": "boolean",
       "title": "Hascustomowner"
      },
-     "appOwnerTenantId": {
-      "anyOf": [
-       {
-        "type": "string"
-       },
-       {
-        "type": "null"
-       }
-      ],
-      "title": "Appownertenantid"
-     },
      "homepage": {
       "anyOf": [
        {
@@ -8143,12 +8132,34 @@
       ],
       "title": "Homepage"
      },
+     "logoutUrl": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Logouturl"
+     },
      "replyUrls": {
       "items": {
        "type": "string"
       },
       "type": "array",
       "title": "Replyurls"
+     },
+     "appOwnerTenantId": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Appownertenantid"
      },
      "servicePrincipalNames": {
       "items": {
@@ -8219,9 +8230,10 @@
      "appRoleCount",
      "oauth2PermissionCount",
      "hasCustomOwner",
-     "appOwnerTenantId",
      "homepage",
+     "logoutUrl",
      "replyUrls",
+     "appOwnerTenantId",
      "servicePrincipalNames",
      "application",
      "credentials",
@@ -8314,6 +8326,35 @@
      "hasCustomOwner": {
       "type": "boolean",
       "title": "Hascustomowner"
+     },
+     "homepage": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Homepage"
+     },
+     "logoutUrl": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Logouturl"
+     },
+     "replyUrls": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Replyurls"
      }
     },
     "type": "object",
@@ -8330,7 +8371,10 @@
      "keyCount",
      "appRoleCount",
      "oauth2PermissionCount",
-     "hasCustomOwner"
+     "hasCustomOwner",
+     "homepage",
+     "logoutUrl",
+     "replyUrls"
     ],
     "title": "ServicePrincipalRow"
    },

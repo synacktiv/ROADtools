@@ -313,6 +313,9 @@ class ServicePrincipalRow(BaseModel):
     appRoleCount: int
     oauth2PermissionCount: int
     hasCustomOwner: bool
+    homepage: str | None
+    logoutUrl: str | None
+    replyUrls: list[str]
 
 
 class ServicePrincipalQuery(PageQuery):
@@ -339,8 +342,6 @@ class ServicePrincipalCounts(BaseModel):
 
 class ServicePrincipalDetail(ServicePrincipalRow):
     appOwnerTenantId: str | None
-    homepage: str | None
-    replyUrls: list[str]
     servicePrincipalNames: list[str]
     application: ObjectRef | None
     credentials: list[Credential]

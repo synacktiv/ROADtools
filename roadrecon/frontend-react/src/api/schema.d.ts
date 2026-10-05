@@ -1866,12 +1866,14 @@ export interface components {
             oauth2PermissionCount: number;
             /** Hascustomowner */
             hasCustomOwner: boolean;
-            /** Appownertenantid */
-            appOwnerTenantId: string | null;
             /** Homepage */
             homepage: string | null;
+            /** Logouturl */
+            logoutUrl: string | null;
             /** Replyurls */
             replyUrls: string[];
+            /** Appownertenantid */
+            appOwnerTenantId: string | null;
             /** Serviceprincipalnames */
             servicePrincipalNames: string[];
             application: components["schemas"]["ObjectRef"] | null;
@@ -1917,6 +1919,12 @@ export interface components {
             oauth2PermissionCount: number;
             /** Hascustomowner */
             hasCustomOwner: boolean;
+            /** Homepage */
+            homepage: string | null;
+            /** Logouturl */
+            logoutUrl: string | null;
+            /** Replyurls */
+            replyUrls: string[];
         };
         /** SettingValue */
         SettingValue: {
