@@ -544,6 +544,44 @@ class AZresource(Base, SerializeMixin):
 
 '''
 
+custom_intune = '''
+class DeviceManagementSetting(Base, SerializeMixin):
+    __tablename__ = 'DeviceManagementSettings'
+
+    id = Column(Text, primary_key=True)
+    secureByDefault = Column(Boolean)
+    deviceComplianceCheckinThresholdDays = Column(Integer)
+    enhancedJailBreak = Column(Boolean)
+    isScheduledActionEnabled = Column(Boolean)
+    settings = Column(JSON)
+
+class DeviceCompliancePolicy(Base, SerializeMixin):
+    __tablename__ = 'DeviceCompliancePolicys'
+
+    id = Column(Text, primary_key=True)
+    odataType = Column(Text)
+    platform = Column(Text)
+    displayName = Column(Text)
+    description = Column(Text)
+    createdDateTime = Column(DateTime)
+    lastModifiedDateTime = Column(DateTime)
+    version = Column(Integer)
+    settings = Column(JSON)
+    scheduledActionsForRule = Column(JSON)
+
+class DeviceCompliancePolicyAssignment(Base, SerializeMixin):
+    __tablename__ = 'DeviceCompliancePolicyAssignments'
+
+    id = Column(Text, primary_key=True)
+    policyId = Column(Text, ForeignKey("DeviceCompliancePolicys.id"))
+    targetType = Column(Text)
+    groupId = Column(Text)
+    filterId = Column(Text)
+    filterType = Column(Text)
+    target = Column(JSON)
+
+'''
+
 with open('metadef/database.py', 'w') as outf:
     outf.write(header)
     for relname, reldata in relations.items():
@@ -557,4 +595,5 @@ with open('metadef/database.py', 'w') as outf:
     for table, links, revlinks in tables:
         outf.write(gen_db_class(table, links, revlinks))
     outf.write(custom_az)
+    outf.write(custom_intune)
     outf.write(footer)
