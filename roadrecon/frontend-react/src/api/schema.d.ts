@@ -970,6 +970,18 @@ export interface components {
             gracePeriodHours: number | null;
             /** Lastmodifieddatetime */
             lastModifiedDateTime: string | null;
+            /**
+             * Effect
+             * @description With deviceId: exclusion wins.
+             */
+            effect?: ("included" | "excluded") | null;
+            /**
+             * Included
+             * @description With deviceId: how an assignment reaches the device (condition Device, or Owner with the owner first in `via`).
+             */
+            included?: components["schemas"]["MatchReason"][] | null;
+            /** Excluded */
+            excluded?: components["schemas"]["MatchReason"][] | null;
             /** Createddatetime */
             createdDateTime: string | null;
             /** Version */
@@ -1013,6 +1025,18 @@ export interface components {
             gracePeriodHours: number | null;
             /** Lastmodifieddatetime */
             lastModifiedDateTime: string | null;
+            /**
+             * Effect
+             * @description With deviceId: exclusion wins.
+             */
+            effect?: ("included" | "excluded") | null;
+            /**
+             * Included
+             * @description With deviceId: how an assignment reaches the device (condition Device, or Owner with the owner first in `via`).
+             */
+            included?: components["schemas"]["MatchReason"][] | null;
+            /** Excluded */
+            excluded?: components["schemas"]["MatchReason"][] | null;
         };
         /** ComplianceSetting */
         ComplianceSetting: {
@@ -3537,6 +3561,8 @@ export interface operations {
                 match?: "all" | "any";
                 /** @description Platform label or raw value (windows10, ios...). */
                 platform?: string | null;
+                /** @description Policies assigned or excluded for this device (object id), directly or through its owners. */
+                deviceId?: string | null;
             };
             header?: never;
             path?: never;

@@ -83,6 +83,41 @@ def test_settings_and_stats(client):
     assert Stats(**get(client, '/api/stats')).compliancePolicies == 5
 
 
+def via(reasons):
+    return {(r.condition, tuple(v.displayName for v in r.via)) for r in reasons}
+
+
+def test_device(client, db):
+    gm, own = d.lnk_group_member_device, d.lnk_device_owner
+    dev = db.scalar(select(gm.c.Device).where(gm.c.Group == group_id(db, 'Contractors')))
+    rows = {r.displayName: r for r in policies(client, deviceId=dev).items}
+    staff = ('Engineering', 'Sales EMEA', 'Finance', 'IT Admins', 'All Staff')
+    win = rows['Windows 10/11 baseline']  # included through nested groups, excluded by Contractors
+    assert win.effect == 'excluded' and ('Device', ('Contractors',)) in via(win.excluded)
+    assert ('Device', staff) in via(win.included)
+    android = rows['Android work profile']
+    assert android.effect == 'included' and android.excluded == []
+    assert {('Device', ('Engineering',)), ('Device', staff[:2])} <= via(android.included)
+    assert via(rows['macOS FileVault'].included) == {('Device', ('All devices',))}
+    assert 'Windows 10/11 legacy (unassigned)' not in rows
+
+    # Through an owner: a device outside any group, owned by a member of Engineering.
+    user = db.scalar(select(d.lnk_group_member_user.c.User).where(d.lnk_group_member_user.c.Group == group_id(db, 'Engineering')))
+    name = db.scalar(select(d.User.displayName).where(d.User.objectId == user))
+    owned = db.scalar(select(own.c.Device).where(own.c.User == user, own.c.Device.not_in(select(gm.c.Device))))
+    rows = {r.displayName: r for r in policies(client, deviceId=owned).items}
+    assert ('Owner', (name, 'Engineering')) in via(rows['Android work profile'].included)
+    ios = rows['iOS corporate devices'].included
+    assert ('Owner', (name, 'All users')) in via(ios) and all(r.approximate for r in ios)
+
+    # No owner, no group: only All devices.
+    lone = db.scalar(select(d.Device.objectId).where(d.Device.objectId.not_in(select(gm.c.Device)),
+                                                     d.Device.objectId.not_in(select(own.c.Device))))
+    assert [r.displayName for r in policies(client, deviceId=lone).items] == ['macOS FileVault']
+    assert policies(client, deviceId='missing').total == 0
+    assert all(r.effect is None for r in policies(client).items)
+
+
 def assert_not_collected(c):
     assert get(c, '/api/device-compliance') == {'items': [], 'total': 0, 'page': 1, 'page_size': 50}
     assert get(c, '/api/device-compliance', platform='ios', filter='platform:eq:iOS/iPadOS')['total'] == 0
@@ -90,6 +125,8 @@ def assert_not_collected(c):
     assert Stats(**get(c, '/api/stats')).compliancePolicies is None
     assert get(c, '/api/filters/device-compliance')[1]['options'] == []
     assert c.get('/api/device-compliance/nope').status_code == 404
+    dev = get(c, '/api/devices')['items'][0]['id']
+    assert get(c, '/api/device-compliance', deviceId=dev)['total'] == 0
 
 
 def test_tables_missing(minimal_client):

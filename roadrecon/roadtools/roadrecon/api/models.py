@@ -693,10 +693,17 @@ class CompliancePolicyRow(BaseModel):
     exclusions: list[ObjectRef]
     gracePeriodHours: int | None = Field(description='Before the device is marked non-compliant; null = no block action.')
     lastModifiedDateTime: str | None
+    # Only with ComplianceQuery.deviceId.
+    effect: Literal['included', 'excluded'] | None = Field(None, description='With deviceId: exclusion wins.')
+    included: list[MatchReason] | None = Field(None, description='With deviceId: how an assignment reaches the device '
+                                               '(condition Device, or Owner with the owner first in `via`).')
+    excluded: list[MatchReason] | None = None
 
 
 class ComplianceQuery(PageQuery):
     platform: str | None = Field(None, description='Platform label or raw value (windows10, ios...).')
+    deviceId: str | None = Field(None, description='Policies assigned or excluded for this device (object id), '
+                                 'directly or through its owners.')
 
 
 class ComplianceSetting(BaseModel):

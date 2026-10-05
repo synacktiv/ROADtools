@@ -13,7 +13,8 @@ from roadtools.roadlib.metadef import database as d
 
 from ..common import Db, F, has_table, iso, keyword, not_found, paginate_list, register, resolve_refs
 from ..models import (ComplianceAction, CompliancePolicyDetail, CompliancePolicyRow, ComplianceQuery, ComplianceSetting,
-                      DeviceComplianceSettings, Page)
+                      DeviceComplianceSettings, MatchReason, Page)
+from .policies import _ancestor_chains, _reason
 
 router = APIRouter(prefix='/api', tags=['compliance'])
 
@@ -81,10 +82,38 @@ def _rows(db: Session, policies: list[d.DeviceCompliancePolicy]) -> list[Complia
     return rows
 
 
+def _device_reasons(db: Session, device_id: str) -> dict[str, dict[str, list[MatchReason]]]:
+    """policyId -> {'included': [...], 'excluded': [...]}: assignments that reach the device, or one of its owners
+    (a policy assigned to a user group applies to those users' devices). allLicensedUsers counts any owner."""
+    if not has_table(db, CPA.__tablename__) or db.get(d.Device, device_id) is None:
+        return {}
+    own = d.lnk_device_owner
+    owners = db.scalars(select(own.c.User).where(own.c.Device == device_id)).all()
+    paths = [('Device', [], _ancestor_chains(db, device_id))] + [('Owner', [o], _ancestor_chains(db, o)) for o in owners]
+    refs = resolve_refs(db, {*owners, *(g for *_, chains in paths for g in chains)})
+    out = {}
+    for a in db.scalars(select(CPA)):
+        if a.targetType == 'allDevices':
+            rs = [_reason('Device', [keyword(TARGETS[a.targetType])])]
+        elif a.targetType == 'allLicensedUsers':  # ponytail: Intune licences not checked, so approximate
+            rs = [_reason('Owner', [refs[o], keyword(TARGETS[a.targetType])], approximate=True) for o in owners]
+        else:
+            rs = [_reason(cond, [refs[x] for x in [*prefix, *chains[a.groupId]]])
+                  for cond, prefix, chains in paths if a.groupId in chains]
+        if rs:
+            side = out.setdefault(a.policyId, {'included': [], 'excluded': []})
+            side['excluded' if a.targetType == 'exclusionGroup' else 'included'] += rs
+    return out
+
+
 @router.get('/device-compliance')
 def list_compliance_policies(q: Annotated[ComplianceQuery, Query()], db: Db) -> Page[CompliancePolicyRow]:
     policies = _policies(db)
     rows = [r for r, p in zip(_rows(db, policies), policies) if not q.platform or q.platform in (r.platform, p.platform)]
+    if q.deviceId is not None:
+        reasons = _device_reasons(db, q.deviceId)
+        rows = [r.model_copy(update=dict(effect='excluded' if reasons[r.id]['excluded'] else 'included', **reasons[r.id]))
+                for r in rows if r.id in reasons]
     return paginate_list(rows, q, resource='device-compliance', text=lambda r: f'{r.displayName} {r.description or ""}',
                          sorts={'displayName': lambda r: r.displayName.lower(), 'platform': lambda r: r.platform,
                                 'gracePeriodHours': lambda r: r.gracePeriodHours,
