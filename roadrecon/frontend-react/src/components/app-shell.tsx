@@ -126,7 +126,8 @@ export function AppShell() {
           </Button>
           <ThemeToggle />
         </header>
-        <div className="min-w-0 px-6 py-6">
+        {/* Keyed by path: each page fades in once when opened, not on filter or tab changes. */}
+        <div key={pathname} className="min-w-0 px-6 py-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
           <Outlet />
         </div>
       </SidebarInset>

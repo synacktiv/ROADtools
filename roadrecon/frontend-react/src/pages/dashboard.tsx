@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { IconAlertTriangle, IconFingerprintOff, IconKey, IconUserOff, IconUserShield, IconWorld } from '@tabler/icons-react'
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +11,7 @@ import { ObjectLink, TypeGlyph } from '@/components/object-link'
 import { copy } from '@/components/object-page'
 import { PropertyList } from '@/components/property-list'
 import { toRef } from '@/components/page-parts'
-import { Flag, SourceIcon } from '@/components/badges'
+import { flag, SourceIcon } from '@/components/badges'
 import { useApi } from '@/api/client'
 import type { ObjectType, Route, Tenant } from '@/api/types'
 import { fmtNumber } from '@/lib/format'
@@ -38,6 +39,31 @@ function useCount(route: ListRoute, s: Slice) {
 
 const num = (n: number | undefined) => (n === undefined ? '-' : fmtNumber(n))
 
+/** Counts up from 0 to `value` when it becomes known. */
+function useCountUp(value: number | undefined, ms = 700) {
+  const [shown, setShown] = useState(value === undefined ? undefined : 0)
+  useEffect(() => {
+    if (value === undefined || matchMedia('(prefers-reduced-motion: reduce)').matches) return setShown(value)
+    const start = performance.now()
+    let frame = 0
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / ms)
+      setShown(Math.round(value * (1 - (1 - p) ** 3)))
+      if (p < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [value, ms])
+  return shown
+}
+
+function Count({ n }: { n?: number }) {
+  return num(useCountUp(n))
+}
+
+/** Cards rise in one after another. */
+const rise = (i: number) => ({ className: 'motion-safe:animate-rise', style: { animationDelay: `${i * 70}ms` } })
+
 /** Label, n of total and a thin bar. The whole row links to the filtered list. */
 function Meter({ to, icon: Icon, label, help, n, of, showOf, risky }: { to: string; icon: typeof IconKey; label: string; help: string; n?: number; of?: number; showOf?: boolean; risky?: boolean }) {
   const pct = n && of ? Math.max(2, (n / of) * 100) : 0
@@ -51,11 +77,13 @@ function Meter({ to, icon: Icon, label, help, n, of, showOf, risky }: { to: stri
             {label}
           </span>
           <span className="tabular-nums">
-            <span className={cn('font-semibold', bad && 'text-regulatory')}>{num(n)}</span>
+            <span className={cn('font-semibold', bad && 'text-regulatory')}>
+              <Count n={n} />
+            </span>
             {showOf && <span className="text-muted-foreground"> / {num(of)}</span>}
           </span>
           <span className="col-span-2 flex h-1.5 overflow-hidden rounded-full bg-muted">
-            <span className={cn('rounded-full transition-[width] duration-500 motion-reduce:transition-none', bad ? 'bg-regulatory' : 'bg-foreground/60')} style={{ width: `${pct}%` }} />
+            <span className={cn('origin-left rounded-full transition-[width] duration-500 motion-safe:animate-grow motion-reduce:transition-none', bad ? 'bg-regulatory' : 'bg-foreground/60')} style={{ width: `${pct}%` }} />
           </span>
         </Link>
       </TooltipTrigger>
@@ -71,7 +99,9 @@ function BigCount({ to, type, label, value }: { to: string; type: ObjectType; la
         <TypeGlyph type={type} />
         {label}
       </span>
-      <span className="text-4xl font-semibold tracking-tight tabular-nums">{num(value)}</span>
+      <span className="text-4xl font-semibold tracking-tight tabular-nums">
+        <Count n={value} />
+      </span>
     </Link>
   )
 }
@@ -84,11 +114,11 @@ const spCreds: Slice = { page: '/service-principals', filter: ['passwordCount:gt
 const spOwned: Slice = { page: '/service-principals', filter: ['hasCustomOwner:eq:true'] }
 const appCreds: Slice = { page: '/applications', filter: ['passwordCount:gt:0', 'keyCount:gt:0'], match: 'any' }
 
-function UsersCard({ total, guestCount }: { total?: number; guestCount?: number }) {
+function UsersCard({ total, guestCount, i }: { total?: number; guestCount?: number; i: number }) {
   const enabled = useCount('/api/users', enabledUsers)
   const missing = useCount('/api/users', noMfa)
   return (
-    <Card>
+    <Card {...rise(i)}>
       <CardContent className="flex flex-col gap-4">
         <BigCount to="/users" type="user" label="Users" value={total} />
         <div className="flex flex-col gap-1">
@@ -101,12 +131,12 @@ function UsersCard({ total, guestCount }: { total?: number; guestCount?: number 
   )
 }
 
-function AppsCard({ sps, apps }: { sps?: number; apps?: number }) {
+function AppsCard({ sps, apps, i }: { sps?: number; apps?: number; i: number }) {
   const spWithCreds = useCount('/api/service-principals', spCreds)
   const spWithOwner = useCount('/api/service-principals', spOwned)
   const appWithCreds = useCount('/api/applications', appCreds)
   return (
-    <Card>
+    <Card {...rise(i)}>
       <CardContent className="flex flex-col gap-4">
         <div className="flex gap-10">
           <BigCount to="/service-principals" type="servicePrincipal" label="Service principals" value={sps} />
@@ -124,7 +154,7 @@ function AppsCard({ sps, apps }: { sps?: number; apps?: number }) {
 
 const stateSlice = (state: string): Slice => ({ page: '/policies', filter: [`state:in:${state}`] })
 
-function ConditionalAccessCard() {
+function ConditionalAccessCard({ i }: { i: number }) {
   const counts = {
     enabled: useCount('/api/policies', stateSlice('enabled')),
     reporting: useCount('/api/policies', stateSlice('reporting')),
@@ -141,7 +171,7 @@ function ConditionalAccessCard() {
   const blocking = useCount('/api/policies', blockSlice)
   const total = parts.reduce((s, p) => s + p.n, 0)
   return (
-    <Card>
+    <Card {...rise(i)}>
       <CardHeader>
         <CardTitle>Conditional Access</CardTitle>
         <CardDescription>{fmtNumber(total)} policies</CardDescription>
@@ -152,13 +182,15 @@ function ConditionalAccessCard() {
         </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="flex h-2 gap-0.5 overflow-hidden rounded-full" role="img" aria-label={parts.map((p) => `${p.n} ${p.label}`).join(', ')}>
+        <div key={total} className="flex h-2 origin-left gap-0.5 overflow-hidden rounded-full motion-safe:animate-grow" role="img" aria-label={parts.map((p) => `${p.n} ${p.label}`).join(', ')}>
           {parts.map((p) => p.n > 0 && <div key={p.state} className={cn('rounded-full', p.bar)} style={{ width: `${(p.n / Math.max(total, 1)) * 100}%` }} />)}
         </div>
         <div className="-mx-2 grid grid-cols-3 gap-1">
           {parts.map((p) => (
             <Link key={p.state} to={p.to} className="flex flex-col rounded-md px-2 py-1.5 transition-colors hover:bg-accent">
-              <span className={cn('text-2xl font-semibold tabular-nums', p.text)}>{fmtNumber(p.n)}</span>
+              <span className={cn('text-2xl font-semibold tabular-nums', p.text)}>
+                <Count n={p.n} />
+              </span>
               <span className="text-muted-foreground">{p.label}</span>
             </Link>
           ))}
@@ -173,12 +205,12 @@ function ConditionalAccessCard() {
   )
 }
 
-function RolesCard() {
+function RolesCard({ i }: { i: number }) {
   const { data } = useApi('/api/roles', { query: { sort: 'activeCount', order: 'desc', page_size: 6, hasAssignments: true } })
   const max = Math.max(1, ...(data?.items ?? []).map((r) => r.activeCount + r.eligibleCount))
   const inUse: Slice = { page: '/roles', filter: ['activeCount:gt:0', 'eligibleCount:gt:0'], match: 'any' }
   return (
-    <Card>
+    <Card {...rise(i)}>
       <CardHeader>
         <CardTitle>Directory roles</CardTitle>
         <CardDescription className="flex items-center gap-3">
@@ -200,7 +232,7 @@ function RolesCard() {
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {!data && <Skeleton className="h-40 w-full" />}
-        {data?.items.map((r) => (
+        {data?.items.map((r, j) => (
           <div key={r.id} className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-3">
               <ObjectLink value={toRef('role', r)} />
@@ -209,7 +241,7 @@ function RolesCard() {
                 {r.eligibleCount > 0 && <span className="text-warning"> +{r.eligibleCount}</span>}
               </span>
             </div>
-            <div className="flex h-1.5 gap-0.5 overflow-hidden rounded-full">
+            <div className="flex h-1.5 origin-left gap-0.5 overflow-hidden rounded-full motion-safe:animate-grow" style={{ animationDelay: `${(i + j) * 70}ms` }}>
               <div className="rounded-full bg-foreground/70" style={{ width: `${(r.activeCount / max) * 100}%` }} />
               {r.eligibleCount > 0 && <div className="rounded-full bg-warning" style={{ width: `${(r.eligibleCount / max) * 100}%` }} />}
             </div>
@@ -230,14 +262,13 @@ function Setting({ text, risky }: { text: string; risky: boolean }) {
   )
 }
 
-function AuthorizationPolicyCard({ ap }: { ap: Tenant['authorizationPolicy'] }) {
+function AuthorizationPolicyCard({ ap, i }: { ap: Tenant['authorizationPolicy']; i: number }) {
   const consentRisky = ap?.userConsentPolicy === 'all'
   const guestRisky = ap?.guestRole === 'member'
   const inviteRisky = ap?.guestInvitesFrom === 'everyone' || ap?.guestInvitesFrom === 'members'
   const risky = ap ? [ap.usersCanRegisterApps === true, ap.blockMsolPowerShell === false, consentRisky, guestRisky, inviteRisky].filter(Boolean).length : 0
-  const flag = (value: boolean | null, bad?: boolean) => (value === null ? null : <Flag value={value} risky={bad} />)
   return (
-    <Card>
+    <Card {...rise(i)}>
       <CardHeader>
         <CardTitle>Authorization policy</CardTitle>
         <CardDescription>Defaults that apply to every user</CardDescription>
@@ -273,9 +304,9 @@ function AuthorizationPolicyCard({ ap }: { ap: Tenant['authorizationPolicy'] }) 
   )
 }
 
-function DomainsCard({ domains }: { domains?: Tenant['domains'] }) {
+function DomainsCard({ domains, i }: { domains?: Tenant['domains']; i: number }) {
   return (
-    <Card>
+    <Card {...rise(i)}>
       <CardHeader>
         <CardTitle>Domains</CardTitle>
         <CardDescription>{domains ? `${domains.length} verified` : ' '}</CardDescription>
@@ -312,9 +343,84 @@ function DomainsCard({ domains }: { domains?: Tenant['domains'] }) {
   )
 }
 
-
 // Setting names are CamelCase: a zero-width space before each word lets them wrap between words.
 const camelBreaks = (s: string) => s.replace(/(?<=[a-z])(?=[A-Z])/g, '\u200b')
+
+type DirectorySetting = Tenant['directorySettings'][number]
+
+function SettingCard({ s, i }: { s: DirectorySetting; i: number }) {
+  return (
+    <Card {...rise(i)}>
+      <CardHeader>
+        <CardTitle>{s.name}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <PropertyList plain items={s.values.map((v) => [camelBreaks(v.name), v.value] as [string, string])} />
+      </CardContent>
+    </Card>
+  )
+}
+
+// Values of the "Password Rule Settings" template, all strings in the dump.
+const PASSWORD_RULES = ['LockoutThreshold', 'LockoutDurationInSeconds', 'EnableBannedPasswordCheck', 'BannedPasswordList', 'EnableBannedPasswordCheckOnPremises', 'BannedPasswordCheckOnPremisesMode']
+const bool = (v: string | undefined) => (v === undefined ? null : v.toLowerCase() === 'true')
+const seconds = (v: string) => (!/^\d+$/.test(v) ? v : +v % 60 ? `${fmtNumber(+v)} s` : `${fmtNumber(+v / 60)} min`)
+
+/** Smart lockout as numbers, then the custom banned password list and its on-premises agent. */
+function PasswordRulesCard({ s, i }: { s: DirectorySetting; i: number }) {
+  const v: Record<string, string | undefined> = Object.fromEntries(s.values.map((x) => [x.name, x.value]))
+  const banned = (v.BannedPasswordList ?? '').split(/[\t\r\n]+/).filter(Boolean)
+  const onPrem = bool(v.EnableBannedPasswordCheckOnPremises)
+  const mode = v.BannedPasswordCheckOnPremisesMode
+  const lockout = [
+    [v.LockoutThreshold, 'Failed sign-ins before lockout'],
+    [v.LockoutDurationInSeconds && seconds(v.LockoutDurationInSeconds), 'First lockout duration'],
+  ] as const
+  return (
+    <Card {...rise(i)}>
+      <CardHeader>
+        <CardTitle>{s.name}</CardTitle>
+        <CardDescription>Smart lockout and banned passwords</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="-mx-2 grid grid-cols-2 gap-1">
+          {lockout.map(
+            ([value, label]) =>
+              value && (
+                <div key={label} className="flex flex-col px-2 py-1.5">
+                  <span className="text-2xl font-semibold tabular-nums">{value}</span>
+                  <span className="text-muted-foreground">{label}</span>
+                </div>
+              ),
+          )}
+        </div>
+        <PropertyList
+          plain
+          items={[
+            ['Custom banned list enforced', flag(bool(v.EnableBannedPasswordCheck))],
+            [
+              'Banned passwords',
+              v.BannedPasswordList === undefined ? null : banned.length ? (
+                <div className="flex max-h-40 flex-wrap gap-1 overflow-y-auto">
+                  {banned.map((w, j) => (
+                    <Badge key={j} variant="outline" className="font-mono">
+                      {w}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-muted-foreground">Empty</span>
+              ),
+            ],
+            ['On-premises AD protection', flag(onPrem)],
+            ['On-premises mode', onPrem && mode ? <Badge variant={mode === 'Enforce' ? 'guide' : 'warning'}>{mode === 'Enforce' ? 'Enforced' : mode}</Badge> : null],
+            ...s.values.filter((x) => !PASSWORD_RULES.includes(x.name)).map((x) => [camelBreaks(x.name), x.value] as [string, string]),
+          ]}
+        />
+      </CardContent>
+    </Card>
+  )
+}
 
 export function DashboardPage() {
   const { data: t, isLoading } = useApi('/api/tenant')
@@ -335,28 +441,21 @@ export function DashboardPage() {
       </header>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <UsersCard total={stats?.users} guestCount={stats?.guests} />
-        <AppsCard sps={stats?.servicePrincipals} apps={stats?.applications} />
+        <UsersCard i={0} total={stats?.users} guestCount={stats?.guests} />
+        <AppsCard i={1} sps={stats?.servicePrincipals} apps={stats?.applications} />
       </div>
 
       <div className="grid items-start gap-4 xl:grid-cols-12">
         <div className="flex flex-col gap-4 xl:col-span-7">
-          <AuthorizationPolicyCard ap={t?.authorizationPolicy ?? null} />
-          <DomainsCard domains={t?.domains} />
+          <AuthorizationPolicyCard i={2} ap={t?.authorizationPolicy ?? null} />
+          <DomainsCard i={3} domains={t?.domains} />
         </div>
         <div className="flex flex-col gap-4 xl:col-span-5">
-          <ConditionalAccessCard />
-          <RolesCard />
-          {t?.directorySettings.map((s) => (
-            <Card key={s.name}>
-              <CardHeader>
-                <CardTitle>{s.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PropertyList plain items={s.values.map((v) => [camelBreaks(v.name), v.value] as [string, string])} />
-              </CardContent>
-            </Card>
-          ))}
+          <ConditionalAccessCard i={2} />
+          <RolesCard i={3} />
+          {t?.directorySettings.map((s, j) =>
+            s.values.some((v) => v.name === 'LockoutThreshold') ? <PasswordRulesCard key={s.name} s={s} i={4 + j} /> : <SettingCard key={s.name} s={s} i={4 + j} />,
+          )}
         </div>
       </div>
     </div>
