@@ -92,10 +92,10 @@ Backend status (2026-10-04): every route implemented in its worktree, merged int
   - [x] the app page reads publisher, owner tenant, status and assignment from `ApplicationDetail`, without fetching the SP;
   - [x] `LocationPolicies` uses `NamedLocationRow.policies` + `excludedBy`, with no request per row;
   - [x] `grants.tsx` and `apps.tsx` use the server's `isPrivileged` / `privilegedScopes` (the regex copies are gone);
-  - [ ] the governance tables could set `meta.sort` (the backend accepts `role`, `kind`, `resourceType`, `packageName`).
+  - [x] the governance tables set `meta.sort` (the backend accepts `role`, `kind`, `resourceType`, `packageName`).
 - Dashboard directory settings:
   - [x] long CamelCase setting names (`BannedPasswordCheckOnPremisesMode` in Password Rule Settings, `Group.Unified`) overlapped the value; they now wrap between words;
-  - [ ] rework the "Password Rule Settings" section.
+  - [x] rework the "Password Rule Settings" section (lockout numbers, banned-password flags and chips; mock only, gendb has no directory settings).
 - Spec changes after `spec-v1`:
   - `RoleDetail.holders` is a list of `{kind, principalType, scope, count}` (the role page tallied 1000 assignments, over the 500 cap);
   - `NamedLocationRow.excludedBy`: ids of the policies that exclude the location.
@@ -150,17 +150,17 @@ New features
 - [ ] Owner service principals shown (old GUI only showed owner users)
 - [ ] Every object mention is a link (incl. scopes, grants, policy conditions)
 - [ ] ⌘K global search, dark mode
-- [ ] Directory roles list:
+- [x] Directory roles list (`RoleRow.syncedCount`; expanded rows read `/api/role-assignments?expandGroups`, so assigned groups with no members only show on the role page):
   - privileged roles first;
   - expandable rows that show the users assigned the role;
   - a column with how many holders are not cloud only (synced from on-premises).
-- [ ] Animations on the dashboard and on page loading (relaxes design principle 5, "motion only answers an action"; honour `prefers-reduced-motion`)
-- [ ] SQL query page:
+- [x] Animations on the dashboard and on page loading (relaxes design principle 5, "motion only answers an action"; honour `prefers-reduced-motion`)
+- [x] SQL query page (`/api/sql`, `/api/sql/schema`, 11 built-in queries served by the backend; 1000 rows, 10 s, ATTACH denied):
   - direct SQL against the database, with autosuggest (tables, columns) and built-in queries to choose from;
   - results in a `DataTable`, with one-click CSV export;
   - run on a separate read-only connection (`PRAGMA query_only`), with a row cap and a timeout.
-- [ ] Resizable table columns (drag the column header edge in `DataTable`).
-- [ ] Named locations map: trusted countries in green.
+- [x] Resizable table columns (drag the column header edge in `DataTable`).
+- [x] Named locations map: trusted countries in green (already handled; mock and gendb had no trusted country location, now they do).
 
 ## Phase 6 — Switch
 - [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
@@ -181,7 +181,7 @@ New features
 - Shared helpers for the per-router duplicates the review found: `_flag`, `_count`, `gm_user` / `gm_group`.
 - Clean up the `mfa_` column-id prefix in `pages/users.tsx`. It worked around a column-visibility key bug that has since been fixed in `DataTable`.
 - Unify the status marker icons across pages in a single shared helper (no MFA, not compliant, disabled, risky).
-- Code-split the bundle (about 740 kB) if the start-up time matters.
+- Code-split the bundle (about 2 MB now) if the start-up time matters.
 - FTS5 trigram search if `LIKE '%q%'` gets slow on very large tenants (>500k users)
 - Column-compat shim for dumps made by very old roadlib versions
 - policyanalysis fixes (Postgres `on_conflict`, roles via groups, duplicates, `ALLUSERS` in exclude)
