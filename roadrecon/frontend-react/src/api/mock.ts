@@ -921,12 +921,14 @@ const tenant: Tenant = {
   },
   directorySettings: [
     {
-      name: 'Password protection',
+      name: 'Password Rule Settings',
       values: [
-        { name: 'Lockout threshold', value: '10' },
-        { name: 'Lockout duration', value: '60 seconds' },
-        { name: 'Banned password list', value: 'Enabled: halvorsen, maritime, bergen, vessel' },
-        { name: 'On-premises protection', value: 'Audit mode' },
+        { name: 'BannedPasswordCheckOnPremisesMode', value: 'Audit' },
+        { name: 'EnableBannedPasswordCheckOnPremises', value: 'True' },
+        { name: 'EnableBannedPasswordCheck', value: 'True' },
+        { name: 'LockoutDurationInSeconds', value: '60' },
+        { name: 'LockoutThreshold', value: '10' },
+        { name: 'BannedPasswordList', value: 'halvorsen\tmaritime\tbergen\tvessel\tfjord\tnordsjo' },
       ],
     },
   ],

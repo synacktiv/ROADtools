@@ -58,6 +58,18 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Load motion (dashboard): cards rise in, bars grow from the left. Use with motion-safe:. */
+@theme {
+    --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    --animate-grow: grow 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    @keyframes rise {
+        from { opacity: 0; transform: translateY(0.5rem); }
+    }
+    @keyframes grow {
+        from { transform: scaleX(0); }
+    }
+}
+
 /*
  * Glass, greyscale, minimal (ROADMAP.md appendix B).
  * UI chrome has no hue. Colour is reserved for meaning:
