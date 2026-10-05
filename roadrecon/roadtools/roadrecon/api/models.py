@@ -96,6 +96,9 @@ class UserRow(BaseModel):
     dirSyncEnabled: bool | None
     userType: Literal['Member', 'Guest']
     mfa: MfaSummary
+    mfaRequired: bool | None = Field(None, description=(
+        'An enabled Conditional Access policy in scope requires MFA (the MFA control or an authentication strength, '
+        'custom ones included). Only set on the MFA view; null elsewhere and when no CA policies were collected.'))
 
 
 class UserQuery(PageQuery):
@@ -110,6 +113,8 @@ class UserQuery(PageQuery):
         None, description='none = no strong auth method registered.')
     perUserMfa: Literal['Enabled', 'Enforced', 'Disabled'] | None = None
     excludeMailboxOnly: bool | None = Field(None, description='Leave out shared and room mailboxes (the MFA view).')
+    mfaRequired: bool | None = Field(None, description='true = only users an enabled MFA Conditional Access policy '
+                                     'covers; false = only those it does not (the MFA page\'s "no MFA required").')
 
 
 class UserCounts(BaseModel):

@@ -462,6 +462,24 @@
        "title": "Excludemailboxonly"
       },
       "description": "Leave out shared and room mailboxes (the MFA view)."
+     },
+     {
+      "name": "mfaRequired",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "true = only users an enabled MFA Conditional Access policy covers; false = only those it does not (the MFA page's \"no MFA required\").",
+       "title": "Mfarequired"
+      },
+      "description": "true = only users an enabled MFA Conditional Access policy covers; false = only those it does not (the MFA page's \"no MFA required\")."
      }
     ],
     "responses": {
@@ -3970,6 +3988,24 @@
        "title": "Excludemailboxonly"
       },
       "description": "Leave out shared and room mailboxes (the MFA view)."
+     },
+     {
+      "name": "mfaRequired",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "boolean"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "true = only users an enabled MFA Conditional Access policy covers; false = only those it does not (the MFA page's \"no MFA required\").",
+       "title": "Mfarequired"
+      },
+      "description": "true = only users an enabled MFA Conditional Access policy covers; false = only those it does not (the MFA page's \"no MFA required\")."
      },
      {
       "name": "effect",
@@ -9567,6 +9603,18 @@
      "mfa": {
       "$ref": "#/components/schemas/MfaSummary"
      },
+     "mfaRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mfarequired",
+      "description": "An enabled Conditional Access policy in scope requires MFA (the MFA control or an authentication strength, custom ones included). Only set on the MFA view; null elsewhere and when no CA policies were collected."
+     },
      "onPremisesSamAccountName": {
       "anyOf": [
        {
@@ -9736,6 +9784,18 @@
      },
      "mfa": {
       "$ref": "#/components/schemas/MfaSummary"
+     },
+     "mfaRequired": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Mfarequired",
+      "description": "An enabled Conditional Access policy in scope requires MFA (the MFA control or an authentication strength, custom ones included). Only set on the MFA view; null elsewhere and when no CA policies were collected."
      }
     },
     "type": "object",

@@ -118,6 +118,13 @@ const COL = {
   hasApp: { id: 'hasApp', header: 'App', meta: { filter: 'hasApp', noCopy: true }, cell: ({ row }) => <Flag value={row.original.mfa.methods.some((m) => m.startsWith('PhoneApp'))} /> },
   hasPhone: { id: 'hasPhone', header: 'Phone', meta: { filter: 'hasPhone', noCopy: true }, cell: ({ row }) => <Flag value={row.original.mfa.methods.some((m) => m === 'OneWaySms' || m.startsWith('TwoWayVoice'))} /> },
   hasFido: { id: 'hasFido', header: 'FIDO', meta: { filter: 'hasFido', noCopy: true }, cell: ({ row }) => <Flag value={row.original.mfa.fido > 0} /> },
+  mfaRequired: {
+    id: 'mfaRequired',
+    header: 'MFA required',
+    meta: { noCopy: true },
+    // Enforced by a Conditional Access policy / authentication strength — distinct from Registered (methods the user set up).
+    cell: ({ row }) => <Flag value={row.original.mfaRequired} label="Enforced by a Conditional Access policy (authentication strength included)" />,
+  },
   id: { accessorKey: 'id', header: 'Object ID', meta: { className: 'font-mono text-sm' } },
 } satisfies Record<string, Col>
 
@@ -224,17 +231,50 @@ function MfaViews() {
   )
 }
 
+const MFA_REQUIRED: [key: string, label: string][] = [
+  ['', 'Any'],
+  ['true', 'Required'],
+  ['false', 'Not required'],
+]
+
+/** Required = an enabled Conditional Access policy / authentication strength enforces MFA, distinct from Registered. */
+function MfaRequiredFilter() {
+  const { params, set } = useTableParams()
+  const value = params.get('mfaRequired') ?? ''
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground">MFA required</span>
+      <ToggleGroup type="single" variant="outline" size="sm" value={value} onValueChange={(v) => set({ mfaRequired: v || null })} className="w-fit">
+        {MFA_REQUIRED.map(([key, label]) => (
+          <ToggleGroupItem key={key || 'any'} value={key} className="px-3">
+            {label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </div>
+  )
+}
+
 export function MfaPage() {
+  // "MFA required" needs Conditional Access policies; without them the column and filter stay hidden (data-gated).
+  const { data: stats } = useApi('/api/stats')
+  const { params } = useTableParams()
+  const showRequired = (stats?.policies ?? 0) > 0
+  const mfaRequired = params.get('mfaRequired')
+  const columns = showRequired ? MFA_COLUMNS.flatMap((c) => (c.header === 'Registered' ? [c, COL.mfaRequired] : [c])) : MFA_COLUMNS
   return (
     <ListPage
       title="MFA"
-      description="Strong authentication methods registered per user, and the legacy per-user MFA state. Mailbox-only accounts (shared and room mailboxes) are left out. Methods registered through the newer authentication methods policy are not in the dump."
+      description="Strong authentication methods registered per user, and the legacy per-user MFA state. “MFA required” is whether an enabled Conditional Access policy in scope enforces MFA — distinct from the methods a user registered. Mailbox-only accounts (shared and room mailboxes) are left out. Methods registered through the newer authentication methods policy are not in the dump."
     >
-      <MfaViews />
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <MfaViews />
+        {showRequired && <MfaRequiredFilter />}
+      </div>
       <DataTable
         route="/api/users"
-        columns={MFA_COLUMNS}
-        query={{ excludeMailboxOnly: true }}
+        columns={columns}
+        query={{ excludeMailboxOnly: true, mfaRequired: mfaRequired === 'true' ? true : mfaRequired === 'false' ? false : undefined }}
         resource="users"
         searchPlaceholder="Search name, UPN or object ID"
         noun="user"

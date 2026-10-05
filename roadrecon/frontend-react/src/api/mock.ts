@@ -97,6 +97,7 @@ function addUser(displayName: string, upn: string, o: Partial<UserDetail> = {}) 
     dirSyncEnabled: chance(0.55),
     userType: 'Member',
     mfa: mfa(chance(0.7)),
+    mfaRequired: chance(0.65), // intrinsic truth; surfaced only on the MFA view (see listUsers)
     onPremisesSamAccountName: null,
     onPremisesSecurityIdentifier: null,
     createdDateTime: daysAgo(400 + Math.floor(rand() * 1500)),
@@ -114,8 +115,8 @@ function addUser(displayName: string, upn: string, o: Partial<UserDetail> = {}) 
   return u
 }
 
-const breakGlass1 = addUser('Break Glass 01', `bg01@${DOMAIN}`, { dirSyncEnabled: false, department: null, jobTitle: null, mfa: { methods: [], defaultMethod: null, perUserMfa: null, fido: 1, windowsHello: 0 } })
-const breakGlass2 = addUser('Break Glass 02', `bg02@${DOMAIN}`, { dirSyncEnabled: false, department: null, jobTitle: null, mfa: { methods: [], defaultMethod: null, perUserMfa: null, fido: 1, windowsHello: 0 } })
+const breakGlass1 = addUser('Break Glass 01', `bg01@${DOMAIN}`, { dirSyncEnabled: false, department: null, jobTitle: null, mfaRequired: false, mfa: { methods: [], defaultMethod: null, perUserMfa: null, fido: 1, windowsHello: 0 } })
+const breakGlass2 = addUser('Break Glass 02', `bg02@${DOMAIN}`, { dirSyncEnabled: false, department: null, jobTitle: null, mfaRequired: false, mfa: { methods: [], defaultMethod: null, perUserMfa: null, fido: 1, windowsHello: 0 } })
 const syncAccount = addUser('On-Premises Directory Synchronization Service Account', `Sync_DC01_8f2a1c@${DOMAIN}`, { dirSyncEnabled: false, department: null, jobTitle: null, mfa: mfa(false) })
 for (let i = 0; i < 236; i++) {
   const f = pick(FIRST)
@@ -1322,7 +1323,11 @@ function listUsers(q: Q, base = users): Page<UserRow> {
   if (m === 'windowsHello') r = r.filter((u) => u.mfa.windowsHello > 0)
   const pu = q.get('perUserMfa')
   if (pu) r = r.filter((u) => (u.mfa.perUserMfa ?? 'Disabled') === pu)
-  return paginate(r.map(strip), q, (u) => `${u.displayName} ${u.userPrincipalName} ${u.id}`, {
+  // MFA required is only meaningful on the MFA view (excludeMailboxOnly); null elsewhere, matching the backend.
+  const mfaView = !!q.get('excludeMailboxOnly')
+  const mr = q.get('mfaRequired')
+  if (mr) r = r.filter((u) => String(!!u.mfaRequired) === mr)
+  return paginate(r.map(strip).map((u) => ({ ...u, mfaRequired: mfaView ? !!u.mfaRequired : null })), q, (u) => `${u.displayName} ${u.userPrincipalName} ${u.id}`, {
     ...byName,
     userPrincipalName: (u) => u.userPrincipalName.toLowerCase(),
     lastPasswordChangeDateTime: (u) => u.lastPasswordChangeDateTime ?? '',

@@ -197,5 +197,16 @@ def page_users(db: Session, q: UserQuery, within: Select | None = None) -> Page[
     if q.excludeMailboxOnly:
         t = U.cloudMSExchRecipientDisplayType
         stmt = stmt.where(or_(t.is_(None), t.not_in(MAILBOX_ONLY)))
+    # MFA required = in scope of an enabled CA policy that requires MFA. Shown (as a column) only on the MFA view and
+    # only when CA policies were collected; the required-set is computed at most once and reused for filter + column.
+    show_required = bool(q.excludeMailboxOnly) and policies.ca_policies_collected(db)
+    required = policies.mfa_required_users(db) if q.mfaRequired is not None or show_required else None
+    if q.mfaRequired is not None:  # ids are User.objectId (PK, non-null), so NOT IN has no NULL pitfall
+        stmt = stmt.where(U.objectId.in_(required) if q.mfaRequired else U.objectId.not_in(required))
+
+    def build(users):
+        marked = set(db.scalars(select(U.objectId).where(U.objectId.in_([u.objectId for u in users]),
+                                                         U.objectId.in_(required)))) if show_required and users else set()
+        return [UserRow(**_row(u), mfaRequired=(u.objectId in marked) if show_required else None) for u in users]
     return paginate(db, stmt, q, resource='users', search=[U.displayName, U.userPrincipalName, U.objectId],
-                    sorts=SORTS, build=lambda users: [UserRow(**_row(u)) for u in users])
+                    sorts=SORTS, build=build)
