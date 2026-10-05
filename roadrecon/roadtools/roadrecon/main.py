@@ -71,12 +71,6 @@ def main():
                             action='store',
                             help='Database file. Can be the local database name for SQLite, or an SQLAlchemy compatible URL such as postgresql+psycopg2://dirkjan@/roadtools',
                             default='roadrecon.db')
-    gui_parser.add_argument('--debug',
-                            action='store_true',
-                            help='Enable flask debug')
-    gui_parser.add_argument('--profile',
-                            action='store_true',
-                            help='Enable flask profiler')
     gui_parser.add_argument('--host',
                             type=str,
                             action='store',
@@ -87,6 +81,9 @@ def main():
                             action='store',
                             help='HTTP Server port (default=5000)',
                             default=5000)
+    gui_parser.add_argument('--read-only',
+                            action='store_true',
+                            help='Never write to the database (no index creation); for evidence copies')
 
     # Construct plugins module options
     plugin_parser = subparsers.add_parser('plugin', help='Run a ROADrecon plugin')
@@ -134,9 +131,9 @@ def main():
             return
         auth.save_tokens(args)
     elif args.command == 'gui':
-        from roadtools.roadrecon.server import main as servermain
+        from roadtools.roadrecon.api.__main__ import main as guimain
         check_database_exists(args.database)
-        servermain(args)
+        guimain(['-d', args.database, '--host', args.host, '--port', str(args.port)] + (['--read-only'] if args.read_only else []))
     elif args.command == 'gather' or args.command == 'dump':
         from roadtools.roadrecon.gather import main as gathermain
         gathermain(args)

@@ -18,6 +18,8 @@ setup(name='roadrecon',
       packages=[
         'roadtools.roadrecon',
         'roadtools.roadrecon.plugins',
+        'roadtools.roadrecon.api',
+        'roadtools.roadrecon.api.routers',
         'roadtools.roadrecon.dist_gui',
         'roadtools.roadrecon.dist_gui.assets'
       ],
@@ -28,13 +30,9 @@ setup(name='roadrecon',
       },
       install_requires=[
           'roadlib>=1.7',
-          'flask<3',
-          'sqlalchemy>=1.4',
-          'marshmallow<4',
-          'flask-sqlalchemy>=2.5',
-          'flask-marshmallow',
-          'flask-cors',
-          'marshmallow-sqlalchemy>=0.29',
+          'sqlalchemy>=2',
+          'fastapi>=0.115',
+          'uvicorn',
           'aiohttp',
           'openpyxl'
       ],
@@ -44,7 +42,7 @@ setup(name='roadrecon',
       zip_safe=False,
       include_package_data=True,
       entry_points={
-          'console_scripts': ['roadrecon-gui=roadtools.roadrecon.server:main',
+          'console_scripts': ['roadrecon-gui=roadtools.roadrecon.api.__main__:main',
                               'roadrecon=roadtools.roadrecon.main:main']
       }
       )

@@ -1,16 +1,20 @@
-# Dev environment for the new GUI. Nothing is installed on the host.
-#   podman compose --profile backend up     api on :8000 (internal), web on http://127.0.0.1:5173
+# ROADrecon GUI. Nothing is installed on the host.
+# Database: $ROADRECON_DB, relative to roadrecon/ (default .dev/roadrecon.db).
+#   podman compose up                       build the frontend, serve GUI + API on http://127.0.0.1:5000
+#   podman compose up api web               dev profile: api on :8000 (internal, --reload), Vite on http://127.0.0.1:5173
 #   VITE_MOCK=1 podman compose up web       frontend on mock data only
+#   podman compose up legacy                legacy profile: old Flask GUI on the same DB, http://127.0.0.1:5001
 #   podman compose run --rm py pytest roadrecon/tests -q
 #   podman compose run --rm node npm run build
 # Worktree agents: podman compose -p rr-<worktree> run --rm py|node ...
+x-db: &db /src/roadrecon/${ROADRECON_DB:-.dev/roadrecon.db}
 x-py: &py
   image: localhost/roadrecon-dev-py
   build: { context: ., dockerfile: Containerfile }
   volumes: ["..:/src:z"]
   working_dir: /src
   environment:
-    ROADRECON_DB: /src/roadrecon/.dev/roadrecon.db
+    ROADRECON_DB: *db
 x-node: &node
   image: docker.io/library/node:22
   working_dir: /src/roadrecon/frontend-react
@@ -19,13 +23,21 @@ x-node: &node
     - "node_modules:/src/roadrecon/frontend-react/node_modules"
     - "npm-cache:/root/.npm"
 services:
+  gui-build:
+    <<: *node
+    command: sh -c "npm ci && npm run build"
+  gui:
+    <<: *py
+    command: [python, -m, roadtools.roadrecon.api, -d, *db, --host, 0.0.0.0, --port, "5000"]
+    depends_on: { gui-build: { condition: service_completed_successfully } }
+    ports: ["127.0.0.1:5000:5000"]
   api:
     <<: *py
     command: >-
       uvicorn roadtools.roadrecon.api.app:create_app --factory --reload
       --reload-dir /src/roadrecon/roadtools --reload-dir /src/roadlib/roadtools
       --host 0.0.0.0 --port 8000
-    profiles: [backend]
+    profiles: [dev]
   web:
     <<: *node
     command: sh -c "npm ci && npx vite --host 0.0.0.0"
@@ -33,6 +45,27 @@ services:
       API_URL: http://api:8000
       VITE_MOCK: ${VITE_MOCK:-0}
     ports: ["127.0.0.1:5173:5173"]
+    profiles: [dev]
+  # Old Angular GUI, built outside dist_gui (which holds the new one) with the Node it supports
+  legacy-build:
+    <<: *node
+    image: docker.io/library/node:16
+    working_dir: /src/roadrecon/frontend
+    volumes:
+      - "..:/src:z"
+      - "legacy-node_modules:/src/roadrecon/frontend/node_modules"
+      - "legacy-gui:/legacy"
+      - "npm-cache:/root/.npm"
+    command: sh -c "npm ci && npx ng build --configuration production --output-path /legacy/gui"
+    profiles: [legacy]
+  legacy:
+    <<: *py
+    command: [python, -m, roadtools.roadrecon.server, -d, *db, --host, 0.0.0.0, --port, "5001"]
+    volumes: ["..:/src:z", "legacy-gui:/legacy"]
+    environment: { ROADRECON_LEGACY_GUI: /legacy/gui }
+    depends_on: { legacy-build: { condition: service_completed_successfully } }
+    ports: ["127.0.0.1:5001:5001"]
+    profiles: [legacy]
   py:
     <<: *py
     profiles: [tools]
@@ -42,3 +75,5 @@ services:
 volumes:
   node_modules: {}
   npm-cache: { name: roadrecon-npm-cache }
+  legacy-node_modules: {}
+  legacy-gui: {}

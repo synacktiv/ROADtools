@@ -145,16 +145,21 @@ jobs:
     inputs:
       versionSpec: '3.11'
     displayName: 'Use Python 3.11'
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '22.x'
+    displayName: 'Use Node 22'
+
   - task: Npm@1
     inputs:
-      command: 'install'
-      workingDir: 'roadrecon/frontend/'
+      command: 'ci'
+      workingDir: 'roadrecon/frontend-react/'
 
   - task: Npm@1
     inputs:
       command: 'custom'
-      workingDir: 'roadrecon/frontend/'
-      customCommand: 'run build -- --configuration production'
+      workingDir: 'roadrecon/frontend-react/'
+      customCommand: 'run build'
 
   - script: |
       pip install --upgrade setuptools wheel build
