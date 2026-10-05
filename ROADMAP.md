@@ -155,6 +155,10 @@ New features
   - expandable rows that show the users assigned the role;
   - a column with how many holders are not cloud only (synced from on-premises).
 - [ ] Animations on the dashboard and on page loading (relaxes design principle 5, "motion only answers an action"; honour `prefers-reduced-motion`)
+- [ ] SQL query page:
+  - direct SQL against the database, with autosuggest (tables, columns) and built-in queries to choose from;
+  - results in a `DataTable`, with one-click CSV export;
+  - run on a separate read-only connection (`PRAGMA query_only`), with a row cap and a timeout.
 
 ## Phase 6 — Switch
 - [ ] `roadrecon gui` / `roadrecon-gui` → `roadtools.roadrecon.api.__main__` (keep `-d`, `--host`, `--port`)
