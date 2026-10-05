@@ -374,12 +374,14 @@ def _side(crits: list[dict], name: str, active_only: bool = False) -> Select | N
     return union(*parts) if parts else None
 
 
-def _scope(det: dict, effect: str = 'applies') -> Select:
-    """One-column select of the user ids in scope (`applies`), or included but excluded (`excluded`)."""
+def _scope(det: dict, effect: str = 'applies', tag: str = '') -> Select:
+    """One-column select of the user ids in scope (`applies`), or included but excluded (`excluded`).
+
+    `tag` suffixes the CTE names so several scopes can be combined in one statement (see mfa_required_users)."""
     cond = det.get('Conditions') or {}
-    inc = _side(_crits(cond, 'Users', 'Include'), 'scope_include')
+    inc = _side(_crits(cond, 'Users', 'Include'), 'scope_include' + tag)
     # An eligible (not activated) role does not exclude: CA only sees active role assignments.
-    exc = _side(_crits(cond, 'Users', 'Exclude'), 'scope_exclude', active_only=True)
+    exc = _side(_crits(cond, 'Users', 'Exclude'), 'scope_exclude' + tag, active_only=True)
     if inc is None:
         return select(U.objectId).where(false())
     stmt = ALL_USERS if inc is ALL_USERS else select(U.objectId).where(U.objectId.in_(inc))
@@ -389,6 +391,19 @@ def _scope(det: dict, effect: str = 'applies') -> Select:
         return stmt.where(U.objectId.in_(exc))
     sq = exc.subquery()
     return stmt.where(U.objectId.not_in(select(sq.c[0]).where(sq.c[0].isnot(None))))  # NOT IN + NULL = nothing
+
+
+def ca_policies_collected(db: Session) -> bool:
+    """Whether Conditional Access policies (policyType 18) were collected at all (the feature's data gate)."""
+    return db.scalar(select(d.Policy.objectId).where(d.Policy.policyType == 18).limit(1)) is not None
+
+
+def mfa_required_users(db: Session) -> Select:
+    """One-column select of the user ids an ENABLED Conditional Access policy requiring MFA puts in scope (the union
+    of `_scope` over those policies). Empty select when there is no such policy, including a dump with no CA policies."""
+    scopes = [_scope(det, tag=f'_m{i}') for i, (_p, det, row) in enumerate(_policies(db))
+              if row.state == 'enabled' and row.requiresMfa]
+    return union(*scopes) if scopes else select(U.objectId).where(false())
 
 
 # --- Matches -------------------------------------------------------------------

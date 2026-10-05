@@ -7,6 +7,7 @@ from roadtools.roadlib.metadef import database as d
 from roadtools.roadrecon.api.app import create_app
 from roadtools.roadrecon.api.common import mfa_summary
 from roadtools.roadrecon.api.models import ObjectRef, Page, UserDetail, UserQuery, UserRow
+from roadtools.roadrecon.api.routers import policies as pol
 from roadtools.roadrecon.api.routers.users import page_users
 
 
@@ -138,6 +139,32 @@ def test_advanced_filters(client, users):
     assert ids(client, filter=['department:in:IT', 'userType:in:Guest'], match='any') == \
         where(users, lambda u, m: u.department == 'IT' or u.userType == 'Guest')
     assert client.get('/api/users', params={'filter': 'mfaMethod:contains:x'}).status_code == 422
+
+
+def test_mfa_required(client, db, users):
+    """MFA required = in scope of an enabled CA policy requiring MFA. Shown only on the MFA view, filterable."""
+    required = set(db.scalars(pol.mfa_required_users(db)))
+    assert required and required != set(users)  # gendb has both covered and uncovered users
+    rows = get(client, excludeMailboxOnly=True).items
+    view = {r.id for r in rows}
+    assert rows and all(r.mfaRequired is not None for r in rows)  # populated on the MFA view
+    assert {r.id for r in rows if r.mfaRequired} == required & view
+    assert ids(client, excludeMailboxOnly=True, mfaRequired=True) == required & view
+    assert ids(client, excludeMailboxOnly=True, mfaRequired=False) == view - required
+    # The custom-strength MFA policy (resolved) puts its in-scope users into the required set.
+    p = next(p for p in client.get('/api/policies').json()['items'] if p['displayName'] == 'Protect security info registration')
+    custom = {u['id'] for u in client.get(f"/api/policies/{p['id']}/users").json()['items']}
+    assert custom and custom <= required
+    # The normal users list does not compute or carry it.
+    assert all(r.mfaRequired is None for r in get(client).items)
+
+
+def test_mfa_required_not_collected(odd_client):
+    """No Conditional Access policies collected: no column (mfaRequired null), filter matches nobody as required."""
+    rows = get(odd_client, excludeMailboxOnly=True).items
+    assert rows and all(r.mfaRequired is None for r in rows)
+    assert ids(odd_client, excludeMailboxOnly=True, mfaRequired=True) == set()
+    assert ids(odd_client, excludeMailboxOnly=True, mfaRequired=False) == {r.id for r in rows}
 
 
 def test_filter_catalogue(client):

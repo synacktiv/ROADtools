@@ -2317,6 +2317,11 @@ export interface components {
              */
             userType: "Member" | "Guest";
             mfa: components["schemas"]["MfaSummary"];
+            /**
+             * Mfarequired
+             * @description An enabled Conditional Access policy in scope requires MFA (the MFA control or an authentication strength, custom ones included). Only set on the MFA view; null elsewhere and when no CA policies were collected.
+             */
+            mfaRequired?: boolean | null;
             /** Onpremisessamaccountname */
             onPremisesSamAccountName?: string | null;
             /** Onpremisessecurityidentifier */
@@ -2359,6 +2364,11 @@ export interface components {
              */
             userType: "Member" | "Guest";
             mfa: components["schemas"]["MfaSummary"];
+            /**
+             * Mfarequired
+             * @description An enabled Conditional Access policy in scope requires MFA (the MFA control or an authentication strength, custom ones included). Only set on the MFA view; null elsewhere and when no CA policies were collected.
+             */
+            mfaRequired?: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2513,6 +2523,8 @@ export interface operations {
                 perUserMfa?: ("Enabled" | "Enforced" | "Disabled") | null;
                 /** @description Leave out shared and room mailboxes (the MFA view). */
                 excludeMailboxOnly?: boolean | null;
+                /** @description true = only users an enabled MFA Conditional Access policy covers; false = only those it does not (the MFA page's "no MFA required"). */
+                mfaRequired?: boolean | null;
             };
             header?: never;
             path?: never;
@@ -3486,6 +3498,8 @@ export interface operations {
                 perUserMfa?: ("Enabled" | "Enforced" | "Disabled") | null;
                 /** @description Leave out shared and room mailboxes (the MFA view). */
                 excludeMailboxOnly?: boolean | null;
+                /** @description true = only users an enabled MFA Conditional Access policy covers; false = only those it does not (the MFA page's "no MFA required"). */
+                mfaRequired?: boolean | null;
                 effect?: ("applies" | "excluded") | null;
             };
             header?: never;
