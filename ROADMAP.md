@@ -179,17 +179,18 @@ New features
 
 ## Phase 7 — Device compliance settings (new collection)
 The original collector does not gather Intune compliance data. Collect it, then show it on a new page.
-- [ ] Collector: `roadrecon compliancegather` (alias `compliancedump`), in its own module like `pimgather.py` / `iggather.py`, also called by `gatherall`. It uses MS Graph, because AAD Graph has no Intune endpoints.
+- [x] Collector: `roadrecon compliancegather` (alias `compliancedump`), in its own module like `pimgather.py` / `iggather.py`, also called by `gatherall`. It uses MS Graph, because AAD Graph has no Intune endpoints.
   - tenant compliance settings: `GET /deviceManagement?$select=settings`. Covers "mark devices with no compliance policy as", the check-in threshold in days, and enhanced jailbreak detection;
   - compliance policies with their assignments: `GET /deviceManagement/deviceCompliancePolicies?$expand=assignments,scheduledActionsForRule($expand=scheduledActionConfigurations)`. Store the platform from `@odata.type` and the raw settings as JSON.
 - [x] Tables in `roadlib/metadef/database.py` (`DeviceManagementSettings`, `DeviceCompliancePolicys`, `DeviceCompliancePolicyAssignments`), added, never altered. A DB without them gives empty results, not errors, and the API reports that compliance data is absent (see the conventions).
-- [ ] API: `/api/device-compliance` (settings + policy list, `Page[T]`) and `/api/device-compliance/{id}` (settings by platform, assignments as `ObjectRef` to groups or all users / all devices, actions for non-compliance). Add to openapi.json and `schema.d.ts`, with tests on gendb data.
-- [ ] gendb: settings and a few policies per platform.
-- [ ] Frontend: a "Device compliance" page in the sidebar, shown only when compliance data was collected. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
+- [x] API: `/api/device-compliance` (settings + policy list, `Page[T]`) and `/api/device-compliance/{id}` (settings by platform, assignments as `ObjectRef` to groups or all users / all devices, actions for non-compliance). Add to openapi.json and `schema.d.ts`, with tests on gendb data.
+- [x] gendb: settings and a few policies per platform.
+- [x] Frontend: a "Device compliance" page in the sidebar, shown only when compliance data was collected. Tenant settings card on top (a no-policy device marked compliant shows as `regulatory`), then a `DataTable` of policies (platform, assigned groups, grace period). The detail page has a two-pane layout and a Raw tab.
 - [ ] Device page: compliance policies that target the device's owner groups or member groups (later; needs the assignments first).
 - Open questions:
   - token: which first-party client has `DeviceManagementConfiguration.Read.All` without consent? Candidate: Microsoft Intune PowerShell `d1ddf0e4-d672-4dae-b554-9d5bdfd93547`.
-  - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall`.
+  - a tenant without an Intune licence returns 400 or 403: log it and skip, never fail `gatherall` (done: any non-200 is logged and skipped).
+  - `gatherall` uses an Azure CLI token, which lacks the scope: in practice compliance data needs a separate `compliancegather` run with an Intune-capable token.
 
 ## Phase 8 — Authentication strengths
 Today the policies show authentication strength ids as unresolved references (only the three built-in ids are known, in the old `policies` plugin).
