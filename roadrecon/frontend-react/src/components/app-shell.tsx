@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router'
 import { useTheme } from 'next-themes'
 import { type Icon, IconFingerprint, IconKey, IconLayoutDashboard, IconMoon, IconSearch, IconSun, IconTerminal2, IconTicket } from '@tabler/icons-react'
@@ -20,6 +20,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/components/ui/kbd'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { CommandDialog, Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { ObjectLink, TYPE_LABEL, TypeGlyph, objectHref } from '@/components/object-link'
 import { useApi } from '@/api/client'
@@ -129,7 +130,10 @@ export function AppShell() {
         </header>
         {/* Keyed by path: each page fades in once when opened, not on filter or tab changes. */}
         <div key={pathname} className="min-w-0 px-6 py-6 motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300">
-          <Outlet />
+          {/* Pages are lazy chunks (main.tsx). */}
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <Outlet />
+          </Suspense>
         </div>
       </SidebarInset>
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />

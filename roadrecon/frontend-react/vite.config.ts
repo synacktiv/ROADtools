@@ -14,7 +14,8 @@ export default defineConfig({
     // emptyOutDir also deletes the .gitkeep files that keep dist_gui in git
     { name: 'gitkeep', apply: 'build', closeBundle: () => ['', '/assets'].forEach((d) => writeFileSync(`${outDir}${d}/.gitkeep`, '')) },
   ],
-  build: { outDir, emptyOutDir: true },
+  // The world map chunk (~1.2 MB of SVG paths, named location pages only) is the one large chunk.
+  build: { outDir, emptyOutDir: true, chunkSizeWarningLimit: 1300 },
   resolve: { alias: { '@': path.resolve(import.meta.dirname, './src') } },
   server: {
     proxy: { '/api': process.env.API_URL ?? 'http://127.0.0.1:8000' },

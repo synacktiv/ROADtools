@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Link, useParams } from 'react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { IconAlertTriangle, IconArrowRight, IconCircleFilled, IconCircleHalf2, IconMinus, IconNetwork, IconShieldCheck, IconWorld } from '@tabler/icons-react'
@@ -9,7 +10,6 @@ import { DataTable } from '@/components/data-table'
 import { ObjectLink } from '@/components/object-link'
 import { ObjectPage } from '@/components/object-page'
 import { PolicyStateBadge, flag } from '@/components/badges'
-import { NamedLocationMap, NamedLocationsOverviewMap } from '@/components/world-map'
 import { PolicyFlow } from '@/components/policy-flow'
 import { IconText, PolicyMatchList, SessionControls, grantSummary } from '@/components/policy-match-list'
 import { Dash, ListPage, orDash, toRef } from '@/components/page-parts'
@@ -18,6 +18,12 @@ import { useApi } from '@/api/client'
 import type { NamedLocationRow, PolicyQuery, PolicyRow } from '@/api/types'
 import { fmtDate, fmtNumber } from '@/lib/format'
 import { useSetCrumb } from '@/lib/crumb'
+
+// The world map data is ~1 MB: its own chunk, fetched only by the named location pages.
+const worldMap = () => import('@/components/world-map')
+const NamedLocationMap = lazy(() => worldMap().then((m) => ({ default: m.NamedLocationMap })))
+const NamedLocationsOverviewMap = lazy(() => worldMap().then((m) => ({ default: m.NamedLocationsOverviewMap })))
+const mapFallback = <Skeleton className="h-64 w-full" />
 import { cn } from '@/lib/utils'
 
 /** All vs selected scope: a full disc for everyone, a half disc for a selection. */
@@ -306,7 +312,9 @@ export function NamedLocationsPage() {
         {/* The map sizes itself to max-w-4xl; capped here so the table stays above the fold. */}
         {data && (
           <div>
-            <NamedLocationsOverviewMap locations={data.items} size="md" />
+            <Suspense fallback={mapFallback}>
+              <NamedLocationsOverviewMap locations={data.items} size="md" />
+            </Suspense>
           </div>
         )}
         <DataTable route="/api/named-locations" columns={locationColumns} resource="named-locations" noun="named location" defaultSort={{ sort: 'displayName', order: 'asc' }} />
@@ -326,7 +334,11 @@ export function NamedLocationPage() {
       loading={isLoading}
       error={error}
       badges={l?.trusted && <TrustedBadge />}
-      aside={l && <NamedLocationMap location={l} />}
+      aside={l && (
+        <Suspense fallback={mapFallback}>
+          <NamedLocationMap location={l} />
+        </Suspense>
+      )}
       raw={l?.raw}
       summary={l && [
         ['Kind', <Kind key="k" kind={l.kind} />],
