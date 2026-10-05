@@ -64,9 +64,9 @@ export const sessionIcon = (text: string) => pick(SESSION_ICONS, text, IconAdjus
 /** Icon in front of a short label. */
 export function IconText({ icon: I, children, className }: { icon: Icon; children: React.ReactNode; className?: string }) {
   return (
-    <span className={cn('inline-flex min-w-0 items-start gap-1.5', className)}>
+    <span className={cn('inline-flex max-w-full min-w-0 items-start gap-1.5', className)}>
       <I className="mt-[0.2em] size-4 shrink-0 text-muted-foreground" stroke={1.75} aria-hidden />
-      <span>{children}</span>
+      <span className="min-w-0 break-words">{children}</span>
     </span>
   )
 }
@@ -81,10 +81,10 @@ export function BlockMark({ label = 'Block' }: { label?: string }) {
   )
 }
 
-/** Keywords (All users, All resources, Any location) are scopes, not objects: a chip, never a link. */
+/** Keywords (All users, All resources, Any location) are scopes, not objects: a chip, never a link. Long ones (guest types) wrap inside it. */
 export function KeywordChip({ children }: { children: React.ReactNode }) {
   return (
-    <Badge variant="outline" className="h-6 rounded-md px-2 text-sm font-medium">
+    <Badge variant="outline" className="inline-block h-auto min-h-6 max-w-full min-w-0 shrink rounded-md px-2 py-px text-sm font-medium whitespace-normal break-words">
       {children}
     </Badge>
   )
@@ -93,7 +93,7 @@ export function KeywordChip({ children }: { children: React.ReactNode }) {
 /** One reference inside a policy: keyword chip, plain value, or object link. */
 export function PolicyRef({ value, icon, wrap }: { value: ObjectRef; icon?: (text: string) => Icon; wrap?: boolean }) {
   if (value.type === 'keyword') return <KeywordChip>{value.displayName}</KeywordChip>
-  if (value.type === 'value') return icon ? <IconText icon={icon(value.displayName)}>{value.displayName}</IconText> : <span className="text-pretty">{value.displayName}</span>
+  if (value.type === 'value') return icon ? <IconText icon={icon(value.displayName)}>{value.displayName}</IconText> : <span className="min-w-0 text-pretty break-words">{value.displayName}</span>
   return <ObjectLink value={value} wrap={wrap} className="max-w-full" />
 }
 

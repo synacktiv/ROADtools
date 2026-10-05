@@ -99,7 +99,7 @@ export function ObjectLink({ value, sub, wrap, className }: ObjectLinkProps) {
   const content = (
     <>
       <TypeGlyph type={value.type} className="text-muted-foreground" />
-      <span data-copy className={wrap ? 'break-words' : 'min-w-0 truncate'}>{value.displayName}</span>
+      <span data-copy className={cn('min-w-0', wrap ? 'break-words' : 'truncate')}>{value.displayName}</span>
       {sub && value.sub && <span className="min-w-0 shrink-[4] truncate text-muted-foreground">{value.sub}</span>}
     </>
   )
