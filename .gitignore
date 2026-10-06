@@ -29,3 +29,8 @@ roadlib/roadtools/roadlib/*.xml
 # Its build output (npm run build), served by roadtools.roadrecon.api
 roadrecon/roadtools/roadrecon/dist_gui/*
 !roadrecon/roadtools/roadrecon/dist_gui/.gitkeep
+.claude/
+CLAUDE.md
+CONTEXT.md
+ROADMAP.md
+venv/
