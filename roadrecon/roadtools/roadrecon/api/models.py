@@ -596,6 +596,14 @@ class AccessPackagePolicyQuery(PageQuery):
 PolicyState = Literal['enabled', 'reporting', 'disabled']
 
 
+class WhatIfMatch(BaseModel):
+    """How one policy evaluates against the sign-in described by a WhatIfQuery."""
+    result: Literal['applies', 'mayApply']
+    dependsOn: list[str] = Field(description='Conditions that could not be decided (mayApply): not set in the check, '
+                                 'not evaluated from the dump (device filter, app bundles) or approximate '
+                                 '(guest type from userType, eligible role).')
+
+
 class PolicyRow(BaseModel):
     id: str
     displayName: str
@@ -615,9 +623,40 @@ class PolicyRow(BaseModel):
     sessionControls: list[str]
     modifiedDateTime: str | None
     parseError: str | None
+    whatIf: WhatIfMatch | None = Field(None, description='Set only when the list is filtered by a sign-in check.')
 
 
-class PolicyQuery(PageQuery):
+class WhatIfQuery(BaseModel):
+    """A sign-in to evaluate the policies against. A condition left unset can take any value."""
+    identity: str | None = Field(None, description='objectId of the user or workload identity (service principal).')
+    resource: str | None = Field(None, description='appId, a user action (`urn:user:registersecurityinfo`, '
+                                 '`urn:user:registerdevice`) or an authentication context (`c1`..`c99`).')
+    location: str | None = Field(None, description='objectId of a named location, or `other` for none of them.')
+    platform: Literal['android', 'ios', 'windows', 'windowsphone', 'macos', 'linux'] | None = None
+    clientApp: Literal['browser', 'native', 'eas', 'other'] | None = Field(
+        None, description='Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients.')
+    signInRisk: Literal['none', 'low', 'medium', 'high'] | None = None
+    userRisk: Literal['none', 'low', 'medium', 'high'] | None = None
+    authFlow: Literal['none', 'deviceCodeFlow', 'authenticationTransfer'] | None = None
+
+
+class WhatIfResult(BaseModel):
+    """Outcome of the enabled policies for a sign-in. Report-only policies are counted, never enforced."""
+    identity: ObjectRef | None
+    resource: ObjectRef | None
+    block: bool
+    requiresMfa: bool
+    grant: list[str] = Field(description='Grant controls of the applying policies; each policy must be satisfied.')
+    sessionControls: list[str]
+    mayBlock: bool = Field(description='A policy that may apply blocks.')
+    mayRequireMfa: bool = Field(description='A policy that may apply requires MFA.')
+    dependsOn: list[str] = Field(description='Conditions the policies that may apply depend on.')
+    applies: int
+    mayApply: int
+    reportOnly: int = Field(description='Report-only policies that apply or may apply.')
+
+
+class PolicyQuery(PageQuery, WhatIfQuery):
     state: PolicyState | None = None
     block: bool | None = None
 
@@ -801,6 +840,10 @@ class Tenant(BaseModel):
     displayName: str
     tenantId: str
     dirSyncEnabled: bool | None
+    license: Literal['Free', 'P1', 'P2'] | None = Field(description='Entra ID tier from the active service plans (assignedPlans).')
+    securityDefaults: bool | None = Field(description='From the policyType-10 policy; null when it is not in the dump.')
+    seamlessSso: bool | None = Field(description='Seamless SSO (DesktopSSO), from the policyType-8 policy; null when it is not in the dump.')
+    seamlessSsoDomains: list[str] = Field(description='On-premises AD domains holding an AZUREADSSOACC account.')
     domains: list[Domain]
     authorizationPolicy: AuthorizationPolicySummary | None
     directorySettings: list[DirectorySettingSummary]

@@ -3414,8 +3414,176 @@
      "policies"
     ],
     "summary": "List Policies",
+    "description": "All policies, or with any sign-in check parameter only those that apply or may apply to that sign-in.",
     "operationId": "list_policies_api_policies_get",
     "parameters": [
+     {
+      "name": "identity",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "objectId of the user or workload identity (service principal).",
+       "title": "Identity"
+      },
+      "description": "objectId of the user or workload identity (service principal)."
+     },
+     {
+      "name": "resource",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "appId, a user action (`urn:user:registersecurityinfo`, `urn:user:registerdevice`) or an authentication context (`c1`..`c99`).",
+       "title": "Resource"
+      },
+      "description": "appId, a user action (`urn:user:registersecurityinfo`, `urn:user:registerdevice`) or an authentication context (`c1`..`c99`)."
+     },
+     {
+      "name": "location",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "objectId of a named location, or `other` for none of them.",
+       "title": "Location"
+      },
+      "description": "objectId of a named location, or `other` for none of them."
+     },
+     {
+      "name": "platform",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "android",
+          "ios",
+          "windows",
+          "windowsphone",
+          "macos",
+          "linux"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Platform"
+      }
+     },
+     {
+      "name": "clientApp",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "browser",
+          "native",
+          "eas",
+          "other"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients.",
+       "title": "Clientapp"
+      },
+      "description": "Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients."
+     },
+     {
+      "name": "signInRisk",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "low",
+          "medium",
+          "high"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Signinrisk"
+      }
+     },
+     {
+      "name": "userRisk",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "low",
+          "medium",
+          "high"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Userrisk"
+      }
+     },
+     {
+      "name": "authFlow",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "deviceCodeFlow",
+          "authenticationTransfer"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authflow"
+      }
+     },
      {
       "name": "page",
       "in": "query",
@@ -3561,6 +3729,207 @@
        "application/json": {
         "schema": {
          "$ref": "#/components/schemas/Page_PolicyRow_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/policies/what-if": {
+   "get": {
+    "tags": [
+     "policies"
+    ],
+    "summary": "Policies What If",
+    "description": "What the enabled policies enforce on a sign-in. The matching policies are `/api/policies` with the same query.",
+    "operationId": "policies_what_if_api_policies_what_if_get",
+    "parameters": [
+     {
+      "name": "identity",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "objectId of the user or workload identity (service principal).",
+       "title": "Identity"
+      },
+      "description": "objectId of the user or workload identity (service principal)."
+     },
+     {
+      "name": "resource",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "appId, a user action (`urn:user:registersecurityinfo`, `urn:user:registerdevice`) or an authentication context (`c1`..`c99`).",
+       "title": "Resource"
+      },
+      "description": "appId, a user action (`urn:user:registersecurityinfo`, `urn:user:registerdevice`) or an authentication context (`c1`..`c99`)."
+     },
+     {
+      "name": "location",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "objectId of a named location, or `other` for none of them.",
+       "title": "Location"
+      },
+      "description": "objectId of a named location, or `other` for none of them."
+     },
+     {
+      "name": "platform",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "android",
+          "ios",
+          "windows",
+          "windowsphone",
+          "macos",
+          "linux"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Platform"
+      }
+     },
+     {
+      "name": "clientApp",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "browser",
+          "native",
+          "eas",
+          "other"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "description": "Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients.",
+       "title": "Clientapp"
+      },
+      "description": "Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients."
+     },
+     {
+      "name": "signInRisk",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "low",
+          "medium",
+          "high"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Signinrisk"
+      }
+     },
+     {
+      "name": "userRisk",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "low",
+          "medium",
+          "high"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Userrisk"
+      }
+     },
+     {
+      "name": "authFlow",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "enum": [
+          "none",
+          "deviceCodeFlow",
+          "authenticationTransfer"
+         ],
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Authflow"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WhatIfResult"
         }
        }
       }
@@ -8151,6 +8520,17 @@
       ],
       "title": "Parseerror"
      },
+     "whatIf": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/WhatIfMatch"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Set only when the list is filtered by a sign-in check."
+     },
      "who": {
       "items": {
        "$ref": "#/components/schemas/Condition"
@@ -8355,6 +8735,17 @@
        }
       ],
       "title": "Parseerror"
+     },
+     "whatIf": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/WhatIfMatch"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Set only when the list is filtered by a sign-in check."
      }
     },
     "type": "object",
@@ -9393,6 +9784,55 @@
       ],
       "title": "Dirsyncenabled"
      },
+     "license": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "Free",
+         "P1",
+         "P2"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "License",
+      "description": "Entra ID tier from the active service plans (assignedPlans)."
+     },
+     "securityDefaults": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Securitydefaults",
+      "description": "From the policyType-10 policy; null when it is not in the dump."
+     },
+     "seamlessSso": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seamlesssso",
+      "description": "Seamless SSO (DesktopSSO), from the policyType-8 policy; null when it is not in the dump."
+     },
+     "seamlessSsoDomains": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Seamlessssodomains",
+      "description": "On-premises AD domains holding an AZUREADSSOACC account."
+     },
      "domains": {
       "items": {
        "$ref": "#/components/schemas/Domain"
@@ -9428,6 +9868,10 @@
      "displayName",
      "tenantId",
      "dirSyncEnabled",
+     "license",
+     "securityDefaults",
+     "seamlessSso",
+     "seamlessSsoDomains",
      "domains",
      "authorizationPolicy",
      "directorySettings",
@@ -9854,6 +10298,128 @@
      "type"
     ],
     "title": "ValidationError"
+   },
+   "WhatIfMatch": {
+    "properties": {
+     "result": {
+      "type": "string",
+      "enum": [
+       "applies",
+       "mayApply"
+      ],
+      "title": "Result"
+     },
+     "dependsOn": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dependson",
+      "description": "Conditions that could not be decided (mayApply): not set in the check, not evaluated from the dump (device filter, app bundles) or approximate (guest type from userType, eligible role)."
+     }
+    },
+    "type": "object",
+    "required": [
+     "result",
+     "dependsOn"
+    ],
+    "title": "WhatIfMatch",
+    "description": "How one policy evaluates against the sign-in described by a WhatIfQuery."
+   },
+   "WhatIfResult": {
+    "properties": {
+     "identity": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "resource": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/ObjectRef"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "block": {
+      "type": "boolean",
+      "title": "Block"
+     },
+     "requiresMfa": {
+      "type": "boolean",
+      "title": "Requiresmfa"
+     },
+     "grant": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Grant",
+      "description": "Grant controls of the applying policies; each policy must be satisfied."
+     },
+     "sessionControls": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Sessioncontrols"
+     },
+     "mayBlock": {
+      "type": "boolean",
+      "title": "Mayblock",
+      "description": "A policy that may apply blocks."
+     },
+     "mayRequireMfa": {
+      "type": "boolean",
+      "title": "Mayrequiremfa",
+      "description": "A policy that may apply requires MFA."
+     },
+     "dependsOn": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Dependson",
+      "description": "Conditions the policies that may apply depend on."
+     },
+     "applies": {
+      "type": "integer",
+      "title": "Applies"
+     },
+     "mayApply": {
+      "type": "integer",
+      "title": "Mayapply"
+     },
+     "reportOnly": {
+      "type": "integer",
+      "title": "Reportonly",
+      "description": "Report-only policies that apply or may apply."
+     }
+    },
+    "type": "object",
+    "required": [
+     "identity",
+     "resource",
+     "block",
+     "requiresMfa",
+     "grant",
+     "sessionControls",
+     "mayBlock",
+     "mayRequireMfa",
+     "dependsOn",
+     "applies",
+     "mayApply",
+     "reportOnly"
+    ],
+    "title": "WhatIfResult",
+    "description": "Outcome of the enabled policies for a sign-in. Report-only policies are counted, never enforced."
    }
   }
  }

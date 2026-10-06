@@ -931,6 +931,10 @@ const tenant: Tenant = {
   displayName: 'Halvorsen Maritime',
   tenantId: TENANT_ID,
   dirSyncEnabled: true,
+  license: 'P2',
+  securityDefaults: false,
+  seamlessSso: true,
+  seamlessSsoDomains: ['corp.halvorsen.local'],
   domains: [
     { name: DOMAIN, type: 'Managed', capabilities: ['Email', 'OfficeCommunicationsOnline'], isDefault: true, isInitial: false },
     { name: 'halvorsenmaritime.onmicrosoft.com', type: 'Managed', capabilities: ['Email', 'OfficeCommunicationsOnline'], isDefault: false, isInitial: true },

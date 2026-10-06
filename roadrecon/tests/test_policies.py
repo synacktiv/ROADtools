@@ -408,3 +408,70 @@ def test_eligible_only_exclusion_does_not_win():
     act = [MatchReason(condition='Directory roles', via=[], approximate=False, eligibleOnly=False)]
     assert _match(row, inc, elig).effect == 'included'
     assert _match(row, inc, act).effect == 'excluded'
+
+
+# --- Sign-in check (what if) -------------------------------------------------------------
+
+def _eval(conditions, loc=None, microsoft=False, **q):
+    from roadtools.roadrecon.api.models import PolicyRow, WhatIfQuery
+    row = PolicyRow(id='p', displayName='p', state='enabled', targetsAllUsers=False, targetsAllApps=False, block=False,
+                    grant=[], grantOperator='OR', requiresMfa=False, mfaApproximate=False, sessionControls=[],
+                    modifiedDateTime=None, parseError=None)
+    s = {'q': WhatIfQuery(identity='u', **q), 'matches': {'p': pol._match(row, [pol._reason('Users')], [])},
+         'microsoft': microsoft, 'location': loc}
+    return pol._evaluate({'Conditions': conditions}, row, s)
+
+
+def test_what_if_conditions():
+    plat = {'DevicePlatforms': {'Include': [{'DevicePlatforms': ['All']}], 'Exclude': [{'DevicePlatforms': ['iOS']}]}}
+    assert _eval(plat, platform='ios')[0] is False
+    assert _eval(plat, platform='windows') == (True, [])
+    assert _eval(plat) == (None, ['Device platforms'])  # unset: an excluded platform keeps it undecided
+
+    locs = {'Locations': {'Include': [{'Locations': ['All']}], 'Exclude': [{'Locations': ['AllTrusted']}]}}
+    assert _eval(locs, loc=('k', True), location='x')[0] is False
+    assert _eval(locs, location='other')[0] is True
+    named = {'Locations': {'Include': [{'Locations': ['k']}]}}
+    assert _eval(named, loc=('k', False), location='x')[0] is True
+
+    action = {'Applications': {'Include': [{'Acrs': ['urn:user:registersecurityinfo']}]}}
+    assert _eval(action, resource='urn:user:registersecurityinfo')[0] is True
+    assert _eval(action, resource=GRAPH_APPID)[0] is False
+    all_apps = {'Applications': {'Include': [{'Applications': ['All']}], 'Exclude': [{'Applications': [GRAPH_APPID]}]}}
+    assert _eval(all_apps, resource='urn:user:registersecurityinfo')[0] is False  # All resources skips user actions
+    assert _eval(all_apps, resource=GRAPH_APPID)[0] is False
+    assert _eval(all_apps, resource='c1')[0] is False
+    bundle = {'Applications': {'Include': [{'Applications': ['Office365']}]}}
+    assert _eval(bundle, microsoft=True, resource=GRAPH_APPID)[0] is None
+    assert _eval(bundle, resource='11111111-1111-1111-1111-111111111111')[0] is False
+
+    legacy = {'ClientTypes': {'Include': [{'ClientTypes': ['EasSupported', 'LegacySmtp']}]}}
+    assert [_eval(legacy, clientApp=c)[0] for c in ('browser', 'native', 'eas', 'other')] == [False, False, True, True]
+    risk = {'SignInRisks': {'Include': [{'SignInRisks': ['high', 'medium']}]}}
+    assert [_eval(risk, signInRisk=r)[0] for r in ('none', 'medium')] == [False, True]
+    flows = {'AuthFlows': {'Include': [{'AuthFlowType': ['deviceCodeFlow']}]}}
+    assert [_eval(flows, authFlow=f)[0] for f in ('none', 'deviceCodeFlow')] == [False, True]
+    rule = {'Devices': {'Include': [{'DeviceRule': 'device.isCompliant -eq True'}]}}
+    assert _eval(rule) == (None, ['Device filter'])  # filter rules are not evaluated
+
+
+def test_what_if_routes(client):
+    pid = next(p['id'] for p in client.get('/api/policies', params={'q': 'Require MFA for all users'}).json()['items'])
+
+    def user(effect):
+        return client.get(f'/api/policies/{pid}/users', params={'effect': effect, 'page_size': 1}).json()['items'][0]['id']
+    inside, excluded = user('applies'), user('excluded')
+    q = {'identity': inside, 'resource': GRAPH_APPID, 'location': 'other', 'platform': 'windows', 'clientApp': 'browser',
+         'signInRisk': 'none', 'userRisk': 'none', 'authFlow': 'none'}
+    r = client.get('/api/policies/what-if', params=q).json()
+    assert r['requiresMfa'] and 'MFA' in r['grant'] and r['identity']['id'] == inside
+    rows = {p['id']: p['whatIf'] for p in client.get('/api/policies', params=q).json()['items']}
+    assert rows[pid] == {'result': 'applies', 'dependsOn': []}
+    rows = client.get('/api/policies', params={**q, 'identity': excluded}).json()['items']
+    assert pid not in {p['id'] for p in rows}
+    # Without a check the list is unchanged and carries no whatIf.
+    assert all(p['whatIf'] is None for p in client.get('/api/policies').json()['items'])
+
+
+def test_what_if_minimal_db(minimal_client):
+    assert minimal_client.get('/api/policies/what-if', params={'platform': 'ios'}).status_code == 200

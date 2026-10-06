@@ -19,7 +19,7 @@ from ..common import (Db, F, count_rows, gm_group, gm_user, iso, keyword, member
                       register, resolve_appids, resolve_ref, resolve_refs, unresolved, value)
 from ..models import (AuthenticationStrength, Condition, MatchReason, NamedLocationDetail, NamedLocationRow, ObjectRef,
                       Page, PageQuery, PolicyCounts, PolicyDetail, PolicyMatch, PolicyQuery, PolicyRow, PolicyTargetType,
-                      PolicyUserQuery, UserRow)
+                      PolicyUserQuery, UserRow, WhatIfMatch, WhatIfQuery, WhatIfResult)
 from . import users
 
 router = APIRouter(prefix='/api', tags=['policies'])
@@ -502,6 +502,128 @@ def _affecting(db: Session, type: str, id: str) -> list[PolicyMatch]:
     return out
 
 
+# --- Sign-in check (what if) -----------------------------------------------------------
+# Three-valued: True (matches), False (rules the policy out), None (cannot tell: unset in the check, not evaluated
+# from the dump, or approximate). A policy applies when every condition is True, may apply when none is False.
+
+CLIENT_APPS = {'browser': {'browser'}, 'native': {'native'}, 'eas': {'eassupported', 'easunsupported'}}
+BUNDLES = {'Office365', 'MicrosoftAdminPortals'}  # ponytail: not expanded; a Microsoft app in a bundle is undecided
+USER_ACTION_PREFIX = 'urn:user:'
+
+
+def _and(*xs):
+    return False if False in xs else None if None in xs else True
+
+
+def _side_hit(vals: list | None, hit) -> bool | None:
+    """Any value of one side matches. `hit(v)` is three-valued too."""
+    rs = [hit(v) for v in vals or []]
+    return True if True in rs else None if None in rs else False
+
+
+def _cond(cond: dict, key: str, sub: str | None, hit) -> bool | None:
+    """Included and not excluded, from the values of `sub` (every key of the criteria when None)."""
+    def vals(side):
+        return [x for c in _crits(cond, key, side) for k, v in c.items() if sub in (None, k) for x in _vals(v)]
+    inc, exc = _side_hit(vals('Include'), hit), _side_hit(vals('Exclude'), hit)
+    return _and(inc, None if exc is None else not exc)
+
+
+def _signin(db: Session, q: WhatIfQuery) -> dict:
+    """What the check needs to know about the sign-in, resolved once for every policy."""
+    s = {'q': q, 'identity': None, 'matches': {}, 'microsoft': False, 'location': None}
+    if q.identity:
+        s['identity'] = ref = resolve_ref(db, q.identity)
+        if ref.type in ('user', 'servicePrincipal'):
+            wanted = {'Users', 'Directory roles'} if ref.type == 'user' else {'Workload identities'}
+            for m in _affecting(db, ref.type, q.identity):  # only the identity side: drop the Resources reasons
+                inc, exc = ([r for r in rs if r.condition in wanted] for rs in (m.included, m.excluded))
+                if mm := _match(m.policy, inc, exc):
+                    s['matches'][m.policy.id] = mm
+    if q.resource and not q.resource.startswith(USER_ACTION_PREFIX):
+        s['microsoft'] = bool(db.scalar(select(func.count()).where(
+            d.ServicePrincipal.appId == q.resource, d.ServicePrincipal.microsoftFirstParty.is_(True))))
+    if q.location and q.location != 'other':
+        for key, fields, p in _locations(db):
+            if p.objectId == q.location:
+                s['location'] = (key, fields['trusted'])
+    return s
+
+
+def _evaluate(det: dict, row: PolicyRow, s: dict) -> tuple[bool | None, list[str]]:
+    """(result, labels of the undecided conditions) of one policy for the sign-in."""
+    q, cond, results = s['q'], det.get('Conditions') or {}, {}
+    if row.parseError:
+        results['Unreadable policy'] = None
+    # Identity: Users and ServicePrincipals together, from the same matches as the object Policies tabs.
+    if not q.identity:
+        results['User or workload identity'] = None
+    else:
+        m = s['matches'].get(row.id)
+        if m is None or m.effect == 'excluded':
+            results['User or workload identity'] = False
+        else:
+            certain = any(not r.approximate and not r.eligibleOnly for r in m.included)
+            results['User or workload identity'] = True if certain else None
+    for key in cond:
+        if key in ('Users', 'ServicePrincipals'):
+            continue
+        label = LABELS.get(key, key)
+        if key == 'Applications':
+            r = q.resource
+            if r is None:
+                res = None
+            elif r.startswith(USER_ACTION_PREFIX) or not _is_guid(r):  # user action or authentication context
+                res = _cond(cond, key, None, lambda v: v == r)
+            else:
+                res = _cond(cond, key, 'Applications', lambda v: True if v in ('All', r) else
+                            None if v in BUNDLES and s['microsoft'] else False)
+        elif key == 'Locations':
+            loc = s['location']
+            res = _cond(cond, key, 'Locations', lambda v: True if v == 'All' else None if q.location is None else
+                        bool(loc) and (v == loc[0] or (v == 'AllTrusted' and loc[1])))
+        elif key in ('DevicePlatforms', 'SignInRisks', 'UserRisks', 'ClientTypes', 'AuthFlows'):
+            want = {'DevicePlatforms': q.platform, 'SignInRisks': q.signInRisk, 'UserRisks': q.userRisk,
+                    'ClientTypes': q.clientApp, 'AuthFlows': q.authFlow}[key]
+
+            def hit(v, want=want, key=key):
+                v = str(v).lower()
+                if v == 'all':
+                    return True
+                if want is None:
+                    return None
+                if key == 'ClientTypes':  # OtherLegacy and Legacy* are the "other clients"
+                    return v in CLIENT_APPS[want] if want in CLIENT_APPS else v == 'otherlegacy' or v.startswith('legacy')
+                return v == want.lower()
+            res = _cond(cond, key, None, hit)
+        else:  # device filter rules and anything newer: shown, not evaluated
+            res = _cond(cond, key, None, lambda v: True if v == 'All' else None)
+        results[label] = res
+    result = _and(*results.values())
+    return result, [k for k, v in results.items() if v is None]
+
+
+def _is_guid(s: str) -> bool:
+    return len(s) == 36 and s.count('-') == 4
+
+
+def what_if(db: Session, q: WhatIfQuery) -> tuple[dict, list[PolicyRow]]:
+    """(sign-in facts, enabled and report-only policies that apply or may apply, each with `whatIf` set)."""
+    s, out = _signin(db, q), []
+    for _p, det, row in _policies(db):
+        if row.state == 'disabled':
+            continue
+        result, depends = _evaluate(det, row, s)
+        if result is not False:
+            row.whatIf = WhatIfMatch(result='applies' if result else 'mayApply', dependsOn=depends)
+            out.append(row)
+    return s, out
+
+
+def _what_if_set(q: WhatIfQuery) -> bool:
+    return any(getattr(q, k) is not None for k in WhatIfQuery.model_fields)
+
+
 # --- Named locations -----------------------------------------------------------------
 
 def _location(p: d.Policy) -> tuple[str | None, dict]:
@@ -560,11 +682,33 @@ def _location_row(key, fields, policies) -> tuple[NamedLocationRow, list[PolicyM
 
 @router.get('/policies')
 def list_policies(q: Annotated[PolicyQuery, Query()], db: Db) -> Page[PolicyRow]:
-    rows = [row for _p, _d, row in _policies(db)
-            if (q.state is None or row.state == q.state) and (q.block is None or row.block == q.block)]
+    """All policies, or with any sign-in check parameter only those that apply or may apply to that sign-in."""
+    rows = what_if(db, q)[1] if _what_if_set(q) else [row for _p, _d, row in _policies(db)]
+    rows = [row for row in rows if (q.state is None or row.state == q.state) and (q.block is None or row.block == q.block)]
     return paginate_list(rows, q, resource='policies', text=lambda r: r.displayName, sorts={
         'displayName': lambda r: r.displayName.lower(), 'state': lambda r: r.state,
         'modifiedDateTime': lambda r: r.modifiedDateTime})
+
+
+@router.get('/policies/what-if')
+def policies_what_if(q: Annotated[WhatIfQuery, Query()], db: Db) -> WhatIfResult:
+    """What the enabled policies enforce on a sign-in. The matching policies are `/api/policies` with the same query."""
+    s, rows = what_if(db, q)
+    enforced = [r for r in rows if r.state == 'enabled']
+    sure, maybe = ([r for r in enforced if r.whatIf.result == want] for want in ('applies', 'mayApply'))
+    resource = None
+    if q.resource:
+        resource = (keyword(VALUES.get(q.resource, f'Authentication context {q.resource}'))
+                    if q.resource.startswith(USER_ACTION_PREFIX) or not _is_guid(q.resource)
+                    else resolve_appids(db, [q.resource])[q.resource])
+    return WhatIfResult(
+        identity=s['identity'], resource=resource,
+        block=any(r.block for r in sure), requiresMfa=any(r.requiresMfa for r in sure),
+        grant=list(dict.fromkeys(g for r in sure for g in r.grant)),
+        sessionControls=list(dict.fromkeys(x for r in sure for x in r.sessionControls)),
+        mayBlock=any(r.block for r in maybe), mayRequireMfa=any(r.requiresMfa for r in maybe),
+        dependsOn=list(dict.fromkeys(x for r in maybe for x in r.whatIf.dependsOn)),
+        applies=len(sure), mayApply=len(maybe), reportOnly=len(rows) - len(enforced))
 
 
 @router.get('/policies/affecting/{type}/{id}')

@@ -142,3 +142,15 @@ def test_tables_empty(dbpath, tmp_path):
                            'DELETE FROM DeviceManagementSettings;')
     with TestClient(create_app(str(path))) as c:
         assert_not_collected(c)
+
+
+def test_tables_dropped_while_running(dbpath, tmp_path):
+    """The DB file changes under a running server (an original-roadrecon dump copied over it): no stale table list."""
+    path = tmp_path / 'swap.db'
+    shutil.copy(dbpath, path)
+    with TestClient(create_app(str(path))) as c:
+        assert Stats(**get(c, '/api/stats')).compliancePolicies == 5
+        with sqlite3.connect(path) as conn:
+            conn.executescript('DROP TABLE DeviceCompliancePolicyAssignments; DROP TABLE DeviceCompliancePolicys; '
+                               'DROP TABLE DeviceManagementSettings;')
+        assert_not_collected(c)

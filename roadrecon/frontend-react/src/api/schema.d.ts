@@ -468,8 +468,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Policies */
+        /**
+         * List Policies
+         * @description All policies, or with any sign-in check parameter only those that apply or may apply to that sign-in.
+         */
         get: operations["list_policies_api_policies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/policies/what-if": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Policies What If
+         * @description What the enabled policies enforce on a sign-in. The matching policies are `/api/policies` with the same query.
+         */
+        get: operations["policies_what_if_api_policies_what_if_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1807,6 +1830,8 @@ export interface components {
             modifiedDateTime: string | null;
             /** Parseerror */
             parseError: string | null;
+            /** @description Set only when the list is filtered by a sign-in check. */
+            whatIf?: components["schemas"]["WhatIfMatch"] | null;
             /**
              * Who
              * @description Users, workload identities.
@@ -1896,6 +1921,8 @@ export interface components {
             modifiedDateTime: string | null;
             /** Parseerror */
             parseError: string | null;
+            /** @description Set only when the list is filtered by a sign-in check. */
+            whatIf?: components["schemas"]["WhatIfMatch"] | null;
         };
         /** RequiredPermission */
         RequiredPermission: {
@@ -2250,6 +2277,26 @@ export interface components {
             tenantId: string;
             /** Dirsyncenabled */
             dirSyncEnabled: boolean | null;
+            /**
+             * License
+             * @description Entra ID tier from the active service plans (assignedPlans).
+             */
+            license: ("Free" | "P1" | "P2") | null;
+            /**
+             * Securitydefaults
+             * @description From the policyType-10 policy; null when it is not in the dump.
+             */
+            securityDefaults: boolean | null;
+            /**
+             * Seamlesssso
+             * @description Seamless SSO (DesktopSSO), from the policyType-8 policy; null when it is not in the dump.
+             */
+            seamlessSso: boolean | null;
+            /**
+             * Seamlessssodomains
+             * @description On-premises AD domains holding an AZUREADSSOACC account.
+             */
+            seamlessSsoDomains: string[];
             /** Domains */
             domains: components["schemas"]["Domain"][];
             authorizationPolicy: components["schemas"]["AuthorizationPolicySummary"] | null;
@@ -2382,6 +2429,65 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * WhatIfMatch
+         * @description How one policy evaluates against the sign-in described by a WhatIfQuery.
+         */
+        WhatIfMatch: {
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "applies" | "mayApply";
+            /**
+             * Dependson
+             * @description Conditions that could not be decided (mayApply): not set in the check, not evaluated from the dump (device filter, app bundles) or approximate (guest type from userType, eligible role).
+             */
+            dependsOn: string[];
+        };
+        /**
+         * WhatIfResult
+         * @description Outcome of the enabled policies for a sign-in. Report-only policies are counted, never enforced.
+         */
+        WhatIfResult: {
+            identity: components["schemas"]["ObjectRef"] | null;
+            resource: components["schemas"]["ObjectRef"] | null;
+            /** Block */
+            block: boolean;
+            /** Requiresmfa */
+            requiresMfa: boolean;
+            /**
+             * Grant
+             * @description Grant controls of the applying policies; each policy must be satisfied.
+             */
+            grant: string[];
+            /** Sessioncontrols */
+            sessionControls: string[];
+            /**
+             * Mayblock
+             * @description A policy that may apply blocks.
+             */
+            mayBlock: boolean;
+            /**
+             * Mayrequiremfa
+             * @description A policy that may apply requires MFA.
+             */
+            mayRequireMfa: boolean;
+            /**
+             * Dependson
+             * @description Conditions the policies that may apply depend on.
+             */
+            dependsOn: string[];
+            /** Applies */
+            applies: number;
+            /** Mayapply */
+            mayApply: number;
+            /**
+             * Reportonly
+             * @description Report-only policies that apply or may apply.
+             */
+            reportOnly: number;
         };
     };
     responses: never;
@@ -3369,6 +3475,18 @@ export interface operations {
     list_policies_api_policies_get: {
         parameters: {
             query?: {
+                /** @description objectId of the user or workload identity (service principal). */
+                identity?: string | null;
+                /** @description appId, a user action (`urn:user:registersecurityinfo`, `urn:user:registerdevice`) or an authentication context (`c1`..`c99`). */
+                resource?: string | null;
+                /** @description objectId of a named location, or `other` for none of them. */
+                location?: string | null;
+                platform?: ("android" | "ios" | "windows" | "windowsphone" | "macos" | "linux") | null;
+                /** @description Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients. */
+                clientApp?: ("browser" | "native" | "eas" | "other") | null;
+                signInRisk?: ("none" | "low" | "medium" | "high") | null;
+                userRisk?: ("none" | "low" | "medium" | "high") | null;
+                authFlow?: ("none" | "deviceCodeFlow" | "authenticationTransfer") | null;
                 page?: number;
                 page_size?: number;
                 q?: string | null;
@@ -3394,6 +3512,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_PolicyRow_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    policies_what_if_api_policies_what_if_get: {
+        parameters: {
+            query?: {
+                /** @description objectId of the user or workload identity (service principal). */
+                identity?: string | null;
+                /** @description appId, a user action (`urn:user:registersecurityinfo`, `urn:user:registerdevice`) or an authentication context (`c1`..`c99`). */
+                resource?: string | null;
+                /** @description objectId of a named location, or `other` for none of them. */
+                location?: string | null;
+                platform?: ("android" | "ios" | "windows" | "windowsphone" | "macos" | "linux") | null;
+                /** @description Browser, mobile apps and desktop clients, Exchange ActiveSync, other (legacy) clients. */
+                clientApp?: ("browser" | "native" | "eas" | "other") | null;
+                signInRisk?: ("none" | "low" | "medium" | "high") | null;
+                userRisk?: ("none" | "low" | "medium" | "high") | null;
+                authFlow?: ("none" | "deviceCodeFlow" | "authenticationTransfer") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatIfResult"];
                 };
             };
             /** @description Validation Error */

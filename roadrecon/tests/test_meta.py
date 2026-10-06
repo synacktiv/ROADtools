@@ -7,7 +7,7 @@ from gendb import generate
 from roadtools.roadlib.metadef import database as d
 from roadtools.roadrecon.api.app import create_app
 from roadtools.roadrecon.api.models import SearchResult, Stats, Tenant
-from roadtools.roadrecon.api.routers.meta import _consent
+from roadtools.roadrecon.api.routers.meta import AAD_P1, AAD_P2, _auth_policy, _consent, _license
 
 
 def get(client, url, **params):
@@ -39,6 +39,7 @@ def test_tenant(client, db):
     assert {x.name for x in t.domains} == {v['name'] for v in td.verifiedDomains}
     assert t.domains[0].isDefault and not t.domains[0].isInitial and t.domains[1].isInitial
     assert t.domains[0].capabilities == ['Email', 'OfficeCommunicationsOnline']
+    assert (t.license, t.securityDefaults, t.seamlessSso, t.seamlessSsoDomains) == ('P1', False, True, ['corp.synthetic.local'])
     ap = t.authorizationPolicy
     assert ap.selfServicePasswordReset is True and ap.blockMsolPowerShell is False and ap.usersCanRegisterApps is True
     assert (ap.usersCanCreateTenants, ap.usersCanReadOwnBitlockerKeys) == (True, False)
@@ -49,6 +50,20 @@ def test_tenant(client, db):
     values = {v.name: v for v in t.directorySettings[0].values}
     assert values['EnableGroupCreation'].value == 'true' and values['EnableGroupCreation'].ref is None
     assert values['GroupCreationAllowedGroupId'].ref.type == 'group'
+
+
+def test_license_tier():
+    plan = lambda pid, status: {'servicePlanId': pid, 'capabilityStatus': status}  # noqa: E731
+    assert _license(None) == _license([plan(AAD_P2, 'Suspended'), plan(AAD_P1, 'Deleted')]) == 'Free'
+    assert _license([plan(AAD_P1, 'Warning')]) == 'P1'
+    assert _license([plan(AAD_P1, 'Enabled'), plan(AAD_P2, 'Enabled')]) == 'P2'
+
+
+def test_invites_case_insensitive():
+    """AAD Graph returns 'Everyone', MS Graph 'everyone'."""
+    ap = _auth_policy(d.AuthorizationPolicy(allowInvitesFrom='AdminsGuestInvitersAndAllMembers'))
+    assert ap.guestInvitesFrom == 'members' and not ap.guestInvites.startswith('Unknown')
+    assert _auth_policy(d.AuthorizationPolicy(allowInvitesFrom='Everyone')).guestInvitesFrom == 'everyone'
 
 
 def test_consent_decoding():
@@ -106,13 +121,14 @@ def test_empty_tenant_tables(tmp_path):
     path = tmp_path / 'old.db'
     generate(str(path))
     with sqlite3.connect(path) as conn:
-        conn.executescript('DELETE FROM TenantDetails; DELETE FROM RoleDefinitions;'
+        conn.executescript('DELETE FROM TenantDetails; DELETE FROM RoleDefinitions; DELETE FROM Policys WHERE policyType IN (8, 10);'
                            'DROP TABLE AuthorizationPolicys; DROP TABLE DirectorySettings;')
         roles = conn.execute('SELECT count(*) FROM DirectoryRoles').fetchone()[0]
         role_name = conn.execute('SELECT displayName, roleTemplateId FROM DirectoryRoles').fetchone()
     with TestClient(create_app(str(path))) as c:
         t = Tenant(**get(c, '/api/tenant'))
         assert (t.domains, t.authorizationPolicy, t.directorySettings, t.raw) == ([], None, [], {})
+        assert (t.license, t.securityDefaults, t.seamlessSso, t.seamlessSsoDomains) == (None, None, None, [])
         assert Stats(**get(c, '/api/stats')).roles == roles > 0
         g = next(g for g in SearchResult(**get(c, '/api/search', q=role_name[0])).groups if g.type == 'role')
         assert g.items[0].id == role_name[1]

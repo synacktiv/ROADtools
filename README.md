@@ -51,25 +51,35 @@ cd roadrecon/frontend-react/
 npm ci
 ```
 
-Run the API with `uvicorn roadtools.roadrecon.api.app:create_app --factory --reload --port 8000` (it reads the database from `$ROADRECON_DB`, default `roadrecon.db`), then `npm run dev` from `roadrecon/frontend-react/`. Vite serves the front-end on http://127.0.0.1:5173 and forwards `/api` to port 8000. To build the JavaScript files into ROADrecon's `roadtools/roadrecon/dist_gui` directory, run `npm run build`.
+Run the API with `uvicorn roadtools.roadrecon.api.app:create_app --factory --reload --port 8000` (it reads the database from `$ROADRECON_DB`, default `roadrecon.db`; set `ROADRECON_READ_ONLY=1` to never write to it), then `npm run dev` from `roadrecon/frontend-react/`. Vite serves the front-end on http://127.0.0.1:5173 and forwards `/api` to port 8000. To build the JavaScript files into ROADrecon's `roadtools/roadrecon/dist_gui` directory, run `npm run build`.
 
 Alternatively, `roadrecon/compose.yaml` runs everything in containers (podman or docker), from the `roadrecon/` directory:
 ```
 podman compose run --rm py python roadrecon/tests/gendb.py -o roadrecon/.dev/roadrecon.db   # synthetic database
 podman compose up                  # built GUI + API on http://127.0.0.1:5000 (ROADRECON_DB overrides the database)
 podman compose up api web          # development: API with --reload + Vite on http://127.0.0.1:5173
+VITE_MOCK=1 podman compose up web  # front-end only, on mock data
+podman compose up legacy           # old GUI on the same database, http://127.0.0.1:5001
 podman compose run --rm py pytest roadrecon/tests -q
 podman compose run --rm node npm run build
 ```
 
 ### Using ROADrecon
-After gathering data with `roadrecon auth` and `roadrecon gather`, start the GUI with `roadrecon gui` (or `roadrecon-gui`) and open http://127.0.0.1:5000. Options: `-d` for the database file (default `roadrecon.db`), `--host` and `--port` (default `127.0.0.1:5000`), and `--read-only` to never write to the database (by default, indexes are added on start-up).
+Authenticate with `roadrecon auth`, then gather data:
+* `roadrecon gather`: the directory, from the Azure AD Graph;
+* `roadrecon pimgather`: Privileged Identity Management role assignments;
+* `roadrecon iggather`: Identity Governance (access packages);
+* `roadrecon azgather`: Azure Resource Manager access and resources;
+* `roadrecon gatherall`: all of the above.
 
-The GUI shows:
-* A dashboard with tenant statistics, tenant information and directory settings.
-* Lists of users, groups, devices, administrative units, service principals, applications, directory roles, application role assignments, OAuth2 permission grants and MFA status, with server-side search, filters, sorting and CSV/JSON export.
+Then start the GUI with `roadrecon gui` (or `roadrecon-gui`) and open http://127.0.0.1:5000. Options: `-d` for the database file (default `roadrecon.db`), `--host` and `--port` (default `127.0.0.1:5000`), and `--read-only` to never write to the database (by default, indexes are added on start-up).
+
+The GUI shows the following (pages and tabs whose data was not gathered are hidden):
+* A dashboard with tenant statistics, tenant information, directory settings and the Entra ID licence (P2 / P1 / Free), security defaults and seamless SSO.
+* Lists of users, groups, devices, administrative units, service principals, applications, directory roles, application role assignments, OAuth2 permission grants and MFA status (methods registered, and whether a Conditional Access policy requires MFA), with server-side search, filters, sorting and CSV/JSON export.
 * A page per object, with its properties, its relations (members, owners, roles, PIM, Azure roles, access packages, Conditional Access policies) and the raw object.
-* Conditional Access policies with every reference resolved to a link, the users in scope of a policy, and the named locations with the policies that use them.
+* Conditional Access policies with every reference resolved to a link (authentication strengths included), the users in scope of a policy, and the named locations with the policies that use them.
+* A Conditional Access sign-in check: pick a user or workload identity, a target resource, a location, platform, client app and risks to see which policies apply or may apply, and whether the sign-in is blocked, needs MFA or other grant and session controls.
 * A SQL page to run read-only queries directly against the database, with built-in queries.
 * A global search across all objects (⌘K / Ctrl+K).
 

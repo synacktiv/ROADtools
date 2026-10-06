@@ -164,6 +164,12 @@ New features
   - run on a separate read-only connection (`PRAGMA query_only`), with a row cap and a timeout.
 - [x] Resizable table columns (drag the column header edge in `DataTable`).
 - [x] Named locations map: trusted countries in green (already handled; mock and gendb had no trusted country location, now they do).
+- [x] Conditional Access sign-in check (`/api/policies/what-if`, plus the same params on `/api/policies`): pick a user or workload identity, a target resource (app, user action, authentication context), a named location, platform, client app, risks and auth flow; shows block / MFA / grant and session controls, and filters the table to the policies that apply or may apply. Three-valued: a condition left on Any, a device filter, an app bundle, a guest type or an eligible role leaves the policy at "may apply" and names what it depends on.
+- [x] Dashboard "Licence and sign-in" card (`Tenant.license | securityDefaults | seamlessSso | seamlessSsoDomains`), all from data the original `gather` already collects:
+  - Entra ID licence: P2 / P1 / Free, from the `Enabled` or `Warning` service plans in `TenantDetails.assignedPlans`;
+  - security defaults: policyType 10, `SecurityPolicy.SecurityDefaults.IsEnabled`;
+  - seamless SSO: policyType 8, `OnPremAuthenticationFlowPolicy.DesktopSSO` (the AD domains holding an `AZUREADSSOACC` account; shown in red, since its Kerberos key lets an attacker forge tickets for any synced user).
+  The card is hidden when none of the three is in the dump.
 - [x] Service principals list: a URLs column (reply URLs, homepage, logout URL), hidden by default, with a `url` filter; logout URL also on the SP page.
 
 ## Phase 6 — Switch
@@ -192,6 +198,7 @@ Today the policies show authentication strength ids as unresolved references (on
 - [x] API: built-in strength ids (`…0002/3/4`) resolve from a constant with their allowed combinations (`PolicyDetail.authenticationStrengths`); custom ids stay unresolved ("Custom authentication strength").
 - [x] MFA requirement: `PolicyRow.requiresMfa` / `mfaApproximate` + a `requiresMfa` filter. A grant entry met only by MFA and/or strengths requires MFA; built-in strengths count; a custom strength counts but is flagged approximate (combinations not collected); "MFA or compliant device" does not.
 - [x] Frontend: policy flow lists a built-in strength's combinations, or notes a custom one; the user page's risk signals card says whether an enabled policy in scope requires MFA.
+- [x] MFA page: a "MFA required" column and an Any / Required / Not required filter, distinct from "Registered" (methods the user set up). Required = an enabled CA policy in scope enforces MFA, authentication strengths (incl. resolved custom ones) included. Shown only when CA policies were collected.
 - Reference: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-strengths
 
 ## UI bugs

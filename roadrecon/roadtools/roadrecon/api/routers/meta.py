@@ -1,4 +1,5 @@
 """S9 meta: stats, tenant, global search, filter catalogues."""
+import json
 from typing import Annotated
 
 from fastapi import APIRouter, Query
@@ -14,7 +15,7 @@ from ..models import (AuthorizationPolicySummary, DirectorySettingSummary, Domai
 
 router = APIRouter(prefix='/api', tags=['meta'])
 
-CA_POLICY, NAMED_LOCATION = 18, 6
+CA_POLICY, NAMED_LOCATION, SECURITY_DEFAULTS, ON_PREM_AUTH = 18, 6, 10, 8
 
 
 @router.get('/filters/{resource}')
@@ -88,7 +89,8 @@ def _auth_policy(ap: d.AuthorizationPolicy) -> AuthorizationPolicySummary:
     consent_policy, consent = _consent(ap.permissionGrantPolicyIdsAssignedToDefaultUserRole or [])
     # Unknown values fall back to the Entra defaults (limited guests, everyone invites); the text says so.
     guest_role, guest_access = GUEST_ROLES.get(ap.guestUserRoleId, ('limited', f'Unknown guest role: {ap.guestUserRoleId}'))
-    invites_from, invites = INVITES.get(ap.allowInvitesFrom, ('everyone', f'Unknown: {ap.allowInvitesFrom}'))
+    # AAD Graph returns PascalCase ('Everyone'), MS Graph camelCase ('everyone').
+    invites_from, invites = {k.lower(): v for k, v in INVITES.items()}.get((ap.allowInvitesFrom or '').lower(), ('everyone', f'Unknown: {ap.allowInvitesFrom}'))
     return AuthorizationPolicySummary(
         selfServicePasswordReset=ap.allowedToUseSSPR,
         blockMsolPowerShell=ap.blockMsolPowerShell,
@@ -110,6 +112,24 @@ def _domain(v: dict) -> Domain:
                   isDefault=bool(v.get('default') or v.get('isDefault')), isInitial=bool(v.get('initial') or v.get('isInitial')))
 
 
+# Entra ID service plan ids (assignedPlans); P2 includes P1.
+AAD_P1, AAD_P2 = '41781fb2-bc02-4b7c-bd55-b576c07bb09d', 'eec0eb4f-6444-4f95-aba0-50c24d67f998'
+
+
+def _license(plans: list | None) -> str:
+    # Warning = grace period after expiry, still working; Suspended / LockedOut / Deleted are not.
+    active = {p.get('servicePlanId') for p in plans or [] if isinstance(p, dict) and p.get('capabilityStatus') in ('Enabled', 'Warning')}
+    return 'P2' if AAD_P2 in active else 'P1' if AAD_P1 in active else 'Free'
+
+
+def _policy_detail(db: Session, policy_type: int) -> dict | None:
+    detail = db.scalar(select(d.Policy.policyDetail).where(d.Policy.policyType == policy_type).limit(1))
+    try:
+        return json.loads(detail[0])
+    except (TypeError, IndexError, ValueError):
+        return None
+
+
 @router.get('/tenant')
 def get_tenant(db: Db) -> Tenant:
     td = db.scalars(select(d.TenantDetail).limit(1)).first()
@@ -117,12 +137,18 @@ def get_tenant(db: Db) -> Tenant:
     settings = db.scalars(select(d.DirectorySetting)).all() if has_table(db, 'DirectorySettings') else []
     domains = [_domain(v) for v in (td.verifiedDomains if td else None) or [] if isinstance(v, dict)]
     values = {s.id: [v for v in s.values or [] if isinstance(v, dict)] for s in settings}
+    sec = _policy_detail(db, SECURITY_DEFAULTS)
+    sso = ((_policy_detail(db, ON_PREM_AUTH) or {}).get('OnPremAuthenticationFlowPolicy') or {}).get('DesktopSSO') or {}
     refs = {k: r for k, r in resolve_refs(db, [str(v.get('value')) for vs in values.values() for v in vs]).items()
             if r.type != 'unknown'}
     return Tenant(
         displayName=(td and td.displayName) or '',
         tenantId=(td and td.objectId) or '',
         dirSyncEnabled=td.dirSyncEnabled if td else None,
+        license=_license(td.assignedPlans) if td else None,
+        securityDefaults=(sec or {}).get('SecurityPolicy', {}).get('SecurityDefaults', {}).get('IsEnabled'),
+        seamlessSso=sso.get('Enabled'),
+        seamlessSsoDomains=[s.get('Domain') for s in sso.get('Secrets') or [] if s.get('Domain')],
         domains=sorted(domains, key=lambda x: (not x.isDefault, not x.isInitial, x.name)),
         authorizationPolicy=_auth_policy(ap) if ap else None,
         directorySettings=[DirectorySettingSummary(

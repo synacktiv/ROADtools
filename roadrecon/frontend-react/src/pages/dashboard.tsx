@@ -331,6 +331,27 @@ function AuthorizationPolicyCard({ ap, i }: { ap: Tenant['authorizationPolicy'];
   )
 }
 
+function SignInCard({ t, i }: { t: Tenant; i: number }) {
+  return (
+    <Card {...rise(i)}>
+      <CardHeader>
+        <CardTitle>Licence and sign-in</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <PropertyList
+          plain
+          items={[
+            ['Entra ID licence', t.license && (t.license === 'Free' ? 'Free' : `Microsoft Entra ID ${t.license}`)],
+            ['Security defaults', flag(t.securityDefaults)],
+            ['Seamless SSO', flag(t.seamlessSso, true)],
+            ['Seamless SSO domains', t.seamlessSsoDomains],
+          ]}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
 function DomainsCard({ domains, i }: { domains?: Tenant['domains']; i: number }) {
   return (
     <Card {...rise(i)}>
@@ -475,6 +496,7 @@ export function DashboardPage() {
 
       <div className="grid items-start gap-4 xl:grid-cols-12">
         <div className="flex flex-col gap-4 xl:col-span-7">
+          {t && (t.license ?? t.securityDefaults ?? t.seamlessSso) !== null && <SignInCard i={2} t={t} />}
           <AuthorizationPolicyCard i={2} ap={t?.authorizationPolicy ?? null} />
           <DomainsCard i={3} domains={t?.domains} />
         </div>

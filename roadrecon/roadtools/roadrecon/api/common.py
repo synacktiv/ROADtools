@@ -32,12 +32,12 @@ Db = Annotated[Session, Depends(get_db)]
 
 
 def has_table(db: Session, name: str) -> bool:
-    """Optional tables (PIM*, IG*, AZ*) are missing on older dumps: callers return empty results."""
-    engine = db.get_bind()
-    cache = engine.__dict__.get('_rr_tables')
-    if cache is None:
-        cache = engine.__dict__['_rr_tables'] = set(inspect(engine).get_table_names())
-    return name in cache
+    """Optional tables (PIM*, IG*, AZ*) are missing on older dumps: callers return empty results.
+
+    Asked on the session's own connection, never cached on the engine: the file can be replaced or
+    re-gathered while the server runs, and the answer must match what the next query will see.
+    """
+    return inspect(db.connection()).has_table(name)
 
 
 def not_found(what: str = 'Object') -> HTTPException:

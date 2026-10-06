@@ -696,9 +696,23 @@ class Gen:
                 {'name': self.vanity, 'capabilities': 'Email, OfficeCommunicationsOnline',
                  'default': True, 'initial': False, 'type': 'Managed', 'id': 'vanity'},
             ],
-            'assignedPlans': [],
+            'assignedPlans': [  # an expired P2 trial, then P1: the tenant is P1
+                {'assignedTimestamp': '2024-01-01T00:00:00Z', 'capabilityStatus': 'Deleted', 'service': 'AADPremiumService',
+                 'servicePlanId': 'eec0eb4f-6444-4f95-aba0-50c24d67f998'},
+                {'assignedTimestamp': '2024-02-01T00:00:00Z', 'capabilityStatus': 'Enabled', 'service': 'AADPremiumService',
+                 'servicePlanId': '41781fb2-bc02-4b7c-bd55-b576c07bb09d'},
+            ],
             'provisionedPlans': [],
         })
+        # Security defaults (policyType 10) and seamless SSO (policyType 8), as AAD Graph returns them.
+        for oid, ptype, name, detail in (
+            ('5ec0de7a-0000-4000-8000-000000000010', 10, '01/01/2024 00:00:00', {'SecurityPolicy': {'Version': 0, 'SecurityDefaults': {'IsEnabled': False}}}),
+            ('5ec0de7a-0000-4000-8000-000000000008', 8, 'On-Premise Authentication Flow Policy', {'OnPremAuthenticationFlowPolicy': {
+                'DesktopSSO': {'Enabled': True, 'Secrets': [{'Domain': 'corp.synthetic.local', 'Machine': 'AZUREADSSOACC'}]},
+                'PassthroughAuth': {'Enabled': False}, 'Version': 2}}),
+        ):
+            self.add(db.Policy, {'objectType': 'Policy', 'objectId': oid, 'displayName': name, 'policyType': ptype,
+                                 'policyIdentifier': None, 'tenantDefaultPolicy': None, 'policyDetail': [json.dumps(detail)]})
         self.add(db.AuthorizationPolicy, {
             'id': 'authorizationPolicy',
             'displayName': 'Authorization Policy',
