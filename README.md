@@ -51,7 +51,7 @@ cd roadrecon/frontend-react/
 npm ci
 ```
 
-Run the API with `uvicorn roadtools.roadrecon.api.app:create_app --factory --reload --port 8000` (it reads the database from `$ROADRECON_DB`, default `roadrecon.db`; set `ROADRECON_READ_ONLY=1` to never write to it), then `npm run dev` from `roadrecon/frontend-react/`. Vite serves the front-end on http://127.0.0.1:5173 and forwards `/api` to port 8000. To build the JavaScript files into ROADrecon's `roadtools/roadrecon/dist_gui` directory, run `npm run build`.
+Run the API with `uvicorn roadtools.roadrecon.api.app:create_app --factory --reload --port 8000` (it reads the database from `$ROADRECON_DB`, default `roadrecon.db`; set `ROADRECON_READ_ONLY=1` to never write to it), then `npm run dev` from `roadrecon/frontend-react/`. Vite serves the front-end on http://127.0.0.1:5173 and forwards `/api` to port 8000. The built front-end is committed in `roadrecon/roadtools/roadrecon/dist_gui`, so installing from a clone needs no `node`. After changing the front-end, rebuild it with `npm run build` and commit `dist_gui` along with the source.
 
 Alternatively, `roadrecon/compose.yaml` runs everything in containers (podman or docker), from the `roadrecon/` directory:
 ```
