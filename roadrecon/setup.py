@@ -29,7 +29,7 @@ setup(name='roadrecon',
         'roadtools.roadrecon.dist_gui.assets': ['*'],
       },
       install_requires=[
-          'roadlib>=1.7',
+          'roadlib>=1.8',
           'sqlalchemy>=2',
           'fastapi>=0.115',
           'uvicorn',

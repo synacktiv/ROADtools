@@ -8,6 +8,15 @@
 
 ROADtools is a framework to interact with Azure AD. It consists of a library (roadlib) with common components, the ROADrecon Azure AD exploration tool and the ROADtools Token eXchange (roadtx) tool.
 
+**Tenant overview**  
+![ROADrecon overview of a tenant](img/dashboard.png)
+
+**User details**  
+![ROADrecon user detail page](img/user_detail.png)
+
+**Conditional Access policies, with the sign-in check**  
+![ROADrecon Conditional Access page](img/caps.png)
+
 ## ROADlib
 ![PyPI version](https://img.shields.io/pypi/v/roadlib.svg)
 
@@ -26,25 +35,38 @@ ROADrecon is a tool for exploring information in Azure AD from both a Red Team a
 ROADrecon uses `async` Python features and is only compatible with Python 3.10 and newer (development is done with Python 3.11, tests are run with versions up to Python 3.14). 
 
 ### Installation
-There are multiple ways to install ROADrecon:
+The new GUI (FastAPI + React) is only in this repository. The `roadrecon` and `roadlib` packages on PyPI are the upstream ones: `pip install roadrecon` / `pipx install roadrecon` (or the `roadtools` meta-package) gives the old Angular GUI. ROADrecon also needs the `roadlib` from this repository (1.8 or newer, with the extra database tables), so install both from here, `roadlib` first. The built front-end is committed, so `node` / `npm` are not needed.
 
-**Using a published version on PyPi**  
-Stable versions can be installed with `pip install roadrecon`. This will automatically add the `roadrecon` command to your PATH.
-
-**Using a version from GitHub**  
-Every commit to master is automatically built into a release version with Azure Pipelines. This ensures that you can install the latest version of the GUI without having to install `npm` and all it's dependencies. You can download the `roadlib` and `roadrecon` build files from the [Azure Pipelines artifacts](https://dev.azure.com/dirkjanm/ROADtools/_build/latest?definitionId=19&branchName=master) (click on the button "1 Published". The build output files are stored in `ROADtools.zip`. You can either install the `.whl` or `.tar.gz` files directly using pip or unzip both and install the folders in the correct order (`roadlib` first):
-
+**With pipx, straight from GitHub**  
 ```
-pip install roadlib/
-pip install roadrecon/
+pipx install "git+https://github.com/synacktiv/ROADtools.git#subdirectory=roadrecon" \
+  --preinstall "git+https://github.com/synacktiv/ROADtools.git#subdirectory=roadlib"
 ```
 
-You can also install them in development mode with `pip install -e roadlib/`.
+**With pipx, from a clone**  
+```
+git clone https://github.com/synacktiv/ROADtools.git
+cd ROADtools
+pipx install ./roadrecon --preinstall "$PWD/roadlib"
+```
+
+`--preinstall` puts this repository's `roadlib` in the pipx environment before `roadrecon`, so pip does not fetch the PyPI one. If an older roadrecon is already installed with pipx, add `--force` (or run `pipx uninstall roadrecon` first) to replace it. To update later, pull and run the same command again with `--force`.
+
+Both commands add `roadrecon` and `roadrecon-gui` to your PATH. `roadrecon gui` then serves the new GUI on http://127.0.0.1:5000.
+
+**With pip, in a virtual environment**  
+```
+pip install ./roadlib
+pip install ./roadrecon
+```
+
+You can also install them in development mode with `pip install -e roadlib/` and `pip install -e roadrecon/`.
 
 **Developing the front-end**  
 If you want to make changes to the front-end (React, in `roadrecon/frontend-react/`), you will need to have `node` (22) and `npm` installed. Then install the components from git:
 ```
-git clone https://github.com/dirkjanm/roadtools.git
+git clone https://github.com/synacktiv/ROADtools.git
+cd ROADtools
 pip install -e roadlib/
 pip install -e roadrecon/
 cd roadrecon/frontend-react/
@@ -56,6 +78,7 @@ Run the API with `uvicorn roadtools.roadrecon.api.app:create_app --factory --rel
 Alternatively, `roadrecon/compose.yaml` runs everything in containers (podman or docker), from the `roadrecon/` directory:
 ```
 podman compose run --rm py python roadrecon/tests/gendb.py -o roadrecon/.dev/roadrecon.db   # synthetic database
+podman compose run --rm py python roadrecon/tests/mockdb.py -o roadrecon/.dev/mock.db       # fake Contoso tenant, for screenshots
 podman compose up                  # built GUI + API on http://127.0.0.1:5000 (ROADRECON_DB overrides the database)
 podman compose up api web          # development: API with --reload + Vite on http://127.0.0.1:5173
 VITE_MOCK=1 podman compose up web  # front-end only, on mock data
